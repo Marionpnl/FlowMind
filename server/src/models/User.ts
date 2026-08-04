@@ -1,11 +1,13 @@
 import { model, models, Schema, type Document } from "mongoose";
+import bcrypt from "bcryptjs";
 
 // 1. Define the IUser interface TypeScript to represent the user document structure
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  role: "user" | "admin";
+  location?: string;
+  comparePassword?: (candidate: string) => Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,16 +31,32 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: [true, "Le mot de passe est requis"],
     },
-    role: {
+    location: {
       type: String,
-      enum: ["user", "admin"],
-      default: "user",
+      trim: true,
     },
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt fields
   },
 );
+
+// Hash password before save if modified
+userSchema.pre("save", async function (next: any) {
+  try {
+    if (!this.isModified("password")) return next();
+    const hashed = await bcrypt.hash(this.password, 10);
+    this.password = hashed;
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// Instance method to compare password
+userSchema.methods.comparePassword = async function (candidate: string) {
+  return bcrypt.compare(candidate, this.password);
+};
 
 const User = models.User || model<IUser>("User", userSchema);
 export default User;

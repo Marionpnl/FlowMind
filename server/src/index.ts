@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import usersRouter from "./routes/users";
+import authRouter from "./routes/auth";
 import { connectDatabase } from "./config/database";
 
 dotenv.config();
@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
   res.json({ message: "FlowMind API is running" });
 });
 
-app.use("/api/users", usersRouter);
+app.use("/api/auth", authRouter);
 
 const PORT = process.env.PORT || 5000;
 
