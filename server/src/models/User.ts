@@ -42,14 +42,14 @@ const userSchema = new Schema<IUser>(
 );
 
 // Hash password before save if modified
-userSchema.pre("save", async function (next: any) {
+userSchema.pre("save", async function () {
   try {
-    if (!this.isModified("password")) return next();
+    if (!this.isModified("password")) return;
     const hashed = await bcrypt.hash(this.password, 10);
     this.password = hashed;
-    return next();
   } catch (err) {
-    return next(err);
+    console.error("Error hashing password:", err);
+    throw err;
   }
 });
 
