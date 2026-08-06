@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRouter from "./routes/auth";
 import { connectDatabase } from "./config/database";
+import authRouter from "./routes/auth";
+import habitsRouter from "./routes/habits";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/habits", habitsRouter);
 
 const PORT = process.env.PORT || 5000;
 

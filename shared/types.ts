@@ -10,9 +10,11 @@ export interface IUser {
 export interface IHabit {
   _id: string;
   userId: string;
-  name: string;
-  emoji: string;
-  streak: number;
+  name: string; // ex: "Sport", "Lecture", "Code"
+  emoji: string; // ex: "🏃‍♂️", "📚", "💻"
+  completedDates: string[]; // Array of date strings "YYYY-MM-DD"
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ===== SPARKS (SparkTime) =====
