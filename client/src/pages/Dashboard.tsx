@@ -26,13 +26,13 @@ export default function Dashboard() {
         subtitle={`Bonjour ${user?.name} · ${todayBlocks.length} blocs planifiés`}
         actions={
           <>
-            <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <button className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground">
               <Sun className="h-4 w-4" />
               Bilan du jour
             </button>
             <Button
-              size="sm"
-              className="bg-flowday text-white hover:bg-flowday/90"
+              size="lg"
+              className="bg-[#2B2A28] text-white hover:bg-flowday/90 rounded-xl"
             >
               <Plus className="mr-1 h-4 w-4" />
               Nouvelle activité

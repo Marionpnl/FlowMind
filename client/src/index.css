@@ -14,10 +14,14 @@
   --color-accent-danger: #c05b3a;
   --color-accent-danger-bg: #c05b3a26;
 
-  --color-cream: #faf6ee;
+  --color-cream: #fcfaf7;
+  --color-cream-secondary: #f5f2ed;
 
   /* Polices */
-  --font-body: "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
   --font-display: "Playfair Display", serif;
-  --font-jetbrains-mono: "JetBrains Mono", monospace;
+  --font-mono: "JetBrains Mono", monospace;
+}
+body {
+  font-family: var(--font-sans);
 }

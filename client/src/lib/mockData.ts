@@ -8,6 +8,7 @@ export interface PlanningBlock {
   title: string;
   subtitle: string;
   module: ModuleName;
+  done?: boolean;
 }
 
 export const todayBlocks: PlanningBlock[] = [
@@ -17,6 +18,7 @@ export const todayBlocks: PlanningBlock[] = [
     title: "Méditation guidée",
     subtitle: "10 min · réveil en douceur",
     module: "FlowDay",
+    done: true,
   },
   {
     id: "2",

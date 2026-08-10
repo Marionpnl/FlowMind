@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useHabitStore } from "@/store/habitStore";
 import { calculateStreak, getLast30Days } from "@/lib/streak";
+import { TrendingUp } from "lucide-react";
 
 export default function HabitsWidget() {
   const habits = useHabitStore((s) => s.habits);
@@ -16,9 +17,12 @@ export default function HabitsWidget() {
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-lg italic">
-          Habitudes · 30 derniers jours
-        </h2>
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-4.5 w-4.5 text-flowday" />
+          <h2 className="font-sans text-sm font-semibold ">
+            Habitudes · 30 derniers jours
+          </h2>
+        </div>
         <Link
           to="/flowday/habits"
           className="text-xs text-muted-foreground hover:underline"

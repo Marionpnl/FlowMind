@@ -52,7 +52,7 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col justify-between border-r border-black/5 bg-cream p-5 transition-all duration-200",
+        "flex h-screen flex-col justify-between border-r border-black/5 bg-cream-secondary p-5 transition-all duration-200",
         collapsed ? "w-20" : "w-64",
       )}
     >
@@ -72,7 +72,7 @@ export default function Sidebar() {
               <p className="font-display text-2xl italic leading-none">
                 FlowMind
               </p>
-              <p className="font-jetbrains-mono text-[10px] text-black/80 text-muted-foreground">
+              <p className="font-mono text-[10px] text-black/80 text-muted-foreground">
                 V2.0 · JUIN 2026
               </p>
             </div>

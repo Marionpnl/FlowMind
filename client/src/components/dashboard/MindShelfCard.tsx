@@ -5,7 +5,8 @@ export default function MindShelfCard() {
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-mindshelf">
+        <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-mindshelf">
+          <span className="h-1.5 w-1.5 rounded-full bg-mindshelf" />
           MindShelf · En cours
         </p>
         <Link
@@ -30,7 +31,7 @@ export default function MindShelfCard() {
                 />
               </div>
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs font-mono text-muted-foreground">
               {book.progress}% · {book.chapter}
             </span>
           </div>
@@ -38,11 +39,11 @@ export default function MindShelfCard() {
       </div>
 
       <div className="mt-4 rounded-xl bg-mindshelf-bg p-3">
-        <p className="text-xs font-medium text-mindshelf">
+        <p className="text-xs font-medium uppercase text-mindshelf">
           Redécouverte du jour
         </p>
         <p className="mt-1 text-sm italic">"{dailyQuote.text}"</p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs font-mono text-muted-foreground">
           {dailyQuote.source}
         </p>
       </div>
