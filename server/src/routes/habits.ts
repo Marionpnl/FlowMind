@@ -23,7 +23,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
 // POST /api/habits
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { name, emoji } = req.body;
+    const { name, emoji, goal, module } = req.body;
     if (!name)
       return res
         .status(400)
@@ -33,12 +33,14 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       userId: req.userId,
       name,
       emoji: emoji || "⚡",
+      goal: goal,
+      module: module || "Flowday",
     });
 
     res.status(201).json({ success: true, data: habit });
   } catch (error) {
     console.error("POST /api/habits error:", error);
-    res.status(500).json({ success: false, message: "Erreur serveur" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 

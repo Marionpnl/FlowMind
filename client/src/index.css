@@ -17,6 +17,9 @@
   --color-cream: #fcfaf7;
   --color-cream-secondary: #f5f2ed;
 
+  --color-border: #00000018;
+  --color-ring: #4a8c6f40;
+
   /* Polices */
   --font-sans: "Inter", sans-serif;
   --font-display: "Playfair Display", serif;
@@ -24,4 +27,12 @@
 }
 body {
   font-family: var(--font-sans);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
 }

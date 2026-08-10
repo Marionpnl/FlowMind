@@ -7,11 +7,15 @@ export interface IUser {
 }
 
 // ===== HABITS =====
+
+export type HabitModule = "FlowDay" | "MindShelf" | "SparkTime";
 export interface IHabit {
   _id: string;
   userId: string;
   name: string; // ex: "Sport", "Lecture", "Code"
   emoji: string; // ex: "🏃‍♂️", "📚", "💻"
+  goal?: string;
+  module: HabitModule;
   completedDates: string[]; // Array of date strings "YYYY-MM-DD"
   createdAt: Date;
   updatedAt: Date;

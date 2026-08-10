@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { IHabit } from "@shared/types";
+import type { HabitModule, IHabit } from "@shared/types";
 import apiCall from "../lib/api";
 
 interface HabitResponse {
@@ -17,7 +17,12 @@ interface HabitState {
   loading: boolean;
   error: string | null;
   fetchHabits: () => Promise<void>;
-  addHabit: (name: string, emoji?: string) => Promise<void>;
+  addHabit: (data: {
+    name: string;
+    emoji?: string;
+    goal?: string;
+    module: HabitModule;
+  }) => Promise<void>;
   toggleCheck: (id: string, date?: string) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
 }
@@ -40,13 +45,13 @@ export const useHabitStore = create<HabitState>((set, get) => ({
   },
 
   // Add a new habit
-  addHabit: async (name: string, emoji = "⚡") => {
+  addHabit: async (data) => {
     set({ error: null });
     try {
       const res = await apiCall<SingleHabitResponse>("/api/habits", {
         method: "POST",
         auth: true,
-        body: JSON.stringify({ name, emoji }),
+        body: JSON.stringify(data),
       });
       set({ habits: [res.data, ...get().habits] });
     } catch (err) {

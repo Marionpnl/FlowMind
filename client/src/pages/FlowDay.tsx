@@ -42,7 +42,7 @@ export default function FlowDay() {
           <TodayPlanning />
         </div>
         <div className="space-y-5">
-          <HabitsWidget />
+          <HabitsWidget layout="column" />
           <FocusCard />
         </div>
       </main>
