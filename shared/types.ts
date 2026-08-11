@@ -36,10 +36,25 @@ export interface ISpark {
 export type PlanView = "day" | "week" | "month";
 export type DisplayMode = "list" | "calendar";
 
-export interface AIBlock {
-  time: string;
-  task: string;
-  emoji: string;
-  type: "focus" | "break" | "habit" | "spark" | "other";
-  sparkId?: string;
+export interface DayPlanBlock {
+  id: string;
+  time: string; // ex: "09:00"
+  title: string;
+  subtitle?: string;
+  duration: number; // in minutes
+  module: HabitModule; // use the same type as for habits
+  done: boolean;
+  sparkId?: string; // if the block comes from a SparkTime suggestion
+}
+
+export interface IDayPlan {
+  _id: string;
+  userId: string;
+  date: string; // "YYYY-MM-DD"
+  userInput?: string; // free text describing the day, sent to the AI
+  blocks: DayPlanBlock[];
+  energyScore?: number; // 1-5, filled at the end-of-day review
+  endOfDaySummary?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
