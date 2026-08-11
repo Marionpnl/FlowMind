@@ -9,16 +9,22 @@ interface DayPlanResponse {
 
 interface DayPlanState {
   currentPlan: IDayPlan | null;
+  weekPlans: IDayPlan[];
+  monthPlans: IDayPlan[];
   loading: boolean;
   generating: boolean;
   error: string | null;
   fetchPlan: (date: string) => Promise<void>;
+  fetchWeekPlans: (weekStart: string) => Promise<void>;
+  fetchMonthPlans: (year: number, month: number) => Promise<void>;
   generatePlan: (userInput: string, date: string) => Promise<void>;
   toggleBlock: (blockId: string) => Promise<void>;
 }
 
 export const useDayPlanStore = create<DayPlanState>((set, get) => ({
   currentPlan: null,
+  weekPlans: [],
+  monthPlans: [],
   loading: false,
   generating: false,
   error: null,
@@ -33,6 +39,32 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
     } catch {
       // Pas d'erreur affichée si c'est juste "pas encore de plan pour ce jour" (404)
       set({ currentPlan: null, loading: false });
+    }
+  },
+
+  fetchWeekPlans: async (weekStart) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await apiCall<{ success: boolean; data: IDayPlan[] }>(
+        `/api/flowday/week/${weekStart}`,
+        { auth: true },
+      );
+      set({ weekPlans: res.data, loading: false });
+    } catch {
+      set({ weekPlans: [], loading: false });
+    }
+  },
+
+  fetchMonthPlans: async (year, month) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await apiCall<{ success: boolean; data: IDayPlan[] }>(
+        `/api/flowday/month/${year}/${month}`,
+        { auth: true },
+      );
+      set({ monthPlans: res.data, loading: false });
+    } catch {
+      set({ monthPlans: [], loading: false });
     }
   },
 

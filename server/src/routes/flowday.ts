@@ -7,6 +7,53 @@ const router = Router();
 
 router.use(requireAuth);
 
+// GET /api/flowday/week/:weekStart - Week planning (weekStart = Monday, "YYYY-MM-DD" format)
+router.get("/week/:weekStart", async (req: AuthRequest, res: Response) => {
+  try {
+    const weekStart = req.params.weekStart as string;
+    const start = new Date(weekStart);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+
+    const startStr = start.toISOString().split("T")[0];
+    const endStr = end.toISOString().split("T")[0];
+
+    const plans = await DayPlan.find({
+      userId: req.userId,
+      date: { $gte: startStr, $lte: endStr },
+    });
+
+    res.json({ success: true, data: plans });
+  } catch (error) {
+    console.error("GET /api/flowday/week/:weekStart", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// GET /api/flowday/month/:year/:month - Month planning (month = 1-12)
+router.get("/month/:year/:month", async (req: AuthRequest, res: Response) => {
+  try {
+    const year = req.params.year as string;
+    const month = req.params.month as string;
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+
+    const startStr = `${yearNum}-${String(monthNum).padStart(2, "0")}-01`;
+    const lastDay = new Date(yearNum, monthNum, 0).getDate(); // dernier jour du mois
+    const endStr = `${yearNum}-${String(monthNum).padStart(2, "0")}-${lastDay}`;
+
+    const plans = await DayPlan.find({
+      userId: req.userId,
+      date: { $gte: startStr, $lte: endStr },
+    });
+
+    res.json({ success: true, data: plans });
+  } catch (error) {
+    console.error("GET /api/flowday/month/:year/:month", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
 // GET /api/flowday/:date - Get the day plan for a specific date
 router.get("/:date", async (req: AuthRequest, res: Response) => {
   try {
