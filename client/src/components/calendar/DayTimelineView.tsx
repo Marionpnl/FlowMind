@@ -3,7 +3,7 @@ import type { DayPlanBlock } from "@shared/types";
 
 const START_HOUR = 7;
 const END_HOUR = 19;
-const HOUR_HEIGHT = 64; // px par heure
+const HOUR_HEIGHT = 88; // px par heure — 30 min = 44px, assez pour 2 lignes compactes
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -14,7 +14,7 @@ function getBlockPosition(block: DayPlanBlock) {
   const startMinutes = timeToMinutes(block.time) - START_HOUR * 60;
   const top = (startMinutes / 60) * HOUR_HEIGHT;
   const height = (block.duration / 60) * HOUR_HEIGHT;
-  return { top, height: Math.max(height, 24) }; // hauteur minimale pour rester lisible
+  return { top, height }; // jamais de minimum forcé : la hauteur reste toujours fidèle à la vraie durée
 }
 
 const moduleBgSoft = {
@@ -42,18 +42,16 @@ export default function DayTimelineView({ blocks }: DayTimelineViewProps) {
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="relative flex">
-        {/* Colonne des heures */}
         <div className="w-16 shrink-0">
           {hours.map((h) => (
             <div key={h} style={{ height: HOUR_HEIGHT }} className="relative">
-              <span className="absolute -top-2 font-mono text-xs text-muted-foreground">
+              <span className="absolute -top-2 font-mono text-xs text-black/60 text-muted-foreground">
                 {String(h).padStart(2, "0")}:00
               </span>
             </div>
           ))}
         </div>
 
-        {/* Zone des blocs */}
         <div className="relative flex-1 border-l border-black/10">
           {hours.map((h) => (
             <div
@@ -65,28 +63,45 @@ export default function DayTimelineView({ blocks }: DayTimelineViewProps) {
 
           {blocks.map((block) => {
             const { top, height } = getBlockPosition(block);
-            const isBig = height >= 48;
+            const isSolid = block.duration > 60;
+            const isCompact = height < 44; // moins de 30 min : affichage réduit
+            const timeColorClass = isSolid ? "text-white/80" : "text-black/60";
+
             return (
               <div
                 key={block.id}
                 style={{ top, height }}
                 className={cn(
-                  "absolute left-1 right-1 overflow-hidden rounded-lg px-3 py-1.5",
-                  isBig
+                  "absolute left-1 right-1 overflow-hidden rounded-lg px-2",
+                  isCompact ? "flex items-center py-0" : "py-1",
+                  isSolid
                     ? moduleBgSolid[block.module]
                     : moduleBgSoft[block.module],
                 )}
               >
-                <p className="truncate text-sm font-medium">{block.title}</p>
-                {height > 32 && (
-                  <p
-                    className={cn(
-                      "text-xs",
-                      isBig ? "text-white/80" : "opacity-70",
-                    )}
-                  >
-                    {block.time} - {addMinutes(block.time, block.duration)}
+                {isCompact ? (
+                  <p className="truncate text-xs font-medium">
+                    {block.title}{" "}
+                    <span
+                      className={cn("font-mono font-normal", timeColorClass)}
+                    >
+                      · {block.time}
+                    </span>
                   </p>
+                ) : (
+                  <>
+                    <p className="truncate text-sm font-medium leading-tight">
+                      {block.title}
+                    </p>
+                    <p
+                      className={cn(
+                        "font-mono text-xs leading-tight",
+                        timeColorClass,
+                      )}
+                    >
+                      {block.time} - {addMinutes(block.time, block.duration)}
+                    </p>
+                  </>
                 )}
               </div>
             );
