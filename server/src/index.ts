@@ -6,6 +6,7 @@ import cors from "cors";
 import authRouter from "./routes/auth";
 import habitsRouter from "./routes/habits";
 import flowdayRouter from "./routes/flowday";
+import resourcesRouter from "./routes/resources";
 import { connectDatabase } from "./config/database";
 
 const app = express();
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/habits", habitsRouter);
 app.use("/api/flowday", flowdayRouter);
+app.use("/api/resources", resourcesRouter);
 
 const PORT = process.env.PORT || 5000;
 
