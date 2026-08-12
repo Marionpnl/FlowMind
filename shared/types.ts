@@ -70,7 +70,6 @@ export interface INote {
   isQuote: boolean; // true = memorable quote, false = free note
   createdAt: Date;
 }
-
 export interface IResource {
   _id: string;
   userId: string;
@@ -80,6 +79,9 @@ export interface IResource {
   coverUrl?: string;
   isbn?: string;
   status: ResourceStatus;
+  rating?: number; // 0-5
+  progress: number; // 0-100
+  currentPosition?: string; // ex: "ch. 6", "p. 142", "12:30"
   tags: string[];
   notes: INote[];
   createdAt: Date;

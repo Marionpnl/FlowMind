@@ -49,13 +49,23 @@ router.get("/", async (req: AuthRequest, res: Response) => {
 // POST /api/resources - Add a resource
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { type, title, author, coverUrl, isbn, status, tags } = req.body;
+    const {
+      type,
+      title,
+      author,
+      coverUrl,
+      isbn,
+      status,
+      tags,
+      rating,
+      progress,
+      currentPosition,
+    } = req.body;
 
     if (!type || !title) {
-      return res.status(400).json({
-        success: false,
-        message: "type and title are required",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "type and title are required" });
     }
 
     const resource = await Resource.create({
@@ -67,6 +77,9 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       isbn,
       status: status || "to-read",
       tags: tags || [],
+      rating,
+      progress: progress || 0,
+      currentPosition,
     });
 
     res.status(201).json({ success: true, data: resource });
@@ -80,7 +93,16 @@ router.post("/", async (req: AuthRequest, res: Response) => {
 router.put("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, author, status, tags, coverUrl } = req.body;
+    const {
+      title,
+      author,
+      status,
+      tags,
+      coverUrl,
+      rating,
+      progress,
+      currentPosition,
+    } = req.body;
 
     const updates: Record<string, unknown> = {};
     if (title !== undefined) updates.title = title;
@@ -88,6 +110,10 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
     if (status !== undefined) updates.status = status;
     if (tags !== undefined) updates.tags = tags;
     if (coverUrl !== undefined) updates.coverUrl = coverUrl;
+    if (rating !== undefined) updates.rating = rating;
+    if (progress !== undefined) updates.progress = progress;
+    if (currentPosition !== undefined)
+      updates.currentPosition = currentPosition;
 
     const resource = await Resource.findOneAndUpdate(
       { _id: id, userId: req.userId },
@@ -98,13 +124,13 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
     if (!resource) {
       return res
         .status(404)
-        .json({ success: false, message: "Resource not found" });
+        .json({ success: false, message: "Ressource introuvable" });
     }
 
     res.json({ success: true, data: resource });
   } catch (error) {
     console.error("PUT /api/resources/:id", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 });
 

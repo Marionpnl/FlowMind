@@ -15,6 +15,9 @@ export interface IResourceDocument extends Document {
   coverUrl?: string;
   isbn?: string;
   status: "to-read" | "in-progress" | "done";
+  rating?: number;
+  progress: number;
+  currentPosition?: string;
   tags: string[];
   notes: INoteSchema[];
   createdAt: Date;
@@ -33,11 +36,7 @@ const noteSchema = new Schema<INoteSchema>(
 
 const resourceSchema = new Schema<IResourceDocument>(
   {
-    userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     type: {
       type: String,
       enum: ["book", "article", "video", "podcast"],
@@ -45,7 +44,7 @@ const resourceSchema = new Schema<IResourceDocument>(
     },
     title: {
       type: String,
-      required: [true, "Title is required"],
+      required: [true, "The title is required"],
       trim: true,
     },
     author: { type: String, trim: true },
@@ -56,14 +55,11 @@ const resourceSchema = new Schema<IResourceDocument>(
       enum: ["to-read", "in-progress", "done"],
       default: "to-read",
     },
-    tags: {
-      type: [String],
-      default: [],
-    },
-    notes: {
-      type: [noteSchema],
-      default: [],
-    },
+    rating: { type: Number, min: 0, max: 5 },
+    progress: { type: Number, min: 0, max: 100, default: 0 },
+    currentPosition: { type: String, trim: true },
+    tags: { type: [String], default: [] },
+    notes: { type: [noteSchema], default: [] },
   },
   { timestamps: true },
 );
