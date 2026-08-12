@@ -1,13 +1,16 @@
 import { Router, Response } from "express";
 import { requireAuth, AuthRequest } from "../middleware/auth";
-import { fetchBookByISBN } from "../services/openLibraryService";
+import {
+  fetchBookByISBN,
+  searchBooksByTitle,
+} from "../services/openLibraryService";
 import Resource from "../models/Resource";
 
 const router = Router();
 
 router.use(requireAuth);
 
-// GET /api/resources/lookup/:isbn - Recherche un livre par ISBN via OpenLibrary
+// GET /api/resources/lookup/:isbn - Search books by ISBN via OpenLibrary
 router.get("/lookup/:isbn", async (req: AuthRequest, res: Response) => {
   try {
     const isbn = req.params.isbn as string;
@@ -16,15 +19,25 @@ router.get("/lookup/:isbn", async (req: AuthRequest, res: Response) => {
     if (!book) {
       return res
         .status(404)
-        .json({ success: false, message: "Livre introuvable pour cet ISBN" });
+        .json({ success: false, message: "Book not found for this ISBN" });
     }
 
     res.json({ success: true, data: book });
   } catch (error) {
     console.error("GET /api/resources/lookup/:isbn", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Erreur lors de la recherche" });
+    res.status(500).json({ success: false, message: "Error during search" });
+  }
+});
+
+// GET /api/resources/search/:query - Search books by title via OpenLibrary
+router.get("/search/:query", async (req: AuthRequest, res: Response) => {
+  try {
+    const query = req.params.query as string;
+    const results = await searchBooksByTitle(query);
+    res.json({ success: true, data: results });
+  } catch (error) {
+    console.error("GET /api/resources/search/:query", error);
+    res.status(500).json({ success: false, message: "Error during search" });
   }
 });
 
@@ -124,13 +137,13 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
     if (!resource) {
       return res
         .status(404)
-        .json({ success: false, message: "Ressource introuvable" });
+        .json({ success: false, message: "Resource not found" });
     }
 
     res.json({ success: true, data: resource });
   } catch (error) {
     console.error("PUT /api/resources/:id", error);
-    res.status(500).json({ success: false, message: "Erreur serveur" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 

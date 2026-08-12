@@ -17,6 +17,18 @@ interface BookLookupResponse {
   data: { title: string; author?: string; coverUrl?: string };
 }
 
+interface BookSearchResult {
+  title: string;
+  author?: string;
+  coverUrl?: string;
+  isbn?: string;
+}
+
+interface BookSearchResponse {
+  success: boolean;
+  data: BookSearchResult[];
+}
+
 interface CreateResourceInput {
   type: ResourceType;
   title: string;
@@ -36,7 +48,7 @@ interface ResourceState {
     status?: string;
     tag?: string;
   }) => Promise<void>;
-  addResource: (data: CreateResourceInput) => Promise<void>;
+  addResource: (data: CreateResourceInput) => Promise<IResource | null>;
   updateResource: (id: string, updates: Partial<IResource>) => Promise<void>;
   deleteResource: (id: string) => Promise<void>;
   addNote: (
@@ -47,6 +59,7 @@ interface ResourceState {
   lookupISBN: (
     isbn: string,
   ) => Promise<{ title: string; author?: string; coverUrl?: string } | null>;
+  searchByTitle: (query: string) => Promise<BookSearchResult[]>;
 }
 
 export const useResourceStore = create<ResourceState>((set, get) => ({
@@ -68,8 +81,7 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
       });
       set({ resources: res.data, loading: false });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erreur de chargement";
+      const message = err instanceof Error ? err.message : "Loading error";
       set({ error: message, loading: false });
     }
   },
@@ -83,10 +95,12 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
         body: JSON.stringify(data),
       });
       set({ resources: [res.data, ...get().resources] });
+      return res.data; // Return the newly created resource
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Erreur lors de l'ajout";
+        err instanceof Error ? err.message : "Error adding resource";
       set({ error: message });
+      return null;
     }
   },
 
@@ -108,8 +122,7 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
         resources: get().resources.map((r) => (r._id === id ? res.data : r)),
       });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erreur de mise à jour";
+      const message = err instanceof Error ? err.message : "Update error";
       set({ resources: previousResources, error: message });
     }
   },
@@ -121,8 +134,7 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
     try {
       await apiCall(`/api/resources/${id}`, { method: "DELETE", auth: true });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Erreur de suppression";
+      const message = err instanceof Error ? err.message : "Delete error";
       set({ resources: previousResources, error: message });
     }
   },
@@ -143,10 +155,7 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
         ),
       });
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Erreur lors de l'ajout de la note";
+      const message = err instanceof Error ? err.message : "Error adding note";
       set({ error: message });
     }
   },
@@ -162,6 +171,20 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
       return res.data;
     } catch {
       return null;
+    }
+  },
+
+  searchByTitle: async (query) => {
+    try {
+      const res = await apiCall<BookSearchResponse>(
+        `/api/resources/search/${encodeURIComponent(query)}`,
+        {
+          auth: true,
+        },
+      );
+      return res.data;
+    } catch {
+      return [];
     }
   },
 }));

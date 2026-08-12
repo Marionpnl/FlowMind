@@ -5,6 +5,7 @@ import InProgressCard from "@/components/mindshelf/InProgressCard";
 import LibraryRow from "@/components/mindshelf/LibraryRow";
 import HighlightsPanel from "@/components/mindshelf/HighlightsPanel";
 import AISuggestionCard from "@/components/mindshelf/AISuggestionCard";
+import NewResourceModal from "@/components/mindshelf/NewResourceModal";
 import { Button } from "@/components/ui/button";
 import { useResourceStore } from "@/store/resourceStore";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ export default function MindShelf() {
   const fetchResources = useResourceStore((s) => s.fetchResources);
   const [search, setSearch] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     fetchResources();
@@ -46,6 +48,7 @@ export default function MindShelf() {
             <Button
               size="sm"
               className="bg-mindshelf text-white hover:bg-mindshelf/90"
+              onClick={() => setModalOpen(true)}
             >
               <Plus className="mr-1 h-4 w-4" />
               Ajouter un livre
@@ -133,6 +136,7 @@ export default function MindShelf() {
           <HighlightsPanel resources={resources} />
         </div>
       </main>
+      <NewResourceModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>
   );
 }
