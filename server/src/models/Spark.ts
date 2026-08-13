@@ -7,6 +7,8 @@ export interface ISparkDocument extends Document {
   emoji: string;
   duration: number;
   interestName: string;
+  category?: string;
+  detail?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +39,14 @@ const sparkSchema = new Schema<ISparkDocument>(
       required: true,
     },
     interestName: {
+      type: String,
+      trim: true,
+    },
+    category: {
+      type: String,
+      trim: true,
+    },
+    detail: {
       type: String,
       trim: true,
     },

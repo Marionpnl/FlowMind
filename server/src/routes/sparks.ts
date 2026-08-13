@@ -13,8 +13,10 @@ router.use(requireAuth);
 // POST /api/sparks/generate - Generate and persist new activity suggestions
 router.post("/generate", async (req: AuthRequest, res: Response) => {
   try {
+    const { maxDuration, energyLevel, maxDistance } = req.body;
+
     const [interests, user] = await Promise.all([
-      Interest.find({ userId: req.userId }).select("name"),
+      Interest.find({ userId: req.userId }).select("name category"),
       User.findById(req.userId).select("location"),
     ]);
 
@@ -26,19 +28,50 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
     }
 
     const interestNames = interests.map((i) => i.name);
-    const generated = await generateSparks(interestNames, user?.location);
+    const categoryByInterestName = new Map(
+      interests.map((i) => [i.name, i.category]),
+    );
+    const validMaxDuration =
+      typeof maxDuration === "number" && maxDuration > 0
+        ? maxDuration
+        : undefined;
+    const validMaxDistance =
+      typeof maxDistance === "number" && maxDistance > 0
+        ? maxDistance
+        : undefined;
 
-    const sparksData = generated.map((s) => ({
-      userId: req.userId,
-      title: s.title,
-      description: s.description,
-      emoji: typeof s.emoji === "string" && s.emoji ? s.emoji : "✨",
-      duration:
-        typeof s.duration === "number" && s.duration > 0 ? s.duration : 30,
-      interestName: interestNames.includes(s.interestName)
+    const generated = await generateSparks(
+      interestNames,
+      user?.location,
+      validMaxDuration,
+      typeof energyLevel === "string" ? energyLevel : undefined,
+      validMaxDistance,
+    );
+
+    const sparksData = generated.map((s) => {
+      const interestName = interestNames.includes(s.interestName)
         ? s.interestName
-        : interestNames[0],
-    }));
+        : interestNames[0];
+      let duration =
+        typeof s.duration === "number" && s.duration > 0 ? s.duration : 30;
+      if (validMaxDuration) duration = Math.min(duration, validMaxDuration);
+
+      return {
+        userId: req.userId,
+        title: s.title,
+        description: s.description,
+        emoji: typeof s.emoji === "string" && s.emoji ? s.emoji : "✨",
+        duration,
+        interestName,
+        category:
+          categoryByInterestName.get(interestName) ||
+          (typeof s.category === "string" && s.category
+            ? s.category
+            : undefined),
+        detail:
+          typeof s.detail === "string" && s.detail ? s.detail : undefined,
+      };
+    });
 
     const sparks = await Spark.insertMany(sparksData);
 

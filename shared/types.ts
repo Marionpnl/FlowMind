@@ -69,6 +69,8 @@ export interface ISpark {
   emoji: string;
   duration: number;
   interestName: string;
+  category?: string;
+  detail?: string; // free-text line ex: "8 km · centre-ville", "niveau facile"
   createdAt: Date;
   updatedAt: Date;
 }

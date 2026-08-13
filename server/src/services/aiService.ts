@@ -83,11 +83,16 @@ export interface GeneratedSpark {
   emoji: string;
   duration: number;
   interestName: string;
+  category?: string;
+  detail?: string;
 }
 
 export async function generateSparks(
   interestNames: string[],
   location: string | undefined,
+  maxDuration?: number,
+  energyLevel?: string,
+  maxDistance?: number,
 ): Promise<GeneratedSpark[]> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -96,12 +101,22 @@ Tu es un assistant qui suggère des activités concrètes pour l'application Flo
 
 Ses centres d'intérêt : ${interestNames.join(", ")}
 Sa localisation (indicative, à utiliser si pertinent) : ${location || "non renseignée"}
+${maxDuration ? `Durée maximale par activité : ${maxDuration} minutes` : ""}
+${energyLevel ? `Niveau d'énergie recherché : ${energyLevel}` : ""}
+${maxDistance ? `Distance maximale autour de sa localisation : ${maxDistance} km (indicative, pour les activités qui impliquent un déplacement)` : ""}
 
 Propose 3 suggestions d'activités concrètes et réalisables, variées, chacune liée à l'un de ses centres d'intérêt.
-Chaque suggestion doit avoir : title (court, actionnable), description (1-2 phrases), emoji (un seul emoji représentatif), duration (durée en minutes, un nombre réaliste comme 15, 30, 45, 60), interestName (doit correspondre exactement à l'un des centres d'intérêt listés ci-dessus).
+Chaque suggestion doit avoir :
+- title (court, actionnable)
+- description (1-2 phrases)
+- emoji (un seul emoji représentatif)
+- duration (durée en minutes, un nombre réaliste comme 15, 30, 45, 60${maxDuration ? `, ne dépassant pas ${maxDuration}` : ""})
+- interestName (doit correspondre exactement à l'un des centres d'intérêt listés ci-dessus)
+- category (une catégorie courte parmi Sport, Créatif, Bien-être, Social, Culture, Nature, ou une autre si aucune ne convient)
+- detail (une courte ligne contextuelle optionnelle : distance, lieu, niveau de difficulté — ex: "8 km · centre-ville" ou "niveau facile". Ne répète JAMAIS la durée dans ce champ, elle est déjà affichée ailleurs)
 
 Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
-{"sparks": [{"title": "...", "description": "...", "emoji": "...", "duration": 30, "interestName": "..."}]}
+{"sparks": [{"title": "...", "description": "...", "emoji": "...", "duration": 30, "interestName": "...", "category": "...", "detail": "..."}]}
 `;
 
   const completion = await openai.chat.completions.create({
