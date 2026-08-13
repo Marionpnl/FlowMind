@@ -1,13 +1,16 @@
 import { Router, Response } from "express";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import Interest from "../models/Interest";
+import Habit from "../models/Habit";
+import Resource from "../models/Resource";
+import { detectInterests } from "../services/aiService";
 
 const router = Router();
 
 // Security Middleware applicated on all routes /api/interests
 router.use(requireAuth);
 
-// GET /api/interests
+// GET /api/interests - Interest List
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const interests = await Interest.find({ userId: req.userId }).sort({
@@ -20,10 +23,10 @@ router.get("/", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// POST /api/interests
+// POST /api/interests - Add an interest
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { name, emoji, category } = req.body;
+    const { name, emoji, category, source } = req.body;
     if (!name)
       return res
         .status(400)
@@ -34,7 +37,7 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       name,
       emoji: emoji || "✨",
       category,
-      source: "manual",
+      source: source === "ai" ? "ai" : "manual",
     });
 
     res.status(201).json({ success: true, data: interest });
@@ -54,7 +57,63 @@ router.post("/", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PATCH /api/interests/:id
+// POST /api/interests/detect - Suggest interests from existing habits/resources (does not persist)
+router.post("/detect", async (req: AuthRequest, res: Response) => {
+  try {
+    const [habits, resources, existingInterests] = await Promise.all([
+      Habit.find({ userId: req.userId }).select("name"),
+      Resource.find({ userId: req.userId }).select("title type tags"),
+      Interest.find({ userId: req.userId }).select("name"),
+    ]);
+
+    if (habits.length === 0 && resources.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Not enough data to detect interests",
+      });
+    }
+
+    const habitNames = habits.map((h) => h.name);
+    const resourceSummaries = resources.map((r) =>
+      r.tags.length
+        ? `${r.title} (${r.type}, tags: ${r.tags.join(", ")})`
+        : `${r.title} (${r.type})`,
+    );
+    const existingNames = existingInterests.map((i) => i.name);
+
+    const detected = await detectInterests(
+      habitNames,
+      resourceSummaries,
+      existingNames,
+    );
+
+    const existingNamesLower = existingNames.map((n) => n.toLowerCase());
+    const seen = new Set<string>();
+    const suggestions = detected
+      .filter((d) => typeof d.name === "string" && d.name.trim().length > 0)
+      .map((d) => ({
+        name: d.name.trim(),
+        emoji: typeof d.emoji === "string" && d.emoji ? d.emoji : "✨",
+        category:
+          typeof d.category === "string" && d.category
+            ? d.category
+            : undefined,
+      }))
+      .filter((d) => {
+        const key = d.name.toLowerCase();
+        if (existingNamesLower.includes(key) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+    res.json({ success: true, data: suggestions });
+  } catch (error) {
+    console.error("POST /api/interests/detect error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// PATCH /api/interests/:id - Update a interest
 router.patch("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -88,7 +147,7 @@ router.patch("/:id", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// DELETE /api/interests/:id
+// DELETE /api/interests/:id - Delete a interest
 router.delete("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
