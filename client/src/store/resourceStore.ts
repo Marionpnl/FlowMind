@@ -55,7 +55,9 @@ interface ResourceState {
     resourceId: string,
     content: string,
     isQuote: boolean,
+    page?: string,
   ) => Promise<void>;
+  deleteNote: (resourceId: string, noteId: string) => Promise<void>;
   lookupISBN: (
     isbn: string,
   ) => Promise<{ title: string; author?: string; coverUrl?: string } | null>;
@@ -139,14 +141,14 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
     }
   },
 
-  addNote: async (resourceId, content, isQuote) => {
+  addNote: async (resourceId, content, isQuote, page) => {
     try {
       const res = await apiCall<ResourceResponse>(
         `/api/resources/${resourceId}/notes`,
         {
           method: "POST",
           auth: true,
-          body: JSON.stringify({ content, isQuote }),
+          body: JSON.stringify({ content, isQuote, page }),
         },
       );
       set({
@@ -156,6 +158,24 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error adding note";
+      set({ error: message });
+    }
+  },
+
+  deleteNote: async (resourceId, noteId) => {
+    try {
+      const res = await apiCall<ResourceResponse>(
+        `/api/resources/${resourceId}/notes/${noteId}`,
+        { method: "DELETE", auth: true },
+      );
+      set({
+        resources: get().resources.map((r) =>
+          r._id === resourceId ? res.data : r,
+        ),
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Erreur lors de la suppression";
       set({ error: message });
     }
   },

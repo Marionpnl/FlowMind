@@ -173,7 +173,7 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
 router.post("/:id/notes", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { content, isQuote } = req.body;
+    const { content, isQuote, page } = req.body;
 
     if (!content) {
       return res
@@ -185,6 +185,7 @@ router.post("/:id/notes", async (req: AuthRequest, res: Response) => {
       id: `note-${Date.now()}`,
       content,
       isQuote: !!isQuote,
+      page: page || undefined,
       createdAt: new Date(),
     };
 
@@ -203,6 +204,30 @@ router.post("/:id/notes", async (req: AuthRequest, res: Response) => {
     res.status(201).json({ success: true, data: resource });
   } catch (error) {
     console.error("POST /api/resources/:id/notes", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// DELETE /api/resources/:id/notes/:noteId - Delete a note
+router.delete("/:id/notes/:noteId", async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, noteId } = req.params;
+
+    const resource = await Resource.findOneAndUpdate(
+      { _id: id, userId: req.userId },
+      { $pull: { notes: { id: noteId } } },
+      { new: true },
+    );
+
+    if (!resource) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Resource not found" });
+    }
+
+    res.json({ success: true, data: resource });
+  } catch (error) {
+    console.error("DELETE /api/resources/:id/notes/:noteId", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

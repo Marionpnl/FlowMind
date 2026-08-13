@@ -6,6 +6,8 @@ import LibraryRow from "@/components/mindshelf/LibraryRow";
 import HighlightsPanel from "@/components/mindshelf/HighlightsPanel";
 import AISuggestionCard from "@/components/mindshelf/AISuggestionCard";
 import NewResourceModal from "@/components/mindshelf/NewResourceModal";
+import ResourceDetailsModal from "@/components/mindshelf/ResourceDetailsModal";
+import type { IResource } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { useResourceStore } from "@/store/resourceStore";
 import { cn } from "@/lib/utils";
@@ -18,6 +20,9 @@ export default function MindShelf() {
   const [search, setSearch] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedResource, setSelectedResource] = useState<IResource | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchResources();
@@ -25,6 +30,10 @@ export default function MindShelf() {
 
   const inProgress = resources.filter((r) => r.status === "in-progress");
   const totalNotes = resources.reduce((sum, r) => sum + r.notes.length, 0);
+
+  const liveSelectedResource = selectedResource
+    ? (resources.find((r) => r._id === selectedResource._id) ?? null)
+    : null;
 
   const filteredLibrary = resources
     .filter((r) => {
@@ -83,7 +92,11 @@ export default function MindShelf() {
               </p>
               <div className="grid grid-cols-2 gap-4">
                 {inProgress.map((r) => (
-                  <InProgressCard key={r._id} resource={r} />
+                  <InProgressCard
+                    key={r._id}
+                    resource={r}
+                    onClick={() => setSelectedResource(r)}
+                  />
                 ))}
               </div>
             </div>
@@ -101,7 +114,7 @@ export default function MindShelf() {
                     key={f}
                     onClick={() => setLibraryFilter(f)}
                     className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium tracking-wider transition-colors",
+                      "rounded-full px-3 py-1 text-xs font-medium tracking-wider transition-colors cursor-pointer",
                       libraryFilter === f
                         ? "bg-[#2B2A28] text-white"
                         : "text-muted-foreground hover:text-foreground",
@@ -124,7 +137,11 @@ export default function MindShelf() {
             ) : (
               <div>
                 {filteredLibrary.map((r) => (
-                  <LibraryRow key={r._id} resource={r} />
+                  <LibraryRow
+                    key={r._id}
+                    resource={r}
+                    onClick={() => setSelectedResource(r)}
+                  />
                 ))}
               </div>
             )}
@@ -137,6 +154,10 @@ export default function MindShelf() {
         </div>
       </main>
       <NewResourceModal open={modalOpen} onOpenChange={setModalOpen} />
+      <ResourceDetailsModal
+        resource={liveSelectedResource}
+        onOpenChange={(open) => !open && setSelectedResource(null)}
+      />
     </div>
   );
 }

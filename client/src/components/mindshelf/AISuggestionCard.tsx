@@ -15,11 +15,11 @@ export default function AISuggestionCard() {
       <div className="flex items-center gap-3">
         <Button
           size="sm"
-          className="bg-mindshelf text-white rounded-xl hover:bg-mindshelf/90"
+          className="bg-mindshelf text-white rounded-xl hover:bg-mindshelf/90 cursor-pointer"
         >
           + Planifier dans FlowDay
         </Button>
-        <button className="text-xs text-white/60 hover:text-white">
+        <button className="text-xs text-white/60 hover:text-white cursor-pointer">
           Plus tard
         </button>
       </div>

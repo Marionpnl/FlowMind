@@ -1,11 +1,22 @@
 import { BookOpen } from "lucide-react";
 import type { IResource } from "@shared/types";
 
-export default function InProgressCard({ resource }: { resource: IResource }) {
+interface InProgressCardProps {
+  resource: IResource;
+  onClick: () => void;
+}
+
+export default function InProgressCard({
+  resource,
+  onClick,
+}: InProgressCardProps) {
   const notesCount = resource.notes.length;
 
   return (
-    <div className="flex gap-4 rounded-2xl bg-white p-4 border border-black/5 shadow-sm">
+    <button
+      onClick={onClick}
+      className="flex w-full items-start gap-4 rounded-2xl bg-white p-4 text-left border border-black/5 shadow-sm cursor-pointer"
+    >
       <div className="flex h-26 w-17 shrink-0 items-center justify-center overflow-hidden rounded-md bg-mindshelf-bg border border-black/5">
         {resource.coverUrl ? (
           <img
@@ -46,6 +57,6 @@ export default function InProgressCard({ resource }: { resource: IResource }) {
           <span>{notesCount} notes</span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

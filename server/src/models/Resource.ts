@@ -4,6 +4,7 @@ interface INoteSchema {
   id: string;
   content: string;
   isQuote: boolean;
+  page?: string;
   createdAt: Date;
 }
 
@@ -29,6 +30,7 @@ const noteSchema = new Schema<INoteSchema>(
     id: { type: String, required: true },
     content: { type: String, required: true, trim: true },
     isQuote: { type: Boolean, default: false },
+    page: { type: String, trim: true },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false },

@@ -68,6 +68,7 @@ export interface INote {
   id: string;
   content: string;
   isQuote: boolean; // true = memorable quote, false = free note
+  page?: string; // optional page number, pertinent for quotes or notes from books
   createdAt: Date;
 }
 export interface IResource {
