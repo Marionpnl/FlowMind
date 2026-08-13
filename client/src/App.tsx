@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import FlowDay from "./pages/FlowDay";
 import Habits from "./pages/Habits";
 import MindShelf from "./pages/MindShelf";
+import SparkTime from "./pages/SparkTime";
 import Calendar from "./pages/Calendar";
 
 export default function App() {
@@ -37,7 +38,8 @@ export default function App() {
           <Route path="/flowday" element={<FlowDay />} />
           <Route path="/flowday/habits" element={<Habits />} />
           <Route path="/mindshelf" element={<MindShelf />} />
-          {/* MindShelf, SparkTime, Calendar, Settings viendront plus tard */}
+          <Route path="/sparktime" element={<SparkTime />} />
+          {/* Settings viendront plus tard */}
           <Route path="/calendar" element={<Calendar />} />
         </Route>
       </Routes>
