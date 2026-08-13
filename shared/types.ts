@@ -69,6 +69,8 @@ export interface ISpark {
   emoji: string;
   duration: number;
   interestName: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ===== MINDSHELF =====

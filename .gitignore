@@ -35,3 +35,5 @@ build/
 
 # --- Documents & Fichiers média à ne pas versionner ---
 *.pdf
+*.docx
+CLAUDE.md

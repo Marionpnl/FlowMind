@@ -76,3 +76,43 @@ Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
   const parsed = JSON.parse(raw);
   return parsed.interests as DetectedInterest[];
 }
+
+export interface GeneratedSpark {
+  title: string;
+  description: string;
+  emoji: string;
+  duration: number;
+  interestName: string;
+}
+
+export async function generateSparks(
+  interestNames: string[],
+  location: string | undefined,
+): Promise<GeneratedSpark[]> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const prompt = `
+Tu es un assistant qui suggère des activités concrètes pour l'application FlowMind (module SparkTime), à partir des centres d'intérêt d'une utilisatrice.
+
+Ses centres d'intérêt : ${interestNames.join(", ")}
+Sa localisation (indicative, à utiliser si pertinent) : ${location || "non renseignée"}
+
+Propose 3 suggestions d'activités concrètes et réalisables, variées, chacune liée à l'un de ses centres d'intérêt.
+Chaque suggestion doit avoir : title (court, actionnable), description (1-2 phrases), emoji (un seul emoji représentatif), duration (durée en minutes, un nombre réaliste comme 15, 30, 45, 60), interestName (doit correspondre exactement à l'un des centres d'intérêt listés ci-dessus).
+
+Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
+{"sparks": [{"title": "...", "description": "...", "emoji": "...", "duration": 30, "interestName": "..."}]}
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Réponse vide de l'IA");
+
+  const parsed = JSON.parse(raw);
+  return parsed.sparks as GeneratedSpark[];
+}
