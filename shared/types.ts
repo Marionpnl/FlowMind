@@ -50,6 +50,17 @@ export interface IHabit {
 }
 
 // ===== SPARKS (SparkTime) =====
+export interface IInterest {
+  _id: string;
+  userId: string;
+  name: string;
+  emoji: string;
+  category?: string;
+  source: "manual" | "ai";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ISpark {
   _id: string;
   userId: string;
