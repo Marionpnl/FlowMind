@@ -9,6 +9,7 @@ export interface ISparkDocument extends Document {
   interestName: string;
   category?: string;
   detail?: string;
+  energyLevel?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +48,10 @@ const sparkSchema = new Schema<ISparkDocument>(
       trim: true,
     },
     detail: {
+      type: String,
+      trim: true,
+    },
+    energyLevel: {
       type: String,
       trim: true,
     },

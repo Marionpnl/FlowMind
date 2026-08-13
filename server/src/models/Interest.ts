@@ -5,6 +5,7 @@ export interface IInterestDocument extends Document {
   name: string;
   emoji: string;
   category?: string;
+  importance: number;
   source: "manual" | "ai";
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +30,12 @@ const interestSchema = new Schema<IInterestDocument>(
     category: {
       type: String,
       trim: true,
+    },
+    importance: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: 3,
     },
     source: {
       type: String,

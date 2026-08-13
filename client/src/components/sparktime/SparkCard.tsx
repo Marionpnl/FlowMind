@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 
 interface SparkCardProps {
   spark: ISpark;
+  onDetails: () => void;
 }
 
-export default function SparkCard({ spark }: SparkCardProps) {
+export default function SparkCard({ spark, onDetails }: SparkCardProps) {
   return (
     <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
@@ -19,9 +20,7 @@ export default function SparkCard({ spark }: SparkCardProps) {
         </span>
       </div>
 
-      <p className="text-md font-medium">
-        {spark.emoji} {spark.title}
-      </p>
+      <p className="text-md font-medium">{spark.title}</p>
       <p className="mt-1 text-xs text-black/50 text-muted-foreground">
         {spark.description}
       </p>
@@ -38,7 +37,10 @@ export default function SparkCard({ spark }: SparkCardProps) {
         >
           + Planifier
         </Button>
-        <button className="text-xs text-black/60 text-muted-foreground hover:text-foreground cursor-pointer">
+        <button
+          onClick={onDetails}
+          className="text-xs text-black/60 text-muted-foreground hover:text-foreground cursor-pointer"
+        >
           Détails →
         </button>
       </div>

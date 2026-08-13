@@ -85,6 +85,7 @@ export interface GeneratedSpark {
   interestName: string;
   category?: string;
   detail?: string;
+  energyLevel?: string;
 }
 
 export async function generateSparks(
@@ -114,9 +115,10 @@ Chaque suggestion doit avoir :
 - interestName (doit correspondre exactement à l'un des centres d'intérêt listés ci-dessus)
 - category (une catégorie courte parmi Sport, Créatif, Bien-être, Social, Culture, Nature, ou une autre si aucune ne convient)
 - detail (une courte ligne contextuelle optionnelle : distance, lieu, niveau de difficulté — ex: "8 km · centre-ville" ou "niveau facile". Ne répète JAMAIS la durée dans ce champ, elle est déjà affichée ailleurs)
+- energyLevel (le niveau d'énergie que demande CETTE activité précise, parmi Basse, Basse-Moyenne, Moyenne, Moyenne-Haute, Haute)
 
 Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
-{"sparks": [{"title": "...", "description": "...", "emoji": "...", "duration": 30, "interestName": "...", "category": "...", "detail": "..."}]}
+{"sparks": [{"title": "...", "description": "...", "emoji": "...", "duration": 30, "interestName": "...", "category": "...", "detail": "...", "energyLevel": "..."}]}
 `;
 
   const completion = await openai.chat.completions.create({

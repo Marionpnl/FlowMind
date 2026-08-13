@@ -70,6 +70,12 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
             : undefined),
         detail:
           typeof s.detail === "string" && s.detail ? s.detail : undefined,
+        energyLevel:
+          typeof s.energyLevel === "string" && s.energyLevel
+            ? s.energyLevel
+            : typeof energyLevel === "string"
+              ? energyLevel
+              : undefined,
       };
     });
 

@@ -27,6 +27,7 @@ interface CreateInterestInput {
   name: string;
   emoji?: string;
   category?: string;
+  importance?: number;
   source?: "manual" | "ai";
 }
 
@@ -38,7 +39,9 @@ interface InterestState {
   addInterest: (data: CreateInterestInput) => Promise<IInterest | null>;
   updateInterest: (
     id: string,
-    updates: Partial<Pick<IInterest, "name" | "emoji" | "category">>,
+    updates: Partial<
+      Pick<IInterest, "name" | "emoji" | "category" | "importance">
+    >,
   ) => Promise<void>;
   deleteInterest: (id: string) => Promise<void>;
   detectInterests: () => Promise<DetectedInterest[]>;

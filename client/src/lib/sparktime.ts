@@ -23,6 +23,8 @@ export function getCategoryIcon(category?: string): LucideIcon {
   return categoryIcon[category] ?? Sparkles;
 }
 
+export const CATEGORIES = Object.keys(categoryIcon);
+
 export const ENERGY_LEVELS = [
   "Basse",
   "Basse-Moyenne",

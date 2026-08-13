@@ -26,7 +26,7 @@ router.get("/", async (req: AuthRequest, res: Response) => {
 // POST /api/interests - Add an interest
 router.post("/", async (req: AuthRequest, res: Response) => {
   try {
-    const { name, emoji, category, source } = req.body;
+    const { name, emoji, category, importance, source } = req.body;
     if (!name)
       return res
         .status(400)
@@ -37,6 +37,10 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       name,
       emoji: emoji || "✨",
       category,
+      importance:
+        typeof importance === "number" && importance >= 1 && importance <= 5
+          ? importance
+          : 3,
       source: source === "ai" ? "ai" : "manual",
     });
 
@@ -117,7 +121,7 @@ router.post("/detect", async (req: AuthRequest, res: Response) => {
 router.patch("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, emoji, category } = req.body;
+    const { name, emoji, category, importance } = req.body;
 
     const interest = await Interest.findOne({ _id: id, userId: req.userId });
     if (!interest)
@@ -128,6 +132,12 @@ router.patch("/:id", async (req: AuthRequest, res: Response) => {
     if (name !== undefined) interest.name = name;
     if (emoji !== undefined) interest.emoji = emoji;
     if (category !== undefined) interest.category = category;
+    if (
+      typeof importance === "number" &&
+      importance >= 1 &&
+      importance <= 5
+    )
+      interest.importance = importance;
 
     await interest.save();
     res.json({ success: true, data: interest });

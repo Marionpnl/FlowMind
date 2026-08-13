@@ -56,6 +56,7 @@ export interface IInterest {
   name: string;
   emoji: string;
   category?: string;
+  importance: number;
   source: "manual" | "ai";
   createdAt: Date;
   updatedAt: Date;
@@ -71,6 +72,7 @@ export interface ISpark {
   interestName: string;
   category?: string;
   detail?: string; // free-text line ex: "8 km · centre-ville", "niveau facile"
+  energyLevel?: string;
   createdAt: Date;
   updatedAt: Date;
 }

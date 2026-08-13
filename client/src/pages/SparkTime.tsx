@@ -6,11 +6,14 @@ import SparkCard from "@/components/sparktime/SparkCard";
 import CategoriesPanel from "@/components/sparktime/CategoriesPanel";
 import InterestsPanel from "@/components/sparktime/InterestsPanel";
 import AdjustSuggestionsPanel from "@/components/sparktime/AdjustSuggestionsPanel";
+import InterestsModal from "@/components/sparktime/InterestsModal";
+import SparkDetailsModal from "@/components/sparktime/SparkDetailsModal";
 import { Button } from "@/components/ui/button";
 import { useSparkStore } from "@/store/sparkStore";
 import { useInterestStore } from "@/store/interestStore";
 import { cn } from "@/lib/utils";
 import { ENERGY_LEVELS } from "@/lib/sparktime";
+import type { ISpark } from "@shared/types";
 
 export default function SparkTime() {
   const sparks = useSparkStore((s) => s.sparks);
@@ -24,6 +27,12 @@ export default function SparkTime() {
   const [maxDuration, setMaxDuration] = useState(60);
   const [maxDistance, setMaxDistance] = useState(5);
   const [energyIndex, setEnergyIndex] = useState(1);
+  const [interestsModalOpen, setInterestsModalOpen] = useState(false);
+  const [selectedSpark, setSelectedSpark] = useState<ISpark | null>(null);
+
+  const liveSelectedSpark = selectedSpark
+    ? (sparks.find((s) => s._id === selectedSpark._id) ?? null)
+    : null;
 
   useEffect(() => {
     fetchSparks();
@@ -75,7 +84,15 @@ export default function SparkTime() {
                     ? "Ajoute d'abord des centres d'intérêt pour recevoir des suggestions."
                     : "Aucune suggestion pour l'instant."}
                 </p>
-                {interests.length > 0 && (
+                {interests.length === 0 ? (
+                  <Button
+                    size="sm"
+                    onClick={() => setInterestsModalOpen(true)}
+                    className="mt-4 bg-sparktime text-white rounded-xl hover:bg-sparktime/90"
+                  >
+                    Ajouter un centre d'intérêt
+                  </Button>
+                ) : (
                   <Button
                     size="sm"
                     onClick={handleGenerate}
@@ -89,7 +106,11 @@ export default function SparkTime() {
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 {sparks.map((spark) => (
-                  <SparkCard key={spark._id} spark={spark} />
+                  <SparkCard
+                    key={spark._id}
+                    spark={spark}
+                    onDetails={() => setSelectedSpark(spark)}
+                  />
                 ))}
               </div>
             )}
@@ -98,7 +119,10 @@ export default function SparkTime() {
 
         <div className="space-y-5">
           <CategoriesPanel sparks={sparks} />
-          <InterestsPanel interests={interests} />
+          <InterestsPanel
+            interests={interests}
+            onManage={() => setInterestsModalOpen(true)}
+          />
           <AdjustSuggestionsPanel
             maxDuration={maxDuration}
             onMaxDurationChange={setMaxDuration}
@@ -109,6 +133,15 @@ export default function SparkTime() {
           />
         </div>
       </main>
+
+      <InterestsModal
+        open={interestsModalOpen}
+        onOpenChange={setInterestsModalOpen}
+      />
+      <SparkDetailsModal
+        spark={liveSelectedSpark}
+        onOpenChange={(open) => !open && setSelectedSpark(null)}
+      />
     </div>
   );
 }

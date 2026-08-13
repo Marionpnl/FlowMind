@@ -1,17 +1,18 @@
-import { useState } from "react";
 import { Compass } from "lucide-react";
 import type { IInterest } from "@shared/types";
 
 interface InterestsPanelProps {
   interests: IInterest[];
+  onManage: () => void;
 }
 
 const VISIBLE_COUNT = 6;
 
-export default function InterestsPanel({ interests }: InterestsPanelProps) {
-  const [showAll, setShowAll] = useState(false);
-
-  const visible = showAll ? interests : interests.slice(0, VISIBLE_COUNT);
+export default function InterestsPanel({
+  interests,
+  onManage,
+}: InterestsPanelProps) {
+  const visible = interests.slice(0, VISIBLE_COUNT);
   const remaining = interests.length - visible.length;
 
   return (
@@ -21,14 +22,12 @@ export default function InterestsPanel({ interests }: InterestsPanelProps) {
           <Compass className="h-4.5 w-4.5 text-sparktime" />
           Centres d'intérêt
         </h2>
-        {interests.length > VISIBLE_COUNT && (
-          <button
-            onClick={() => setShowAll((v) => !v)}
-            className="text-xs text-black/60 text-muted-foreground hover:underline cursor-pointer"
-          >
-            {showAll ? "Réduire" : "Tout voir →"}
-          </button>
-        )}
+        <button
+          onClick={onManage}
+          className="text-xs text-black/60 text-muted-foreground hover:underline cursor-pointer"
+        >
+          Tout voir →
+        </button>
       </div>
 
       {interests.length === 0 ? (
@@ -46,9 +45,9 @@ export default function InterestsPanel({ interests }: InterestsPanelProps) {
                 {i.emoji} {i.name}
               </span>
             ))}
-            {!showAll && remaining > 0 && (
+            {remaining > 0 && (
               <button
-                onClick={() => setShowAll(true)}
+                onClick={onManage}
                 className="rounded-full bg-cream-secondary px-3 py-1 text-xs font-medium text-black/60 hover:bg-black/5 cursor-pointer"
               >
                 + {remaining} de plus
