@@ -8,6 +8,7 @@ import InterestsPanel from "@/components/sparktime/InterestsPanel";
 import AdjustSuggestionsPanel from "@/components/sparktime/AdjustSuggestionsPanel";
 import InterestsModal from "@/components/sparktime/InterestsModal";
 import SparkDetailsModal from "@/components/sparktime/SparkDetailsModal";
+import NewActivityModal from "@/components/widgets/NewActivityModal";
 import { Button } from "@/components/ui/button";
 import { useSparkStore } from "@/store/sparkStore";
 import { useInterestStore } from "@/store/interestStore";
@@ -29,10 +30,22 @@ export default function SparkTime() {
   const [energyIndex, setEnergyIndex] = useState(1);
   const [interestsModalOpen, setInterestsModalOpen] = useState(false);
   const [selectedSpark, setSelectedSpark] = useState<ISpark | null>(null);
+  const [schedulingSpark, setSchedulingSpark] = useState<ISpark | null>(null);
 
   const liveSelectedSpark = selectedSpark
     ? (sparks.find((s) => s._id === selectedSpark._id) ?? null)
     : null;
+
+  function planSpark(spark: ISpark) {
+    setSelectedSpark(null);
+    setSchedulingSpark(spark);
+  }
+
+  function scheduleNotesFor(spark: ISpark) {
+    const parts = [spark.description];
+    if (spark.energyLevel) parts.push(`énergie ${spark.energyLevel}`);
+    return parts.join(" · ");
+  }
 
   useEffect(() => {
     fetchSparks();
@@ -110,6 +123,7 @@ export default function SparkTime() {
                     key={spark._id}
                     spark={spark}
                     onDetails={() => setSelectedSpark(spark)}
+                    onPlan={() => planSpark(spark)}
                   />
                 ))}
               </div>
@@ -141,6 +155,17 @@ export default function SparkTime() {
       <SparkDetailsModal
         spark={liveSelectedSpark}
         onOpenChange={(open) => !open && setSelectedSpark(null)}
+        onPlan={planSpark}
+      />
+      <NewActivityModal
+        key={schedulingSpark?._id ?? "new"}
+        open={!!schedulingSpark}
+        onOpenChange={(open) => !open && setSchedulingSpark(null)}
+        defaultModule="SparkTime"
+        defaultTitle={schedulingSpark?.title}
+        defaultNotes={schedulingSpark ? scheduleNotesFor(schedulingSpark) : ""}
+        defaultDuration={schedulingSpark?.duration}
+        sparkId={schedulingSpark?._id}
       />
     </div>
   );

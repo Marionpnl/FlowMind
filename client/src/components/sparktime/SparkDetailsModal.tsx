@@ -18,11 +18,13 @@ import type { ISpark } from "@shared/types";
 interface SparkDetailsModalProps {
   spark: ISpark | null;
   onOpenChange: (open: boolean) => void;
+  onPlan: (spark: ISpark) => void;
 }
 
 export default function SparkDetailsModal({
   spark,
   onOpenChange,
+  onPlan,
 }: SparkDetailsModalProps) {
   if (!spark) return null;
 
@@ -97,6 +99,7 @@ export default function SparkDetailsModal({
           <div className="flex items-center gap-2">
             <Button
               size="lg"
+              onClick={() => onPlan(currentSpark)}
               className="rounded-xl bg-sparktime text-white hover:bg-sparktime/90"
             >
               <CalendarPlus className="mr-1.5 h-3.5 w-3.5" />

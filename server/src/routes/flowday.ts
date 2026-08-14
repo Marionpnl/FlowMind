@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import DayPlan from "../models/DayPlan";
-import { generateDayPlan } from "../services/aiService";
+import { generateDayPlan, suggestScheduleSlot } from "../services/aiService";
 
 const router = Router();
 
@@ -143,6 +143,90 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
       success: false,
       message: "Error generating the day plan",
     });
+  }
+});
+
+// POST /api/flowday/blocks - Schedule a new activity block, anywhere from a module
+// (SparkTime "Planifier", MindShelf "Planifier une lecture", FlowDay's own "Add bloc")
+// date/time/duration are optional: whatever is left blank gets filled in by AI
+router.post("/blocks", async (req: AuthRequest, res: Response) => {
+  try {
+    const { title, notes, duration, date, time, module, sparkId } = req.body;
+
+    if (!title || !module) {
+      return res.status(400).json({
+        success: false,
+        message: "title and module are required",
+      });
+    }
+
+    let resolvedDate = typeof date === "string" && date ? date : undefined;
+    let resolvedTime = typeof time === "string" && time ? time : undefined;
+    let resolvedDuration =
+      typeof duration === "number" && duration > 0 ? duration : undefined;
+
+    if (!resolvedDate || !resolvedTime || !resolvedDuration) {
+      const today = new Date().toISOString().split("T")[0];
+      const contextDate = resolvedDate || today;
+      const existingPlan = await DayPlan.findOne({
+        userId: req.userId,
+        date: contextDate,
+      });
+      const todayBlocks = (existingPlan?.blocks || []).map((b) => ({
+        time: b.time,
+        duration: b.duration,
+        title: b.title,
+      }));
+
+      const suggestion = await suggestScheduleSlot(
+        title,
+        notes,
+        module,
+        contextDate,
+        todayBlocks,
+      );
+
+      resolvedDate =
+        resolvedDate ||
+        (typeof suggestion.date === "string" && suggestion.date
+          ? suggestion.date
+          : today);
+      resolvedTime =
+        resolvedTime ||
+        (typeof suggestion.time === "string" && suggestion.time
+          ? suggestion.time
+          : "09:00");
+      resolvedDuration =
+        resolvedDuration ||
+        (typeof suggestion.duration === "number" && suggestion.duration > 0
+          ? suggestion.duration
+          : 30);
+    }
+
+    const block = {
+      id: `block-${Date.now()}`,
+      time: resolvedTime,
+      title,
+      subtitle: notes || undefined,
+      duration: resolvedDuration,
+      module,
+      done: false,
+      sparkId: sparkId || undefined,
+    };
+
+    const plan = await DayPlan.findOneAndUpdate(
+      { userId: req.userId, date: resolvedDate },
+      {
+        $push: { blocks: block },
+        $setOnInsert: { userId: req.userId, date: resolvedDate },
+      },
+      { new: true, upsert: true },
+    );
+
+    res.status(201).json({ success: true, data: plan });
+  } catch (error) {
+    console.error("POST /api/flowday/blocks error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 

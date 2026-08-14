@@ -1,10 +1,20 @@
 import { create } from "zustand";
 import apiCall from "@/lib/api";
-import type { IDayPlan } from "@shared/types";
+import type { IDayPlan, HabitModule } from "@shared/types";
 
 interface DayPlanResponse {
   success: boolean;
   data: IDayPlan;
+}
+
+export interface ScheduleActivityInput {
+  title: string;
+  notes?: string;
+  duration?: number;
+  date?: string;
+  time?: string;
+  module: HabitModule;
+  sparkId?: string;
 }
 
 interface DayPlanState {
@@ -19,6 +29,7 @@ interface DayPlanState {
   fetchMonthPlans: (year: number, month: number) => Promise<void>;
   generatePlan: (userInput: string, date: string) => Promise<void>;
   toggleBlock: (blockId: string) => Promise<void>;
+  scheduleActivity: (input: ScheduleActivityInput) => Promise<IDayPlan | null>;
 }
 
 export const useDayPlanStore = create<DayPlanState>((set, get) => ({
@@ -107,6 +118,26 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
       const message =
         err instanceof Error ? err.message : "Erreur de synchronisation";
       set({ currentPlan: previousPlan, error: message });
+    }
+  },
+
+  scheduleActivity: async (input) => {
+    set({ error: null });
+    try {
+      const res = await apiCall<DayPlanResponse>("/api/flowday/blocks", {
+        method: "POST",
+        auth: true,
+        body: JSON.stringify(input),
+      });
+      if (res.data.date === get().currentPlan?.date) {
+        set({ currentPlan: res.data });
+      }
+      return res.data;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error scheduling activity";
+      set({ error: message });
+      return null;
     }
   },
 }));

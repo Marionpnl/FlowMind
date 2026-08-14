@@ -133,3 +133,56 @@ Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
   const parsed = JSON.parse(raw);
   return parsed.sparks as GeneratedSpark[];
 }
+
+export interface SuggestedSlot {
+  date: string; // "YYYY-MM-DD"
+  time: string; // "HH:MM"
+  duration: number;
+}
+
+interface ExistingBlockSummary {
+  time: string;
+  duration: number;
+  title: string;
+}
+
+export async function suggestScheduleSlot(
+  title: string,
+  notes: string | undefined,
+  module: "FlowDay" | "MindShelf" | "SparkTime",
+  today: string,
+  todayBlocks: ExistingBlockSummary[],
+): Promise<SuggestedSlot> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const busySummary = todayBlocks.length
+    ? todayBlocks
+        .map((b) => `${b.time} (${b.duration} min) — ${b.title}`)
+        .join(", ")
+    : "aucun bloc planifié";
+
+  const prompt = `
+Tu es un assistant de planification pour l'application FlowMind. Une utilisatrice veut ajouter une nouvelle activité mais n'a pas précisé de créneau — propose-lui-en un.
+
+Activité : "${title}"${notes ? ` — notes : "${notes}"` : ""}
+Module : ${module}
+Date du jour : ${today}
+Blocs déjà planifiés aujourd'hui : ${busySummary}
+
+Propose un créneau réaliste : si aujourd'hui a de la place en dehors des blocs déjà occupés, propose une heure aujourd'hui ; sinon propose demain à une heure raisonnable. Propose aussi une durée réaliste pour ce type d'activité (en minutes).
+
+Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
+{"date": "YYYY-MM-DD", "time": "HH:MM", "duration": 30}
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Réponse vide de l'IA");
+
+  return JSON.parse(raw) as SuggestedSlot;
+}
