@@ -31,6 +31,7 @@ export default function SparkTime() {
   const [interestsModalOpen, setInterestsModalOpen] = useState(false);
   const [selectedSpark, setSelectedSpark] = useState<ISpark | null>(null);
   const [schedulingSpark, setSchedulingSpark] = useState<ISpark | null>(null);
+  const [scheduleSession, setScheduleSession] = useState(0);
 
   const liveSelectedSpark = selectedSpark
     ? (sparks.find((s) => s._id === selectedSpark._id) ?? null)
@@ -39,6 +40,7 @@ export default function SparkTime() {
   function planSpark(spark: ISpark) {
     setSelectedSpark(null);
     setSchedulingSpark(spark);
+    setScheduleSession((s) => s + 1);
   }
 
   function scheduleNotesFor(spark: ISpark) {
@@ -73,7 +75,10 @@ export default function SparkTime() {
             className="bg-sparktime text-white rounded-xl hover:bg-sparktime/90"
           >
             <RefreshCw
-              className={cn("mr-1.5 h-3.5 w-3.5", sparksLoading && "animate-spin")}
+              className={cn(
+                "mr-1.5 h-3.5 w-3.5",
+                sparksLoading && "animate-spin",
+              )}
             />
             Régénérer
           </Button>
@@ -85,7 +90,9 @@ export default function SparkTime() {
           <ContextBanner />
 
           <div>
-            <h2 className="font-display text-2xl italic">Pour toi, maintenant</h2>
+            <h2 className="font-display text-2xl italic">
+              Pour toi, maintenant
+            </h2>
             <p className="mb-4 mt-0.5 text-xs text-black/70 text-muted-foreground">
               {sparks.length} idée{sparks.length > 1 ? "s" : ""} à explorer
             </p>
@@ -158,7 +165,7 @@ export default function SparkTime() {
         onPlan={planSpark}
       />
       <NewActivityModal
-        key={schedulingSpark?._id ?? "new"}
+        key={scheduleSession}
         open={!!schedulingSpark}
         onOpenChange={(open) => !open && setSchedulingSpark(null)}
         defaultModule="SparkTime"

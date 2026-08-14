@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   Calendar,
   Settings,
@@ -58,7 +58,8 @@ export default function Sidebar() {
     >
       <div>
         {/* Logo */}
-        <div
+        <Link
+          to="/"
           className={cn(
             "mb-8 flex items-center gap-2",
             collapsed ? "justify-center" : "",
@@ -77,7 +78,7 @@ export default function Sidebar() {
               </p>
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Modules */}
         {!collapsed && (

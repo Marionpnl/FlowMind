@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import FlowDayPlanCard from "@/components/widgets/FlowDayPlanCard";
 import TodayPlanning from "@/components/widgets/TodayPlanning";
 import HabitsWidget from "@/components/widgets/HabitsWidget";
 import FocusCard from "@/components/flowday/FocusCard";
+import NewActivityModal from "@/components/widgets/NewActivityModal";
 import { Button } from "@/components/ui/button";
 import { Sun, Plus } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
@@ -17,6 +18,13 @@ export default function FlowDay() {
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
   const toggleBlock = useDayPlanStore((s) => s.toggleBlock);
+  const [newActivityOpen, setNewActivityOpen] = useState(false);
+  const [scheduleSession, setScheduleSession] = useState(0);
+
+  function openNewActivity() {
+    setScheduleSession((s) => s + 1);
+    setNewActivityOpen(true);
+  }
 
   useEffect(() => {
     fetchPlan(today);
@@ -43,6 +51,7 @@ export default function FlowDay() {
             </button>
             <Button
               size="sm"
+              onClick={openNewActivity}
               className="bg-flowday text-white hover:bg-flowday/90"
             >
               <Plus className="mr-1 h-4 w-4" />
@@ -62,6 +71,13 @@ export default function FlowDay() {
           <FocusCard />
         </div>
       </main>
+
+      <NewActivityModal
+        key={scheduleSession}
+        open={newActivityOpen}
+        onOpenChange={setNewActivityOpen}
+        defaultModule="FlowDay"
+      />
     </div>
   );
 }

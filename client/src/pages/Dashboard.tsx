@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import FlowDayPlanCard from "@/components/widgets/FlowDayPlanCard";
 import TodayPlanning from "@/components/widgets/TodayPlanning";
@@ -6,6 +6,7 @@ import HabitsWidget from "@/components/widgets/HabitsWidget";
 import InsightCard from "@/components/dashboard/InsightCard";
 import MindShelfCard from "@/components/dashboard/MindShelfCard";
 import SparkTimeCard from "@/components/dashboard/SparkTimeCard";
+import NewActivityModal from "@/components/widgets/NewActivityModal";
 import { Button } from "@/components/ui/button";
 import { Sun, Plus } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
@@ -21,6 +22,13 @@ export default function Dashboard() {
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
   const toggleBlock = useDayPlanStore((s) => s.toggleBlock);
+  const [newActivityOpen, setNewActivityOpen] = useState(false);
+  const [scheduleSession, setScheduleSession] = useState(0);
+
+  function openNewActivity() {
+    setScheduleSession((s) => s + 1);
+    setNewActivityOpen(true);
+  }
 
   useEffect(() => {
     fetchPlan(today);
@@ -47,6 +55,7 @@ export default function Dashboard() {
             </button>
             <Button
               size="lg"
+              onClick={openNewActivity}
               className="bg-[#2B2A28] text-white hover:bg-flowday/90 rounded-xl"
             >
               <Plus className="mr-1 h-4 w-4" />
@@ -68,6 +77,13 @@ export default function Dashboard() {
           <SparkTimeCard />
         </div>
       </main>
+
+      <NewActivityModal
+        key={scheduleSession}
+        open={newActivityOpen}
+        onOpenChange={setNewActivityOpen}
+        defaultModule="FlowDay"
+      />
     </div>
   );
 }

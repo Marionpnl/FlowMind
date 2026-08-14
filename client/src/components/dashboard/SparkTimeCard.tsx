@@ -1,8 +1,20 @@
+import { useState } from "react";
 import { Plus, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { sparkSuggestions } from "@/lib/mockData";
+import { sparkSuggestions, type SparkSuggestion } from "@/lib/mockData";
+import NewActivityModal from "@/components/widgets/NewActivityModal";
 
 export default function SparkTimeCard() {
+  const [schedulingItem, setSchedulingItem] = useState<SparkSuggestion | null>(
+    null,
+  );
+  const [session, setSession] = useState(0);
+
+  function handlePlan(item: SparkSuggestion) {
+    setSession((s) => s + 1);
+    setSchedulingItem(item);
+  }
+
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-baseline justify-between">
@@ -33,12 +45,24 @@ export default function SparkTimeCard() {
                 </p>
               </div>
             </div>
-            <button className="flex h-6 w-6 items-center justify-center rounded-full bg-sparktime-bg text-sparktime">
+            <button
+              onClick={() => handlePlan(s)}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-sparktime-bg text-sparktime"
+            >
               <Plus className="h-4 w-4" />
             </button>
           </li>
         ))}
       </ul>
+
+      <NewActivityModal
+        key={session}
+        open={!!schedulingItem}
+        onOpenChange={(open) => !open && setSchedulingItem(null)}
+        defaultModule="SparkTime"
+        defaultTitle={schedulingItem?.title}
+        defaultNotes={schedulingItem?.detail}
+      />
     </div>
   );
 }
