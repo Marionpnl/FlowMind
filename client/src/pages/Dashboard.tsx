@@ -22,6 +22,7 @@ export default function Dashboard() {
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
   const toggleBlock = useDayPlanStore((s) => s.toggleBlock);
+  const deleteBlock = useDayPlanStore((s) => s.deleteBlock);
   const [newActivityOpen, setNewActivityOpen] = useState(false);
   const [scheduleSession, setScheduleSession] = useState(0);
 
@@ -68,7 +69,11 @@ export default function Dashboard() {
       <main className="grid grid-cols-3 gap-5 px-8 py-6">
         <div className="col-span-2 space-y-5">
           <FlowDayPlanCard date={today} />
-          <TodayPlanning blocks={blocks} onToggleBlock={toggleBlock} />
+          <TodayPlanning
+            blocks={blocks}
+            onToggleBlock={toggleBlock}
+            onDeleteBlock={deleteBlock}
+          />
           <HabitsWidget />
         </div>
         <div className="space-y-5">

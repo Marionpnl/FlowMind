@@ -17,6 +17,22 @@ export interface ScheduleActivityInput {
   sparkId?: string;
 }
 
+export interface UpdateBlockInput {
+  title?: string;
+  time?: string;
+  duration?: number;
+  subtitle?: string;
+  module?: HabitModule;
+}
+
+function mergeIntoList(list: IDayPlan[], updated: IDayPlan): IDayPlan[] {
+  const idx = list.findIndex((p) => p.date === updated.date);
+  if (idx === -1) return [...list, updated];
+  const copy = [...list];
+  copy[idx] = updated;
+  return copy;
+}
+
 interface DayPlanState {
   currentPlan: IDayPlan | null;
   weekPlans: IDayPlan[];
@@ -30,6 +46,8 @@ interface DayPlanState {
   generatePlan: (userInput: string, date: string) => Promise<void>;
   toggleBlock: (blockId: string) => Promise<void>;
   scheduleActivity: (input: ScheduleActivityInput) => Promise<IDayPlan | null>;
+  updateBlock: (blockId: string, updates: UpdateBlockInput) => Promise<void>;
+  deleteBlock: (blockId: string) => Promise<void>;
 }
 
 export const useDayPlanStore = create<DayPlanState>((set, get) => ({
@@ -131,21 +149,13 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
       });
       const updated = res.data;
 
-      const mergeIntoList = (list: IDayPlan[]) => {
-        const idx = list.findIndex((p) => p.date === updated.date);
-        if (idx === -1) return [...list, updated];
-        const copy = [...list];
-        copy[idx] = updated;
-        return copy;
-      };
-
       set((state) => ({
         currentPlan:
           updated.date === state.currentPlan?.date
             ? updated
             : state.currentPlan,
-        weekPlans: mergeIntoList(state.weekPlans),
-        monthPlans: mergeIntoList(state.monthPlans),
+        weekPlans: mergeIntoList(state.weekPlans, updated),
+        monthPlans: mergeIntoList(state.monthPlans, updated),
       }));
 
       return updated;
@@ -154,6 +164,81 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
         err instanceof Error ? err.message : "Error scheduling activity";
       set({ error: message });
       return null;
+    }
+  },
+
+  updateBlock: async (blockId, updates) => {
+    set({ error: null });
+    try {
+      const res = await apiCall<DayPlanResponse>(
+        `/api/flowday/blocks/${blockId}`,
+        {
+          method: "PATCH",
+          auth: true,
+          body: JSON.stringify(updates),
+        },
+      );
+      const updated = res.data;
+
+      set((state) => ({
+        currentPlan:
+          updated.date === state.currentPlan?.date
+            ? updated
+            : state.currentPlan,
+        weekPlans: mergeIntoList(state.weekPlans, updated),
+        monthPlans: mergeIntoList(state.monthPlans, updated),
+      }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error updating block";
+      set({ error: message });
+    }
+  },
+
+  deleteBlock: async (blockId) => {
+    const plan = get().currentPlan;
+    const previousPlan = plan;
+    const previousWeekPlans = get().weekPlans;
+    const previousMonthPlans = get().monthPlans;
+
+    // Update optimiste
+    set((state) => ({
+      currentPlan: plan
+        ? { ...plan, blocks: plan.blocks.filter((b) => b.id !== blockId) }
+        : plan,
+      weekPlans: state.weekPlans.map((p) => ({
+        ...p,
+        blocks: p.blocks.filter((b) => b.id !== blockId),
+      })),
+      monthPlans: state.monthPlans.map((p) => ({
+        ...p,
+        blocks: p.blocks.filter((b) => b.id !== blockId),
+      })),
+    }));
+
+    try {
+      const res = await apiCall<DayPlanResponse>(
+        `/api/flowday/blocks/${blockId}`,
+        { method: "DELETE", auth: true },
+      );
+      const updated = res.data;
+      set((state) => ({
+        currentPlan:
+          updated.date === state.currentPlan?.date
+            ? updated
+            : state.currentPlan,
+        weekPlans: mergeIntoList(state.weekPlans, updated),
+        monthPlans: mergeIntoList(state.monthPlans, updated),
+      }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error deleting block";
+      set({
+        currentPlan: previousPlan,
+        weekPlans: previousWeekPlans,
+        monthPlans: previousMonthPlans,
+        error: message,
+      });
     }
   },
 }));

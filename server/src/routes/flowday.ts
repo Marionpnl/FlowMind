@@ -230,4 +230,60 @@ router.post("/blocks", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// PATCH /api/flowday/blocks/:blockId - Update a single block (title/time/duration/subtitle/module)
+router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
+  try {
+    const { blockId } = req.params;
+    const { title, time, duration, subtitle, module } = req.body;
+
+    const setFields: Record<string, unknown> = {};
+    if (title !== undefined) setFields["blocks.$.title"] = title;
+    if (time !== undefined) setFields["blocks.$.time"] = time;
+    if (duration !== undefined) setFields["blocks.$.duration"] = duration;
+    if (subtitle !== undefined) setFields["blocks.$.subtitle"] = subtitle;
+    if (module !== undefined) setFields["blocks.$.module"] = module;
+
+    const plan = await DayPlan.findOneAndUpdate(
+      { userId: req.userId, "blocks.id": blockId },
+      { $set: setFields },
+      { new: true },
+    );
+
+    if (!plan) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Block not found" });
+    }
+
+    res.json({ success: true, data: plan });
+  } catch (error) {
+    console.error("PATCH /api/flowday/blocks/:blockId error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// DELETE /api/flowday/blocks/:blockId - Remove a single block
+router.delete("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
+  try {
+    const { blockId } = req.params;
+
+    const plan = await DayPlan.findOneAndUpdate(
+      { userId: req.userId, "blocks.id": blockId },
+      { $pull: { blocks: { id: blockId } } },
+      { new: true },
+    );
+
+    if (!plan) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Block not found" });
+    }
+
+    res.json({ success: true, data: plan });
+  } catch (error) {
+    console.error("DELETE /api/flowday/blocks/:blockId error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 export default router;

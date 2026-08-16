@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { moduleBadgeClass, moduleDotClass } from "@/lib/moduleStyles";
 import { cn } from "@/lib/utils";
 import type { DayPlanBlock } from "@shared/types";
@@ -6,11 +6,13 @@ import type { DayPlanBlock } from "@shared/types";
 interface TodayPlanningProps {
   blocks: DayPlanBlock[];
   onToggleBlock: (blockId: string) => void;
+  onDeleteBlock: (blockId: string) => void;
 }
 
 export default function TodayPlanning({
   blocks = [],
   onToggleBlock,
+  onDeleteBlock,
 }: TodayPlanningProps) {
   const totalFocusMinutes = blocks
     .filter((b) => b.module === "FlowDay")
@@ -81,14 +83,23 @@ export default function TodayPlanning({
                       </p>
                     </div>
                   </div>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-                      moduleBadgeClass[block.module],
-                    )}
-                  >
-                    {block.module}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                        moduleBadgeClass[block.module],
+                      )}
+                    >
+                      {block.module}
+                    </span>
+                    <button
+                      onClick={() => onDeleteBlock(block.id)}
+                      className="text-black/30 hover:text-accent-danger"
+                      aria-label="Supprimer ce bloc"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </li>

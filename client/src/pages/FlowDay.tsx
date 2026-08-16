@@ -28,6 +28,7 @@ export default function FlowDay() {
   const fetchWeekPlans = useDayPlanStore((s) => s.fetchWeekPlans);
   const fetchMonthPlans = useDayPlanStore((s) => s.fetchMonthPlans);
   const toggleBlock = useDayPlanStore((s) => s.toggleBlock);
+  const deleteBlock = useDayPlanStore((s) => s.deleteBlock);
   const [newActivityOpen, setNewActivityOpen] = useState(false);
   const [scheduleSession, setScheduleSession] = useState(0);
   const [view, setView] = useState<ViewMode>("day");
@@ -105,7 +106,11 @@ export default function FlowDay() {
           </div>
 
           {view === "day" && (
-            <TodayPlanning blocks={blocks} onToggleBlock={toggleBlock} />
+            <TodayPlanning
+              blocks={blocks}
+              onToggleBlock={toggleBlock}
+              onDeleteBlock={deleteBlock}
+            />
           )}
           {view === "week" && (
             <WeekGridView weekStart={weekStart} plans={weekPlans} />

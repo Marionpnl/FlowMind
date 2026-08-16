@@ -24,6 +24,7 @@ export default function Calendar() {
   }
 
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
+  const deleteBlock = useDayPlanStore((s) => s.deleteBlock);
   const weekPlans = useDayPlanStore((s) => s.weekPlans);
   const monthPlans = useDayPlanStore((s) => s.monthPlans);
   const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
@@ -132,7 +133,9 @@ export default function Calendar() {
           ))}
         </div>
 
-        {view === "day" && <DayTimelineView blocks={blocks} />}
+        {view === "day" && (
+          <DayTimelineView blocks={blocks} onDeleteBlock={deleteBlock} />
+        )}
         {view === "week" && (
           <WeekGridView weekStart={weekStart} plans={weekPlans} />
         )}

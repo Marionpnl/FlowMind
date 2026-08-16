@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DayPlanBlock } from "@shared/types";
 
@@ -31,9 +32,13 @@ const moduleBgSolid = {
 
 interface DayTimelineViewProps {
   blocks: DayPlanBlock[];
+  onDeleteBlock: (blockId: string) => void;
 }
 
-export default function DayTimelineView({ blocks }: DayTimelineViewProps) {
+export default function DayTimelineView({
+  blocks,
+  onDeleteBlock,
+}: DayTimelineViewProps) {
   const hours = Array.from(
     { length: END_HOUR - START_HOUR + 1 },
     (_, i) => START_HOUR + i,
@@ -72,13 +77,23 @@ export default function DayTimelineView({ blocks }: DayTimelineViewProps) {
                 key={block.id}
                 style={{ top, height }}
                 className={cn(
-                  "absolute left-1 right-1 overflow-hidden rounded-lg px-2",
+                  "group absolute left-1 right-1 overflow-hidden rounded-lg px-2",
                   isCompact ? "flex items-center py-0" : "py-1",
                   isSolid
                     ? moduleBgSolid[block.module]
                     : moduleBgSoft[block.module],
                 )}
               >
+                <button
+                  onClick={() => onDeleteBlock(block.id)}
+                  className={cn(
+                    "absolute right-1 top-1 hidden rounded-full p-0.5 group-hover:block",
+                    isSolid ? "hover:bg-white/20" : "hover:bg-black/10",
+                  )}
+                  aria-label="Supprimer ce bloc"
+                >
+                  <X className="h-3 w-3" />
+                </button>
                 {isCompact ? (
                   <p className="truncate text-xs font-medium">
                     {block.title}{" "}
