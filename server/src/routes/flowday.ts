@@ -230,11 +230,51 @@ router.post("/blocks", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PATCH /api/flowday/blocks/:blockId - Update a single block (title/time/duration/subtitle/module)
+// PATCH /api/flowday/blocks/:blockId - Update a single block (title/time/duration/subtitle/module/date)
+// A date different from the block's current day moves it to that day's plan.
 router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
   try {
     const { blockId } = req.params;
-    const { title, time, duration, subtitle, module } = req.body;
+    const { title, time, duration, subtitle, module, date } = req.body;
+
+    const plan = await DayPlan.findOne({
+      userId: req.userId,
+      "blocks.id": blockId,
+    });
+
+    if (!plan) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Block not found" });
+    }
+
+    if (typeof date === "string" && date && date !== plan.date) {
+      const block = plan.blocks.find((b) => b.id === blockId)!;
+      const movedBlock = {
+        id: block.id,
+        time: time !== undefined ? time : block.time,
+        title: title !== undefined ? title : block.title,
+        subtitle: subtitle !== undefined ? subtitle : block.subtitle,
+        duration: duration !== undefined ? duration : block.duration,
+        module: module !== undefined ? module : block.module,
+        done: block.done,
+        sparkId: block.sparkId,
+      };
+
+      plan.blocks = plan.blocks.filter((b) => b.id !== blockId) as typeof plan.blocks;
+      await plan.save();
+
+      const targetPlan = await DayPlan.findOneAndUpdate(
+        { userId: req.userId, date },
+        {
+          $push: { blocks: movedBlock },
+          $setOnInsert: { userId: req.userId, date },
+        },
+        { new: true, upsert: true },
+      );
+
+      return res.json({ success: true, data: targetPlan });
+    }
 
     const setFields: Record<string, unknown> = {};
     if (title !== undefined) setFields["blocks.$.title"] = title;
@@ -243,19 +283,13 @@ router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
     if (subtitle !== undefined) setFields["blocks.$.subtitle"] = subtitle;
     if (module !== undefined) setFields["blocks.$.module"] = module;
 
-    const plan = await DayPlan.findOneAndUpdate(
+    const updatedPlan = await DayPlan.findOneAndUpdate(
       { userId: req.userId, "blocks.id": blockId },
       { $set: setFields },
       { new: true },
     );
 
-    if (!plan) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Block not found" });
-    }
-
-    res.json({ success: true, data: plan });
+    res.json({ success: true, data: updatedPlan });
   } catch (error) {
     console.error("PATCH /api/flowday/blocks/:blockId error:", error);
     res.status(500).json({ success: false, message: "Server error" });

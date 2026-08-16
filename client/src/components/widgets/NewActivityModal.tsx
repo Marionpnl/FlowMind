@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useDayPlanStore } from "@/store/dayPlanStore";
-import type { HabitModule } from "@shared/types";
+import type { DayPlanBlock, HabitModule } from "@shared/types";
 import {
   moduleSelectedClass,
   moduleTextClass,
@@ -43,6 +43,10 @@ const MODULES: {
   },
 ];
 
+export type ActivityModalTarget =
+  | { mode: "create" }
+  | { mode: "edit"; block: DayPlanBlock; date: string };
+
 interface NewActivityModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -51,7 +55,9 @@ interface NewActivityModalProps {
   defaultNotes?: string;
   defaultDuration?: number;
   defaultDate?: string;
+  defaultTime?: string;
   sparkId?: string;
+  editingBlockId?: string;
 }
 
 export default function NewActivityModal({
@@ -62,9 +68,13 @@ export default function NewActivityModal({
   defaultNotes = "",
   defaultDuration,
   defaultDate,
+  defaultTime,
   sparkId,
+  editingBlockId,
 }: NewActivityModalProps) {
   const scheduleActivity = useDayPlanStore((s) => s.scheduleActivity);
+  const updateBlock = useDayPlanStore((s) => s.updateBlock);
+  const isEditing = !!editingBlockId;
 
   // Initialisé une seule fois au montage : le parent force un remount (via `key`)
   // à chaque nouvelle ouverture pour repartir d'un formulaire vierge/pré-rempli.
@@ -72,7 +82,7 @@ export default function NewActivityModal({
     module: defaultModule,
     title: defaultTitle,
     date: defaultDate ?? new Date().toISOString().split("T")[0],
-    time: "09:00",
+    time: defaultTime ?? "09:00",
     duration: defaultDuration ?? 30,
     notes: defaultNotes,
   });
@@ -84,16 +94,28 @@ export default function NewActivityModal({
     if (!title.trim()) return;
     setSubmitting(true);
     try {
-      const result = await scheduleActivity({
-        title: title.trim(),
-        notes: notes.trim() || undefined,
-        duration: duration || undefined,
-        date: date || undefined,
-        time: time || undefined,
-        module,
-        sparkId,
-      });
-      if (result) onOpenChange(false);
+      if (isEditing) {
+        await updateBlock(editingBlockId, {
+          title: title.trim(),
+          subtitle: notes.trim() || undefined,
+          duration,
+          date,
+          time,
+          module,
+        });
+        onOpenChange(false);
+      } else {
+        const result = await scheduleActivity({
+          title: title.trim(),
+          notes: notes.trim() || undefined,
+          duration: duration || undefined,
+          date: date || undefined,
+          time: time || undefined,
+          module,
+          sparkId,
+        });
+        if (result) onOpenChange(false);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -104,10 +126,12 @@ export default function NewActivityModal({
       <DialogContent className="sm:max-w-lg bg-cream p-6 max-h-[85vh] flex flex-col overflow-y-auto">
         <DialogHeader className="gap-1">
           <DialogTitle className="font-display text-2xl italic">
-            Nouvelle activité
+            {isEditing ? "Modifier l'activité" : "Nouvelle activité"}
           </DialogTitle>
           <p className="text-sm text-black/60 text-muted-foreground">
-            Décris ce que tu veux faire — l'IA proposera un créneau.
+            {isEditing
+              ? "Ajuste le créneau, la durée ou le module de cette activité."
+              : "Décris ce que tu veux faire — l'IA proposera un créneau."}
           </p>
         </DialogHeader>
 
@@ -203,11 +227,13 @@ export default function NewActivityModal({
           />
         </div>
 
-        <div className="mt-2 flex items-center gap-2 rounded-xl bg-cream-secondary px-3 py-2.5 text-xs text-black/60 text-muted-foreground">
-          <Wand2 className="h-3.5 w-3.5 shrink-0 text-sparktime" />
-          L'IA suggérera un horaire optimal si tu laisses la date ou l'heure
-          vide.
-        </div>
+        {!isEditing && (
+          <div className="mt-2 flex items-center gap-2 rounded-xl bg-cream-secondary px-3 py-2.5 text-xs text-black/60 text-muted-foreground">
+            <Wand2 className="h-3.5 w-3.5 shrink-0 text-sparktime" />
+            L'IA suggérera un horaire optimal si tu laisses la date ou
+            l'heure vide.
+          </div>
+        )}
 
         <div className="mt-4 flex items-center justify-end gap-3">
           <button
@@ -222,7 +248,7 @@ export default function NewActivityModal({
             onClick={handleSubmit}
             className={cn("text-white rounded-xl", moduleButtonClass[module])}
           >
-            + Ajouter
+            {isEditing ? "Enregistrer" : "+ Ajouter"}
           </Button>
         </div>
       </DialogContent>

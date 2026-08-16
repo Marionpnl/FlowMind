@@ -1,6 +1,7 @@
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DAY_LABELS, getMonthGrid, toDateString } from "@/lib/dateUtils";
-import type { IDayPlan } from "@shared/types";
+import type { DayPlanBlock, IDayPlan } from "@shared/types";
 
 const moduleBgSoft = {
   FlowDay: "bg-flowday-bg text-flowday",
@@ -12,12 +13,16 @@ interface MonthGridViewProps {
   year: number;
   month: number; // 1-12
   plans: IDayPlan[];
+  onDeleteBlock: (blockId: string) => void;
+  onEditBlock: (block: DayPlanBlock, date: string) => void;
 }
 
 export default function MonthGridView({
   year,
   month,
   plans,
+  onDeleteBlock,
+  onEditBlock,
 }: MonthGridViewProps) {
   const grid = getMonthGrid(year, month);
   const planByDate = new Map(plans.map((p) => [p.date, p]));
@@ -67,15 +72,26 @@ export default function MonthGridView({
                 {day.getDate()}
               </p>
               {blocks.slice(0, 3).map((block) => (
-                <p
+                <div
                   key={block.id}
+                  onClick={() => onEditBlock(block, dateStr)}
                   className={cn(
-                    "truncate rounded px-1.5 py-0.5 text-[10px] font-medium",
+                    "group relative cursor-pointer truncate rounded px-1.5 py-0.5 pr-4 text-[10px] font-medium",
                     moduleBgSoft[block.module],
                   )}
                 >
                   {block.title}
-                </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteBlock(block.id);
+                    }}
+                    className="absolute right-0 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/70 p-0.5 group-hover:block"
+                    aria-label="Supprimer ce bloc"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </div>
               ))}
               {blocks.length > 3 && (
                 <p className="text-[10px] text-muted-foreground">

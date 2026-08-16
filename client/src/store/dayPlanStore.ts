@@ -23,6 +23,7 @@ export interface UpdateBlockInput {
   duration?: number;
   subtitle?: string;
   module?: HabitModule;
+  date?: string;
 }
 
 function mergeIntoList(list: IDayPlan[], updated: IDayPlan): IDayPlan[] {
@@ -31,6 +32,20 @@ function mergeIntoList(list: IDayPlan[], updated: IDayPlan): IDayPlan[] {
   const copy = [...list];
   copy[idx] = updated;
   return copy;
+}
+
+// Removes a block from every cached plan except the one it now belongs to —
+// needed when an edit moves a block to a different date.
+function stripBlockElsewhere(
+  list: IDayPlan[],
+  blockId: string,
+  keepDate: string,
+): IDayPlan[] {
+  return list.map((p) =>
+    p.date === keepDate
+      ? p
+      : { ...p, blocks: p.blocks.filter((b) => b.id !== blockId) },
+  );
 }
 
 interface DayPlanState {
@@ -180,14 +195,31 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
       );
       const updated = res.data;
 
-      set((state) => ({
-        currentPlan:
-          updated.date === state.currentPlan?.date
+      set((state) => {
+        const currentPlan =
+          state.currentPlan?.date === updated.date
             ? updated
-            : state.currentPlan,
-        weekPlans: mergeIntoList(state.weekPlans, updated),
-        monthPlans: mergeIntoList(state.monthPlans, updated),
-      }));
+            : state.currentPlan
+              ? {
+                  ...state.currentPlan,
+                  blocks: state.currentPlan.blocks.filter(
+                    (b) => b.id !== blockId,
+                  ),
+                }
+              : state.currentPlan;
+
+        return {
+          currentPlan,
+          weekPlans: mergeIntoList(
+            stripBlockElsewhere(state.weekPlans, blockId, updated.date),
+            updated,
+          ),
+          monthPlans: mergeIntoList(
+            stripBlockElsewhere(state.monthPlans, blockId, updated.date),
+            updated,
+          ),
+        };
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error updating block";

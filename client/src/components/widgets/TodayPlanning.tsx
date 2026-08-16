@@ -1,4 +1,4 @@
-import { Check, Trash2 } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { moduleBadgeClass, moduleDotClass } from "@/lib/moduleStyles";
 import { cn } from "@/lib/utils";
 import type { DayPlanBlock } from "@shared/types";
@@ -7,12 +7,14 @@ interface TodayPlanningProps {
   blocks: DayPlanBlock[];
   onToggleBlock: (blockId: string) => void;
   onDeleteBlock: (blockId: string) => void;
+  onEditBlock: (block: DayPlanBlock) => void;
 }
 
 export default function TodayPlanning({
   blocks = [],
   onToggleBlock,
   onDeleteBlock,
+  onEditBlock,
 }: TodayPlanningProps) {
   const totalFocusMinutes = blocks
     .filter((b) => b.module === "FlowDay")
@@ -54,11 +56,17 @@ export default function TodayPlanning({
                   moduleDotClass[block.module],
                 )}
               />
-              <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm">
+              <div
+                onClick={() => onEditBlock(block)}
+                className="flex-1 cursor-pointer rounded-2xl bg-white p-4 shadow-sm"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-3">
                     <button
-                      onClick={() => onToggleBlock(block.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleBlock(block.id);
+                      }}
                       className={cn(
                         "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
                         block.done
@@ -83,7 +91,17 @@ export default function TodayPlanning({
                       </p>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteBlock(block.id);
+                      }}
+                      className="text-black/30 hover:text-accent-danger"
+                      aria-label="Supprimer ce bloc"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                     <span
                       className={cn(
                         "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
@@ -92,13 +110,6 @@ export default function TodayPlanning({
                     >
                       {block.module}
                     </span>
-                    <button
-                      onClick={() => onDeleteBlock(block.id)}
-                      className="text-black/30 hover:text-accent-danger"
-                      aria-label="Supprimer ce bloc"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
                   </div>
                 </div>
               </div>

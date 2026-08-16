@@ -33,11 +33,13 @@ const moduleBgSolid = {
 interface DayTimelineViewProps {
   blocks: DayPlanBlock[];
   onDeleteBlock: (blockId: string) => void;
+  onEditBlock: (block: DayPlanBlock) => void;
 }
 
 export default function DayTimelineView({
   blocks,
   onDeleteBlock,
+  onEditBlock,
 }: DayTimelineViewProps) {
   const hours = Array.from(
     { length: END_HOUR - START_HOUR + 1 },
@@ -76,8 +78,9 @@ export default function DayTimelineView({
               <div
                 key={block.id}
                 style={{ top, height }}
+                onClick={() => onEditBlock(block)}
                 className={cn(
-                  "group absolute left-1 right-1 overflow-hidden rounded-lg px-2",
+                  "group absolute left-1 right-1 cursor-pointer overflow-hidden rounded-lg px-2",
                   isCompact ? "flex items-center py-0" : "py-1",
                   isSolid
                     ? moduleBgSolid[block.module]
@@ -85,7 +88,10 @@ export default function DayTimelineView({
                 )}
               >
                 <button
-                  onClick={() => onDeleteBlock(block.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteBlock(block.id);
+                  }}
                   className={cn(
                     "absolute right-1 top-1 hidden rounded-full p-0.5 group-hover:block",
                     isSolid ? "hover:bg-white/20" : "hover:bg-black/10",

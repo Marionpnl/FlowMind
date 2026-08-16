@@ -1,6 +1,7 @@
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DAY_LABELS, getWeekDays, toDateString } from "@/lib/dateUtils";
-import type { IDayPlan } from "@shared/types";
+import type { DayPlanBlock, IDayPlan } from "@shared/types";
 
 const START_HOUR = 7;
 const END_HOUR = 15;
@@ -33,9 +34,16 @@ function addMinutes(time: string, minutes: number): string {
 interface WeekGridViewProps {
   weekStart: Date;
   plans: IDayPlan[];
+  onDeleteBlock: (blockId: string) => void;
+  onEditBlock: (block: DayPlanBlock, date: string) => void;
 }
 
-export default function WeekGridView({ weekStart, plans }: WeekGridViewProps) {
+export default function WeekGridView({
+  weekStart,
+  plans,
+  onDeleteBlock,
+  onEditBlock,
+}: WeekGridViewProps) {
   const days = getWeekDays(weekStart);
   const hours = Array.from(
     { length: END_HOUR - START_HOUR + 1 },
@@ -111,14 +119,28 @@ export default function WeekGridView({ weekStart, plans }: WeekGridViewProps) {
                   <div
                     key={block.id}
                     style={{ top, height }}
+                    onClick={() => onEditBlock(block, dateStr)}
                     className={cn(
-                      "absolute left-1 right-1 overflow-hidden rounded-lg px-2",
+                      "group absolute left-1 right-1 cursor-pointer overflow-hidden rounded-lg px-2",
                       isCompact ? "flex items-center py-0" : "py-1",
                       isSolid
                         ? moduleBgSolid[block.module]
                         : moduleBgSoft[block.module],
                     )}
                   >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteBlock(block.id);
+                      }}
+                      className={cn(
+                        "absolute right-1 top-1 hidden rounded-full p-0.5 group-hover:block",
+                        isSolid ? "hover:bg-white/20" : "hover:bg-black/10",
+                      )}
+                      aria-label="Supprimer ce bloc"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                     {isCompact ? (
                       <p className="truncate text-[11px] font-medium">
                         {block.title}{" "}

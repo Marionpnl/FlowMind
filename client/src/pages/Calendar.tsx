@@ -3,24 +3,33 @@ import PageHeader from "@/components/layout/PageHeader";
 import DayTimelineView from "@/components/calendar/DayTimelineView";
 import WeekGridView from "@/components/calendar/WeekGridView";
 import MonthGridView from "@/components/calendar/MonthGridView";
-import NewActivityModal from "@/components/widgets/NewActivityModal";
+import NewActivityModal, {
+  type ActivityModalTarget,
+} from "@/components/widgets/NewActivityModal";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import { getMonday, toDateString, MONTH_LABELS } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
+import type { DayPlanBlock } from "@shared/types";
 
 type ViewMode = "day" | "week" | "month";
 
 export default function Calendar() {
   const [view, setView] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [newActivityOpen, setNewActivityOpen] = useState(false);
-  const [scheduleSession, setScheduleSession] = useState(0);
+  const [activityModal, setActivityModal] =
+    useState<ActivityModalTarget | null>(null);
+  const [modalSession, setModalSession] = useState(0);
 
   function openNewActivity() {
-    setScheduleSession((s) => s + 1);
-    setNewActivityOpen(true);
+    setModalSession((s) => s + 1);
+    setActivityModal({ mode: "create" });
+  }
+
+  function openEditBlock(block: DayPlanBlock, date: string) {
+    setModalSession((s) => s + 1);
+    setActivityModal({ mode: "edit", block, date });
   }
 
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
@@ -73,6 +82,10 @@ export default function Calendar() {
   }
 
   const blocks = currentPlan?.blocks ?? [];
+  const editingBlock =
+    activityModal?.mode === "edit" ? activityModal.block : undefined;
+  const editingDate =
+    activityModal?.mode === "edit" ? activityModal.date : undefined;
   const pageTitle =
     view === "month" ? `${MONTH_LABELS[month - 1]} ${year}` : "Calendrier";
 
@@ -134,22 +147,42 @@ export default function Calendar() {
         </div>
 
         {view === "day" && (
-          <DayTimelineView blocks={blocks} onDeleteBlock={deleteBlock} />
+          <DayTimelineView
+            blocks={blocks}
+            onDeleteBlock={deleteBlock}
+            onEditBlock={(block) => openEditBlock(block, dateStr)}
+          />
         )}
         {view === "week" && (
-          <WeekGridView weekStart={weekStart} plans={weekPlans} />
+          <WeekGridView
+            weekStart={weekStart}
+            plans={weekPlans}
+            onDeleteBlock={deleteBlock}
+            onEditBlock={openEditBlock}
+          />
         )}
         {view === "month" && (
-          <MonthGridView year={year} month={month} plans={monthPlans} />
+          <MonthGridView
+            year={year}
+            month={month}
+            plans={monthPlans}
+            onDeleteBlock={deleteBlock}
+            onEditBlock={openEditBlock}
+          />
         )}
       </main>
 
       <NewActivityModal
-        key={scheduleSession}
-        open={newActivityOpen}
-        onOpenChange={setNewActivityOpen}
-        defaultModule="FlowDay"
-        defaultDate={dateStr}
+        key={modalSession}
+        open={!!activityModal}
+        onOpenChange={(open) => !open && setActivityModal(null)}
+        defaultModule={editingBlock?.module ?? "FlowDay"}
+        defaultTitle={editingBlock?.title}
+        defaultNotes={editingBlock?.subtitle}
+        defaultDuration={editingBlock?.duration}
+        defaultDate={editingDate ?? dateStr}
+        defaultTime={editingBlock?.time}
+        editingBlockId={editingBlock?.id}
       />
     </div>
   );

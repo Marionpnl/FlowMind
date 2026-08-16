@@ -6,11 +6,14 @@ import HabitsWidget from "@/components/widgets/HabitsWidget";
 import InsightCard from "@/components/dashboard/InsightCard";
 import MindShelfCard from "@/components/dashboard/MindShelfCard";
 import SparkTimeCard from "@/components/dashboard/SparkTimeCard";
-import NewActivityModal from "@/components/widgets/NewActivityModal";
+import NewActivityModal, {
+  type ActivityModalTarget,
+} from "@/components/widgets/NewActivityModal";
 import { Button } from "@/components/ui/button";
 import { Sun, Plus } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useDayPlanStore } from "@/store/dayPlanStore";
+import type { DayPlanBlock } from "@shared/types";
 
 function getTodayDateString() {
   return new Date().toISOString().split("T")[0];
@@ -23,12 +26,18 @@ export default function Dashboard() {
   const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
   const toggleBlock = useDayPlanStore((s) => s.toggleBlock);
   const deleteBlock = useDayPlanStore((s) => s.deleteBlock);
-  const [newActivityOpen, setNewActivityOpen] = useState(false);
-  const [scheduleSession, setScheduleSession] = useState(0);
+  const [activityModal, setActivityModal] =
+    useState<ActivityModalTarget | null>(null);
+  const [modalSession, setModalSession] = useState(0);
 
   function openNewActivity() {
-    setScheduleSession((s) => s + 1);
-    setNewActivityOpen(true);
+    setModalSession((s) => s + 1);
+    setActivityModal({ mode: "create" });
+  }
+
+  function openEditBlock(block: DayPlanBlock) {
+    setModalSession((s) => s + 1);
+    setActivityModal({ mode: "edit", block, date: today });
   }
 
   useEffect(() => {
@@ -42,6 +51,10 @@ export default function Dashboard() {
   });
 
   const blocks = currentPlan?.blocks ?? [];
+  const editingBlock =
+    activityModal?.mode === "edit" ? activityModal.block : undefined;
+  const editingDate =
+    activityModal?.mode === "edit" ? activityModal.date : undefined;
 
   return (
     <div className="min-h-screen">
@@ -73,6 +86,7 @@ export default function Dashboard() {
             blocks={blocks}
             onToggleBlock={toggleBlock}
             onDeleteBlock={deleteBlock}
+            onEditBlock={openEditBlock}
           />
           <HabitsWidget />
         </div>
@@ -84,10 +98,16 @@ export default function Dashboard() {
       </main>
 
       <NewActivityModal
-        key={scheduleSession}
-        open={newActivityOpen}
-        onOpenChange={setNewActivityOpen}
-        defaultModule="FlowDay"
+        key={modalSession}
+        open={!!activityModal}
+        onOpenChange={(open) => !open && setActivityModal(null)}
+        defaultModule={editingBlock?.module ?? "FlowDay"}
+        defaultTitle={editingBlock?.title}
+        defaultNotes={editingBlock?.subtitle}
+        defaultDuration={editingBlock?.duration}
+        defaultDate={editingDate}
+        defaultTime={editingBlock?.time}
+        editingBlockId={editingBlock?.id}
       />
     </div>
   );
