@@ -129,10 +129,26 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
         auth: true,
         body: JSON.stringify(input),
       });
-      if (res.data.date === get().currentPlan?.date) {
-        set({ currentPlan: res.data });
-      }
-      return res.data;
+      const updated = res.data;
+
+      const mergeIntoList = (list: IDayPlan[]) => {
+        const idx = list.findIndex((p) => p.date === updated.date);
+        if (idx === -1) return [...list, updated];
+        const copy = [...list];
+        copy[idx] = updated;
+        return copy;
+      };
+
+      set((state) => ({
+        currentPlan:
+          updated.date === state.currentPlan?.date
+            ? updated
+            : state.currentPlan,
+        weekPlans: mergeIntoList(state.weekPlans),
+        monthPlans: mergeIntoList(state.monthPlans),
+      }));
+
+      return updated;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error scheduling activity";
