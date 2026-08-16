@@ -29,6 +29,28 @@ interface BookSearchResponse {
   data: BookSearchResult[];
 }
 
+export interface ThematicConnection {
+  resourceIdA: string;
+  resourceIdB: string;
+  theme: string;
+  explanation: string;
+}
+
+interface ConnectionsResponse {
+  success: boolean;
+  data: ThematicConnection[];
+}
+
+export interface RediscoverySuggestion {
+  resourceId: string;
+  reason: string;
+}
+
+interface RediscoveryResponse {
+  success: boolean;
+  data: RediscoverySuggestion;
+}
+
 interface CreateResourceInput {
   type: ResourceType;
   title: string;
@@ -62,6 +84,8 @@ interface ResourceState {
     isbn: string,
   ) => Promise<{ title: string; author?: string; coverUrl?: string } | null>;
   searchByTitle: (query: string) => Promise<BookSearchResult[]>;
+  fetchConnections: () => Promise<ThematicConnection[]>;
+  fetchRediscovery: () => Promise<RediscoverySuggestion | null>;
 }
 
 export const useResourceStore = create<ResourceState>((set, get) => ({
@@ -205,6 +229,30 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
       return res.data;
     } catch {
       return [];
+    }
+  },
+
+  fetchConnections: async () => {
+    try {
+      const res = await apiCall<ConnectionsResponse>(
+        "/api/resources/connections",
+        { method: "POST", auth: true },
+      );
+      return res.data;
+    } catch {
+      return [];
+    }
+  },
+
+  fetchRediscovery: async () => {
+    try {
+      const res = await apiCall<RediscoveryResponse>(
+        "/api/resources/rediscover",
+        { method: "POST", auth: true },
+      );
+      return res.data;
+    } catch {
+      return null;
     }
   },
 }));

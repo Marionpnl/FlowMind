@@ -4,6 +4,7 @@ import {
   fetchBookByISBN,
   searchBooksByTitle,
 } from "../services/openLibraryService";
+import { generateConnections, generateRediscovery } from "../services/aiService";
 import Resource from "../models/Resource";
 
 const router = Router();
@@ -38,6 +39,110 @@ router.get("/search/:query", async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("GET /api/resources/search/:query", error);
     res.status(500).json({ success: false, message: "Error during search" });
+  }
+});
+
+// POST /api/resources/connections - Find thematic connections between resources (not persisted)
+router.post("/connections", async (req: AuthRequest, res: Response) => {
+  try {
+    const resources = await Resource.find({ userId: req.userId }).select(
+      "title author tags notes",
+    );
+
+    if (resources.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Not enough resources to find connections",
+      });
+    }
+
+    const resourceIds = new Set(resources.map((r) => r._id.toString()));
+    const summaries = resources.map((r) => ({
+      id: r._id.toString(),
+      title: r.title,
+      author: r.author,
+      tags: r.tags,
+      noteExcerpts: r.notes.slice(0, 3).map((n) => n.content),
+    }));
+
+    const generated = await generateConnections(summaries);
+
+    const seen = new Set<string>();
+    const connections = generated
+      .filter(
+        (c) =>
+          resourceIds.has(c.resourceIdA) &&
+          resourceIds.has(c.resourceIdB) &&
+          c.resourceIdA !== c.resourceIdB,
+      )
+      .filter((c) => {
+        const key = [c.resourceIdA, c.resourceIdB].sort().join("|");
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 3);
+
+    res.json({ success: true, data: connections });
+  } catch (error) {
+    console.error("POST /api/resources/connections", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// POST /api/resources/rediscover - Suggest one neglected resource to revisit (not persisted)
+router.post("/rediscover", async (req: AuthRequest, res: Response) => {
+  try {
+    const resources = await Resource.find({ userId: req.userId }).select(
+      "title author status progress updatedAt",
+    );
+
+    if (resources.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Not enough resources to suggest a rediscovery",
+      });
+    }
+
+    const resourceById = new Map(resources.map((r) => [r._id.toString(), r]));
+    const summaries = resources.map((r) => ({
+      id: r._id.toString(),
+      title: r.title,
+      author: r.author,
+      status: r.status,
+      progress: r.progress,
+      updatedAt: r.updatedAt.toISOString().split("T")[0],
+    }));
+
+    const generated = await generateRediscovery(summaries);
+
+    const resourceId = resourceById.has(generated.resourceId)
+      ? generated.resourceId
+      : [...resources]
+          .filter((r) => r.status !== "done")
+          .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())[0]
+          ?._id.toString();
+
+    if (!resourceId) {
+      return res.status(404).json({
+        success: false,
+        message: "No resource to suggest",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        resourceId,
+        reason:
+          typeof generated.reason === "string" && generated.reason
+            ? generated.reason
+            : "Une ressource qui mérite d'être reprise.",
+      },
+    });
+  } catch (error) {
+    console.error("POST /api/resources/rediscover", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 

@@ -4,6 +4,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import InProgressCard from "@/components/mindshelf/InProgressCard";
 import LibraryRow from "@/components/mindshelf/LibraryRow";
 import HighlightsPanel from "@/components/mindshelf/HighlightsPanel";
+import ConnectionsPanel from "@/components/mindshelf/ConnectionsPanel";
 import AISuggestionCard from "@/components/mindshelf/AISuggestionCard";
 import NewResourceModal from "@/components/mindshelf/NewResourceModal";
 import ResourceDetailsModal from "@/components/mindshelf/ResourceDetailsModal";
@@ -41,7 +42,15 @@ export default function MindShelf() {
       if (libraryFilter === "to-read") return r.status === "to-read";
       return true;
     })
-    .filter((r) => r.title.toLowerCase().includes(search.toLowerCase()));
+    .filter((r) => {
+      const q = search.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        r.title.toLowerCase().includes(q) ||
+        (r.author?.toLowerCase().includes(q) ?? false) ||
+        r.notes.some((n) => n.content.toLowerCase().includes(q))
+      );
+    });
 
   return (
     <div className="min-h-screen">
@@ -150,6 +159,10 @@ export default function MindShelf() {
 
         <div className="space-y-5">
           <AISuggestionCard />
+          <ConnectionsPanel
+            resources={resources}
+            onSelectResource={setSelectedResource}
+          />
           <HighlightsPanel resources={resources} />
         </div>
       </main>

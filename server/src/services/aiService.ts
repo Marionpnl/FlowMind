@@ -186,3 +186,116 @@ Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
 
   return JSON.parse(raw) as SuggestedSlot;
 }
+
+interface ResourceForConnections {
+  id: string;
+  title: string;
+  author?: string;
+  tags: string[];
+  noteExcerpts: string[];
+}
+
+export interface GeneratedConnection {
+  resourceIdA: string;
+  resourceIdB: string;
+  theme: string;
+  explanation: string;
+}
+
+export async function generateConnections(
+  resources: ResourceForConnections[],
+): Promise<GeneratedConnection[]> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const resourceList = resources
+    .map((r) => {
+      const parts = [`id: ${r.id}`, `titre: "${r.title}"`];
+      if (r.author) parts.push(`auteur: ${r.author}`);
+      if (r.tags.length) parts.push(`tags: ${r.tags.join(", ")}`);
+      if (r.noteExcerpts.length)
+        parts.push(`extraits de notes: ${r.noteExcerpts.join(" / ")}`);
+      return `- ${parts.join(" · ")}`;
+    })
+    .join("\n");
+
+  const prompt = `
+Tu es un assistant qui repère des connexions thématiques entre les ressources (livres, articles, vidéos, podcasts) d'une bibliothèque personnelle, pour l'application FlowMind (module MindShelf).
+
+Ressources de la bibliothèque :
+${resourceList}
+
+Identifie 2 à 3 paires de ressources qui partagent un thème, une idée ou une tension intéressante entre elles (pas juste le même auteur ou le même tag littéral — cherche un vrai lien de fond). Pour chaque paire, donne le id exact de chaque ressource (repris tel quel de la liste ci-dessus), un thème court, et une explication en une phrase de ce qui les relie.
+
+Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
+{"connections": [{"resourceIdA": "...", "resourceIdB": "...", "theme": "...", "explanation": "..."}]}
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Réponse vide de l'IA");
+
+  const parsed = JSON.parse(raw);
+  return parsed.connections as GeneratedConnection[];
+}
+
+interface ResourceForRediscovery {
+  id: string;
+  title: string;
+  author?: string;
+  status: string;
+  progress: number;
+  updatedAt: string;
+}
+
+export interface GeneratedRediscovery {
+  resourceId: string;
+  reason: string;
+}
+
+export async function generateRediscovery(
+  resources: ResourceForRediscovery[],
+): Promise<GeneratedRediscovery> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const resourceList = resources
+    .map((r) => {
+      const parts = [
+        `id: ${r.id}`,
+        `titre: "${r.title}"`,
+        `statut: ${r.status}`,
+        `progression: ${r.progress}%`,
+        `dernière mise à jour: ${r.updatedAt}`,
+      ];
+      if (r.author) parts.push(`auteur: ${r.author}`);
+      return `- ${parts.join(" · ")}`;
+    })
+    .join("\n");
+
+  const prompt = `
+Tu es un assistant qui aide une utilisatrice à redécouvrir une ressource délaissée dans sa bibliothèque personnelle, pour l'application FlowMind (module MindShelf).
+
+Ressources de la bibliothèque :
+${resourceList}
+
+Choisis UNE seule ressource qui mérite d'être reprise maintenant — par exemple une lecture commencée puis abandonnée, ou une ressource "à lire" depuis longtemps. Donne son id exact (repris tel quel de la liste ci-dessus) et une raison courte et engageante d'y revenir maintenant.
+
+Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
+{"resourceId": "...", "reason": "..."}
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Réponse vide de l'IA");
+
+  return JSON.parse(raw) as GeneratedRediscovery;
+}
