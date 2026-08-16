@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Compass, Plus, Sparkles, Wand2, X } from "lucide-react";
 import {
   Dialog,
@@ -74,6 +74,15 @@ export default function InterestsModal({
       setDetecting(false);
     }
   }
+
+  // Un premier jet de suggestions apparaît dès l'ouverture ; le bouton reste
+  // disponible pour en redemander d'autres ensuite. Déférée en microtâche
+  // pour ne pas déclencher de setState synchrone dans l'effet lui-même.
+  useEffect(() => {
+    if (!open) return;
+    void Promise.resolve().then(() => handleDetect());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   async function acceptSuggestion(suggestion: DetectedInterest) {
     setAddingSuggestion(suggestion.name);
