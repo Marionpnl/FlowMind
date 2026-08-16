@@ -3,6 +3,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import DayTimelineView from "@/components/calendar/DayTimelineView";
 import WeekGridView from "@/components/calendar/WeekGridView";
 import MonthGridView from "@/components/calendar/MonthGridView";
+import NewActivityModal from "@/components/widgets/NewActivityModal";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
@@ -14,6 +15,13 @@ type ViewMode = "day" | "week" | "month";
 export default function Calendar() {
   const [view, setView] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [newActivityOpen, setNewActivityOpen] = useState(false);
+  const [scheduleSession, setScheduleSession] = useState(0);
+
+  function openNewActivity() {
+    setScheduleSession((s) => s + 1);
+    setNewActivityOpen(true);
+  }
 
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const weekPlans = useDayPlanStore((s) => s.weekPlans);
@@ -96,6 +104,7 @@ export default function Calendar() {
             </button>
             <Button
               size="sm"
+              onClick={openNewActivity}
               className="bg-flowday text-white hover:bg-flowday/90"
             >
               <Plus className="mr-1 h-4 w-4" />
@@ -131,6 +140,14 @@ export default function Calendar() {
           <MonthGridView year={year} month={month} plans={monthPlans} />
         )}
       </main>
+
+      <NewActivityModal
+        key={scheduleSession}
+        open={newActivityOpen}
+        onOpenChange={setNewActivityOpen}
+        defaultModule="FlowDay"
+        defaultDate={dateStr}
+      />
     </div>
   );
 }

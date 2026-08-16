@@ -12,7 +12,7 @@ interface InterestResponse {
   data: IInterest;
 }
 
-interface DetectedInterest {
+export interface DetectedInterest {
   name: string;
   emoji: string;
   category?: string;

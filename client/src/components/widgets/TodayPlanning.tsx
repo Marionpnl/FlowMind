@@ -25,24 +25,11 @@ export default function TodayPlanning({
 
   return (
     <div>
-      <div className="mb-5 flex items-end justify-between">
-        <div>
-          <h2 className="font-display text-2xl italic">Aujourd'hui</h2>
-          <p className="text-xs text-muted-foreground">
-            {blocks.length} blocs{focusLabel ? ` - ${focusLabel}` : ""}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          <button className="rounded-full bg-[#2B2A28] px-3 py-1 text-xs font-medium text-white">
-            Jour
-          </button>
-          <button className="px-3 py-1 text-xs text-black/70 text-muted-foreground hover:text-foreground">
-            Semaine
-          </button>
-          <button className="px-3 py-1 text-xs text-black/70 text-muted-foreground hover:text-foreground">
-            Mois
-          </button>
-        </div>
+      <div className="mb-5">
+        <h2 className="font-display text-2xl italic">Aujourd'hui</h2>
+        <p className="text-xs text-muted-foreground">
+          {blocks.length} blocs{focusLabel ? ` - ${focusLabel}` : ""}
+        </p>
       </div>
 
       {blocks.length === 0 ? (

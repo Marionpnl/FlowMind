@@ -50,6 +50,7 @@ interface NewActivityModalProps {
   defaultTitle?: string;
   defaultNotes?: string;
   defaultDuration?: number;
+  defaultDate?: string;
   sparkId?: string;
 }
 
@@ -60,6 +61,7 @@ export default function NewActivityModal({
   defaultTitle = "",
   defaultNotes = "",
   defaultDuration,
+  defaultDate,
   sparkId,
 }: NewActivityModalProps) {
   const scheduleActivity = useDayPlanStore((s) => s.scheduleActivity);
@@ -69,7 +71,7 @@ export default function NewActivityModal({
   const [form, setForm] = useState({
     module: defaultModule,
     title: defaultTitle,
-    date: new Date().toISOString().split("T")[0],
+    date: defaultDate ?? new Date().toISOString().split("T")[0],
     time: "09:00",
     duration: defaultDuration ?? 30,
     notes: defaultNotes,
