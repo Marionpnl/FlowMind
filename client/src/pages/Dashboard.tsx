@@ -6,9 +6,11 @@ import HabitsWidget from "@/components/widgets/HabitsWidget";
 import InsightCard from "@/components/dashboard/InsightCard";
 import MindShelfCard from "@/components/dashboard/MindShelfCard";
 import SparkTimeCard from "@/components/dashboard/SparkTimeCard";
+import WeeklyBilanCard from "@/components/dashboard/WeeklyBilanCard";
 import NewActivityModal, {
   type ActivityModalTarget,
 } from "@/components/widgets/NewActivityModal";
+import DaySummaryModal from "@/components/flowday/DaySummaryModal";
 import { Button } from "@/components/ui/button";
 import { Sun, Plus } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
@@ -29,6 +31,8 @@ export default function Dashboard() {
   const [activityModal, setActivityModal] =
     useState<ActivityModalTarget | null>(null);
   const [modalSession, setModalSession] = useState(0);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summarySession, setSummarySession] = useState(0);
 
   function openNewActivity() {
     setModalSession((s) => s + 1);
@@ -38,6 +42,11 @@ export default function Dashboard() {
   function openEditBlock(block: DayPlanBlock) {
     setModalSession((s) => s + 1);
     setActivityModal({ mode: "edit", block, date: today });
+  }
+
+  function openDaySummary() {
+    setSummarySession((s) => s + 1);
+    setSummaryOpen(true);
   }
 
   useEffect(() => {
@@ -63,7 +72,11 @@ export default function Dashboard() {
         subtitle={`Bonjour ${user?.name} · ${blocks.length} blocs planifiés`}
         actions={
           <>
-            <button className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground">
+            <button
+              onClick={openDaySummary}
+              disabled={!currentPlan}
+              className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
               <Sun className="h-4 w-4" />
               Bilan du jour
             </button>
@@ -94,6 +107,7 @@ export default function Dashboard() {
           <InsightCard />
           <MindShelfCard />
           <SparkTimeCard />
+          <WeeklyBilanCard />
         </div>
       </main>
 
@@ -108,6 +122,18 @@ export default function Dashboard() {
         defaultDate={editingDate}
         defaultTime={editingBlock?.time}
         editingBlockId={editingBlock?.id}
+      />
+
+      <DaySummaryModal
+        key={summarySession}
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        planId={currentPlan?._id}
+        date={currentPlan?.date}
+        blocks={blocks}
+        existingTitle={currentPlan?.endOfDaySummary}
+        existingInsight={currentPlan?.endOfDayInsight}
+        existingBlocksSignature={currentPlan?.endOfDayBlocksSignature}
       />
     </div>
   );

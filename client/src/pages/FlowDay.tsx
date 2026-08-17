@@ -7,6 +7,7 @@ import FocusCard from "@/components/flowday/FocusCard";
 import NewActivityModal, {
   type ActivityModalTarget,
 } from "@/components/widgets/NewActivityModal";
+import DaySummaryModal from "@/components/flowday/DaySummaryModal";
 import WeekGridView from "@/components/calendar/WeekGridView";
 import MonthGridView from "@/components/calendar/MonthGridView";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ export default function FlowDay() {
     useState<ActivityModalTarget | null>(null);
   const [modalSession, setModalSession] = useState(0);
   const [view, setView] = useState<ViewMode>("day");
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summarySession, setSummarySession] = useState(0);
 
   function openNewActivity() {
     setModalSession((s) => s + 1);
@@ -45,6 +48,11 @@ export default function FlowDay() {
   function openEditBlock(block: DayPlanBlock, date: string) {
     setModalSession((s) => s + 1);
     setActivityModal({ mode: "edit", block, date });
+  }
+
+  function openDaySummary() {
+    setSummarySession((s) => s + 1);
+    setSummaryOpen(true);
   }
 
   const now = new Date();
@@ -81,7 +89,11 @@ export default function FlowDay() {
         subtitle={`${todayLabel} · ${blocks.length} blocs planifiés`}
         actions={
           <>
-            <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <button
+              onClick={openDaySummary}
+              disabled={!currentPlan}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
               <Sun className="h-4 w-4" />
               Bilan du jour
             </button>
@@ -161,6 +173,18 @@ export default function FlowDay() {
         defaultDate={editingDate}
         defaultTime={editingBlock?.time}
         editingBlockId={editingBlock?.id}
+      />
+
+      <DaySummaryModal
+        key={summarySession}
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        planId={currentPlan?._id}
+        date={currentPlan?.date}
+        blocks={blocks}
+        existingTitle={currentPlan?.endOfDaySummary}
+        existingInsight={currentPlan?.endOfDayInsight}
+        existingBlocksSignature={currentPlan?.endOfDayBlocksSignature}
       />
     </div>
   );

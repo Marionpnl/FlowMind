@@ -10,6 +10,14 @@ export function toDateString(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
+export function formatDuration(minutes: number): string {
+  if (minutes <= 0) return "0 min";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m.toString().padStart(2, "0")}`;
+}
+
 export function getWeekDays(weekStart: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);

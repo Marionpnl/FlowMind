@@ -28,8 +28,9 @@ export interface IDayPlan {
   date: string; // "YYYY-MM-DD"
   userInput?: string; // free text describing the day, sent to the AI
   blocks: DayPlanBlock[];
-  energyScore?: number; // 1-5, filled at the end-of-day review
-  endOfDaySummary?: string;
+  endOfDaySummary?: string; // AI-generated evocative headline for the day
+  endOfDayInsight?: string; // AI-generated productivity pattern + suggestion for tomorrow
+  endOfDayBlocksSignature?: string; // fingerprint of blocks (id:done) at generation time, to detect staleness
   createdAt: Date;
   updatedAt: Date;
 }

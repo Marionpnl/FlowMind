@@ -63,6 +63,7 @@ interface DayPlanState {
   scheduleActivity: (input: ScheduleActivityInput) => Promise<IDayPlan | null>;
   updateBlock: (blockId: string, updates: UpdateBlockInput) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
+  submitDaySummary: (planId: string) => Promise<IDayPlan | null>;
 }
 
 export const useDayPlanStore = create<DayPlanState>((set, get) => ({
@@ -271,6 +272,33 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
         monthPlans: previousMonthPlans,
         error: message,
       });
+    }
+  },
+
+  submitDaySummary: async (planId) => {
+    set({ error: null });
+    try {
+      const res = await apiCall<DayPlanResponse>(
+        `/api/flowday/${planId}/summary`,
+        { method: "PATCH", auth: true },
+      );
+      const updated = res.data;
+
+      set((state) => ({
+        currentPlan:
+          updated.date === state.currentPlan?.date
+            ? updated
+            : state.currentPlan,
+        weekPlans: mergeIntoList(state.weekPlans, updated),
+        monthPlans: mergeIntoList(state.monthPlans, updated),
+      }));
+
+      return updated;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error generating day summary";
+      set({ error: message });
+      return null;
     }
   },
 }));

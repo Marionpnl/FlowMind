@@ -8,6 +8,7 @@ export interface GeneratedBlock {
   module: "FlowDay" | "MindShelf" | "SparkTime";
 }
 
+// FlowDay — Génération de planning (texte libre → blocs structurés)
 export async function generateDayPlan(
   userInput: string,
 ): Promise<GeneratedBlock[]> {
@@ -43,6 +44,7 @@ export interface DetectedInterest {
   category?: string;
 }
 
+// SparkTime — Détection automatique d'intérêts
 export async function detectInterests(
   habitNames: string[],
   resourceSummaries: string[],
@@ -88,6 +90,7 @@ export interface GeneratedSpark {
   energyLevel?: string;
 }
 
+// SparkTime — Génération de suggestions d'activités (profil + localisation)
 export async function generateSparks(
   interestNames: string[],
   location: string | undefined,
@@ -146,6 +149,7 @@ interface ExistingBlockSummary {
   title: string;
 }
 
+// Planification partagée — Suggestion de créneau (date/heure/durée) quand ils ne sont pas précisés
 export async function suggestScheduleSlot(
   title: string,
   notes: string | undefined,
@@ -202,6 +206,7 @@ export interface GeneratedConnection {
   explanation: string;
 }
 
+// MindShelf — Connexions thématiques entre ressources
 export async function generateConnections(
   resources: ResourceForConnections[],
 ): Promise<GeneratedConnection[]> {
@@ -255,6 +260,7 @@ export interface ReadingPatternSuggestion {
   duration: number;
 }
 
+// MindShelf → FlowDay — Suggestion de pratique basée sur le pattern de lecture de la semaine
 export async function generateReadingPatternSuggestion(
   recentActivity: RecentActivitySummary[],
 ): Promise<ReadingPatternSuggestion> {
@@ -292,4 +298,149 @@ Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
   if (!raw) throw new Error("Réponse vide de l'IA");
 
   return JSON.parse(raw) as ReadingPatternSuggestion;
+}
+
+interface DayBlockSummary {
+  time: string;
+  title: string;
+  module: "FlowDay" | "MindShelf" | "SparkTime";
+  duration: number;
+  done: boolean;
+}
+
+export interface DayBilan {
+  title: string;
+  insight: string;
+}
+
+// FlowDay — Bilan de fin de journée
+export async function generateDayBilan(
+  blocks: DayBlockSummary[],
+): Promise<DayBilan> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const blockList = blocks
+    .map(
+      (b) =>
+        `- ${b.time} : ${b.done ? "fait" : "non fait"} — "${b.title}" (${b.module}, ${b.duration} min)`,
+    )
+    .join("\n");
+
+  const prompt = `
+Tu es un assistant bienveillant qui résume la journée d'une utilisatrice pour l'application FlowMind, à partir des blocs de son planning du jour.
+
+Blocs de la journée :
+${blockList}
+
+Génère deux éléments distincts :
+1. "title" : un titre court et évocateur (8 à 12 mots) qui capture l'esprit de la journée, comme une accroche de journal intime — pas un résumé factuel. Exemple de ton : "Une journée équilibrée, avec un vrai moment de focus."
+2. "insight" : une observation courte sur un pattern dans les horaires ou la nature des blocs (quand elle semble la plus productive, un déséquilibre entre modules, etc.), suivie d'une suggestion concrète et actionnable pour demain. Exemple de ton : "Tu es plus productive le matin — envisage de bloquer ta plus grande tâche entre 9h et 11h demain."
+
+Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
+{"title": "...", "insight": "..."}
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Réponse vide de l'IA");
+
+  const parsed = JSON.parse(raw);
+  return {
+    title: typeof parsed.title === "string" ? parsed.title : "",
+    insight: typeof parsed.insight === "string" ? parsed.insight : "",
+  };
+}
+
+export interface WeeklyStatsInput {
+  focusMinutes: number;
+  readingMinutes: number;
+  movementMinutes: number;
+  morningFocusPercent: number;
+  flowdayBlocksDone: number;
+  flowdayBlocksPlanned: number;
+  notesAdded: number;
+  resourcesProgress: { title: string; progress: number }[];
+  sparktimeBlocksDone: number;
+  sparktimeTitles: string[];
+  habits: { name: string; completions: number }[];
+}
+
+export interface WeeklyHighlight {
+  module: "FlowDay" | "MindShelf" | "SparkTime";
+  text: string;
+}
+
+export interface WeeklyBilan {
+  title: string;
+  highlights: WeeklyHighlight[];
+  synthesis: string;
+  actions: string[];
+}
+
+function formatMinutesForPrompt(minutes: number): string {
+  if (minutes <= 0) return "0 min";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h}h` : `${h}h${m.toString().padStart(2, "0")}`;
+}
+
+// Global — Bilan hebdomadaire (titre, points forts, synthèse, actions pour la semaine suivante)
+export async function generateWeeklyBilan(
+  stats: WeeklyStatsInput,
+): Promise<WeeklyBilan> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const habitsSummary = stats.habits.length
+    ? stats.habits.map((h) => `${h.name}: ${h.completions}x`).join(", ")
+    : "aucune";
+  const resourcesSummary = stats.resourcesProgress.length
+    ? stats.resourcesProgress
+        .map((r) => `${r.title} (${r.progress}%)`)
+        .join(", ")
+    : "aucune";
+  const sparktimeSummary = stats.sparktimeTitles.length
+    ? ` (${stats.sparktimeTitles.join(", ")})`
+    : "";
+
+  const prompt = `
+Tu es un assistant bienveillant qui écrit un bilan hebdomadaire pour l'application FlowMind, à partir de statistiques déjà calculées — n'invente AUCUN chiffre qui ne figure pas ci-dessous. Adresse-toi directement à l'utilisatrice en la tutoyant ("tu as", "ton focus"...), jamais à la première personne ("j'ai").
+
+Statistiques de la semaine :
+- Focus (FlowDay) : ${formatMinutesForPrompt(stats.focusMinutes)}, dont ${stats.morningFocusPercent}% le matin (avant midi) — ${stats.flowdayBlocksDone}/${stats.flowdayBlocksPlanned} blocs accomplis
+- Lecture (MindShelf) : ${formatMinutesForPrompt(stats.readingMinutes)}, ${stats.notesAdded} notes prises. Ressources actives : ${resourcesSummary}
+- Mouvement (SparkTime) : ${formatMinutesForPrompt(stats.movementMinutes)}, ${stats.sparktimeBlocksDone} activités accomplies${sparktimeSummary}
+- Habitudes : ${habitsSummary}
+
+Génère 4 éléments :
+1. "title" : un titre court et évocateur (8 à 12 mots) qui capture l'esprit de la semaine.
+2. "highlights" : exactement 3 points forts courts (une phrase chacun), chacun associé au module concerné (une valeur EXACTE parmi "FlowDay", "MindShelf", "SparkTime") — reformule les statistiques ci-dessus de façon vivante, sans inventer de chiffres absents des données.
+3. "synthesis" : un court paragraphe (40 à 50 mots maximum) qui relie ces éléments en une observation de pattern sur la semaine (ex: quand le focus est le plus fort), suivie d'une piste pour la semaine prochaine.
+4. "actions" : exactement 3 recommandations concrètes et courtes pour la semaine prochaine, basées sur les patterns observés.
+
+Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
+{"title": "...", "highlights": [{"module": "FlowDay", "text": "..."}], "synthesis": "...", "actions": ["...", "...", "..."]}
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Réponse vide de l'IA");
+
+  const parsed = JSON.parse(raw);
+  return {
+    title: typeof parsed.title === "string" ? parsed.title : "",
+    highlights: Array.isArray(parsed.highlights) ? parsed.highlights : [],
+    synthesis: typeof parsed.synthesis === "string" ? parsed.synthesis : "",
+    actions: Array.isArray(parsed.actions) ? parsed.actions : [],
+  };
 }

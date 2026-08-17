@@ -1,6 +1,9 @@
-export function calculateStreak(completedDates: string[]): number {
+export function calculateStreak(
+  completedDates: string[],
+  asOf: Date = new Date(),
+): number {
   const set = new Set(completedDates);
-  const cursor = new Date();
+  const cursor = new Date(asOf);
   let dateStr = cursor.toISOString().split("T")[0];
 
   if (!set.has(dateStr)) {

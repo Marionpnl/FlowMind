@@ -16,8 +16,9 @@ export interface IDayPlanDocument extends Document {
   date: string;
   userInput?: string;
   blocks: IDayPlanBlock[];
-  energyScore?: number;
   endOfDaySummary?: string;
+  endOfDayInsight?: string;
+  endOfDayBlocksSignature?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -59,14 +60,16 @@ const dayPlanSchema = new Schema<IDayPlanDocument>(
       type: [blockSchema],
       default: [],
     },
-    energyScore: {
-      type: Number,
-      min: 1,
-      max: 5,
-    },
     endOfDaySummary: {
       type: String,
       trim: true,
+    },
+    endOfDayInsight: {
+      type: String,
+      trim: true,
+    },
+    endOfDayBlocksSignature: {
+      type: String,
     },
   },
   { timestamps: true },

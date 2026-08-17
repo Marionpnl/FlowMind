@@ -1,11 +1,25 @@
 import { Router, Response } from "express";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import DayPlan from "../models/DayPlan";
-import { generateDayPlan, suggestScheduleSlot } from "../services/aiService";
+import {
+  generateDayPlan,
+  suggestScheduleSlot,
+  generateDayBilan,
+} from "../services/aiService";
+import { truncateWords } from "../utils/text";
 
 const router = Router();
 
 router.use(requireAuth);
+
+// Fingerprint of a day's blocks (id + done status) — used to detect whether the
+// end-of-day bilan is stale relative to the current state of the plan.
+function computeBlocksSignature(blocks: { id: string; done: boolean }[]): string {
+  return blocks
+    .map((b) => `${b.id}:${b.done ? 1 : 0}`)
+    .sort()
+    .join(",");
+}
 
 // GET /api/flowday/week/:weekStart - Week planning (weekStart = Monday, "YYYY-MM-DD" format)
 router.get("/week/:weekStart", async (req: AuthRequest, res: Response) => {
@@ -77,11 +91,10 @@ router.get("/:date", async (req: AuthRequest, res: Response) => {
 router.put("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { blocks, energyScore, endOfDaySummary } = req.body;
+    const { blocks, endOfDaySummary } = req.body;
 
     const updates: Record<string, unknown> = {};
     if (blocks) updates.blocks = blocks;
-    if (energyScore !== undefined) updates.energyScore = energyScore;
     if (endOfDaySummary !== undefined)
       updates.endOfDaySummary = endOfDaySummary;
 
@@ -100,6 +113,51 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
     res.json({ success: true, data: plan });
   } catch (error) {
     console.error("PUT /api/flowday/:id", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// PATCH /api/flowday/:id/summary - Generate and save the end-of-day narrative bilan
+router.patch("/:id/summary", async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const plan = await DayPlan.findOne({ _id: id, userId: req.userId });
+    if (!plan) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Day plan not found" });
+    }
+
+    if (plan.blocks.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No blocks to summarize",
+      });
+    }
+
+    const bilan = await generateDayBilan(
+      plan.blocks.map((b) => ({
+        time: b.time,
+        title: b.title,
+        module: b.module,
+        duration: b.duration,
+        done: b.done,
+      })),
+    );
+
+    if (bilan.title.trim()) {
+      plan.endOfDaySummary = truncateWords(bilan.title.trim(), 20);
+    }
+    if (bilan.insight.trim()) {
+      plan.endOfDayInsight = truncateWords(bilan.insight.trim(), 40);
+    }
+    plan.endOfDayBlocksSignature = computeBlocksSignature(plan.blocks);
+    await plan.save();
+
+    res.json({ success: true, data: plan });
+  } catch (error) {
+    console.error("PATCH /api/flowday/:id/summary error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
@@ -261,7 +319,9 @@ router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
         sparkId: block.sparkId,
       };
 
-      plan.blocks = plan.blocks.filter((b) => b.id !== blockId) as typeof plan.blocks;
+      plan.blocks = plan.blocks.filter(
+        (b) => b.id !== blockId,
+      ) as typeof plan.blocks;
       await plan.save();
 
       const targetPlan = await DayPlan.findOneAndUpdate(

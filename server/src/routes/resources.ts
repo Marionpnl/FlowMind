@@ -9,6 +9,7 @@ import {
   generateReadingPatternSuggestion,
 } from "../services/aiService";
 import Resource from "../models/Resource";
+import { truncateWords } from "../utils/text";
 
 const router = Router();
 
@@ -44,12 +45,6 @@ router.get("/search/:query", async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: "Error during search" });
   }
 });
-
-function truncateWords(text: string, maxWords: number): string {
-  const words = text.trim().split(/\s+/);
-  if (words.length <= maxWords) return text;
-  return words.slice(0, maxWords).join(" ") + "…";
-}
 
 // POST /api/resources/connections - Find thematic connections between resources (not persisted)
 router.post("/connections", async (req: AuthRequest, res: Response) => {
