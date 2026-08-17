@@ -4,6 +4,7 @@ import DayPlan from "../models/DayPlan";
 import Resource from "../models/Resource";
 import Spark from "../models/Spark";
 import Habit from "../models/Habit";
+import User from "../models/User";
 import {
   generateWeeklyBilan,
   type WeeklyStatsInput,
@@ -140,7 +141,12 @@ router.post("/weekly", async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const bilan = await generateWeeklyBilan(stats);
+    const user = await User.findById(req.userId).select("preferences");
+    const bilan = await generateWeeklyBilan(
+      stats,
+      user?.preferences?.aiTone || "Calme et encourageant",
+      user?.preferences?.aiLength || "Concise",
+    );
 
     const validModules = ["FlowDay", "MindShelf", "SparkTime"];
     const title = bilan.title.trim()

@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import DayPlan from "../models/DayPlan";
+import User from "../models/User";
 import {
   generateDayPlan,
   suggestScheduleSlot,
@@ -136,6 +137,7 @@ router.patch("/:id/summary", async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const user = await User.findById(req.userId).select("preferences");
     const bilan = await generateDayBilan(
       plan.blocks.map((b) => ({
         time: b.time,
@@ -144,6 +146,8 @@ router.patch("/:id/summary", async (req: AuthRequest, res: Response) => {
         duration: b.duration,
         done: b.done,
       })),
+      user?.preferences?.aiTone || "Calme et encourageant",
+      user?.preferences?.aiLength || "Concise",
     );
 
     if (bilan.title.trim()) {

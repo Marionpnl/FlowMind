@@ -1,3 +1,5 @@
+import type { DayPlanBlock } from "@shared/types";
+
 export function getMonday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay(); // 0 = sunday, 1 = monday, ...
@@ -64,3 +66,34 @@ export const MONTH_LABELS = [
   "Novembre",
   "Décembre",
 ];
+
+export function formatPeriodLabel(
+  view: "day" | "week" | "month",
+  date: Date,
+): string {
+  if (view === "day") {
+    const s = date.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  if (view === "week") {
+    const s = getMonday(date).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+    });
+    return `Semaine du ${s}`;
+  }
+  return `${MONTH_LABELS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+export function summarizeBlocks(blocks: DayPlanBlock[]): string {
+  const focusMinutes = blocks
+    .filter((b) => b.module === "FlowDay")
+    .reduce((sum, b) => sum + b.duration, 0);
+  const focusLabel =
+    focusMinutes > 0 ? ` - ${formatDuration(focusMinutes)} de travail focus` : "";
+  return `${blocks.length} blocs${focusLabel}`;
+}

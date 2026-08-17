@@ -13,7 +13,12 @@ import MonthGridView from "@/components/calendar/MonthGridView";
 import { Button } from "@/components/ui/button";
 import { Sun, Plus } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
-import { getMonday, toDateString } from "@/lib/dateUtils";
+import {
+  getMonday,
+  toDateString,
+  formatPeriodLabel,
+  summarizeBlocks,
+} from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 import type { DayPlanBlock } from "@shared/types";
 
@@ -82,6 +87,15 @@ export default function FlowDay() {
   const editingDate =
     activityModal?.mode === "edit" ? activityModal.date : undefined;
 
+  const headingTitle = view === "day" ? "Aujourd'hui" : formatPeriodLabel(view, now);
+  const periodBlocks =
+    view === "day"
+      ? blocks
+      : view === "week"
+        ? weekPlans.flatMap((p) => p.blocks)
+        : monthPlans.flatMap((p) => p.blocks);
+  const headingSubtitle = summarizeBlocks(periodBlocks);
+
   return (
     <div className="min-h-screen">
       <PageHeader
@@ -113,21 +127,29 @@ export default function FlowDay() {
         <div className="col-span-2 space-y-5">
           <FlowDayPlanCard date={today} />
 
-          <div className="flex items-center gap-1">
-            {(["day", "week", "month"] as ViewMode[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                  view === v
-                    ? "bg-[#2B2A28] text-white"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {v === "day" ? "Jour" : v === "week" ? "Semaine" : "Mois"}
-              </button>
-            ))}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-display text-2xl italic">{headingTitle}</h2>
+              <p className="text-xs text-muted-foreground">
+                {headingSubtitle}
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              {(["day", "week", "month"] as ViewMode[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    view === v
+                      ? "bg-[#2B2A28] text-white"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {v === "day" ? "Jour" : v === "week" ? "Semaine" : "Mois"}
+                </button>
+              ))}
+            </div>
           </div>
 
           {view === "day" && (

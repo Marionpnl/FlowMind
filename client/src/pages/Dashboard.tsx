@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Sun, Plus } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useDayPlanStore } from "@/store/dayPlanStore";
+import { summarizeBlocks } from "@/lib/dateUtils";
 import type { DayPlanBlock } from "@shared/types";
 
 function getTodayDateString() {
@@ -95,6 +96,12 @@ export default function Dashboard() {
       <main className="grid grid-cols-3 gap-5 px-8 py-6">
         <div className="col-span-2 space-y-5">
           <FlowDayPlanCard date={today} />
+          <div>
+            <h2 className="font-display text-2xl italic">Aujourd'hui</h2>
+            <p className="text-xs text-muted-foreground">
+              {summarizeBlocks(blocks)}
+            </p>
+          </div>
           <TodayPlanning
             blocks={blocks}
             onToggleBlock={toggleBlock}

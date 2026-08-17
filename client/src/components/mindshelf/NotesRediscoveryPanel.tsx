@@ -4,6 +4,7 @@ import {
   useResourceStore,
   type RediscoveredNote,
 } from "@/store/resourceStore";
+import { useAuthStore } from "@/store/authStore";
 
 interface NotesRediscoveryPanelProps {
   onOpenAllNotes: () => void;
@@ -14,10 +15,27 @@ export default function NotesRediscoveryPanel({
 }: NotesRediscoveryPanelProps) {
   const fetchRediscovery = useResourceStore((s) => s.fetchRediscovery);
   const [notes, setNotes] = useState<RediscoveredNote[]>([]);
+  const dailyRediscovery =
+    useAuthStore((s) => s.user?.preferences?.dailyRediscovery) ?? true;
 
   useEffect(() => {
+    if (!dailyRediscovery) return;
     fetchRediscovery(2).then((result) => setNotes(result));
-  }, [fetchRediscovery]);
+  }, [dailyRediscovery, fetchRediscovery]);
+
+  if (!dailyRediscovery) {
+    return (
+      <div className="rounded-2xl bg-white p-5 shadow-sm">
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold tracking-wide">
+          <Bookmark className="h-4.5 w-4.5 text-mindshelf" />
+          Notes — Redécouverte du jour
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Redécouverte du jour désactivée dans tes paramètres.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">

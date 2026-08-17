@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { WandSparkles } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
+import { useAuthStore } from "@/store/authStore";
 
 interface FlowDayPlanCardProps {
   date: string;
@@ -13,6 +14,23 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
   );
   const generatePlan = useDayPlanStore((s) => s.generatePlan);
   const generating = useDayPlanStore((s) => s.generating);
+  const autoGeneratePlan =
+    useAuthStore((s) => s.user?.preferences?.autoGeneratePlan) ?? true;
+
+  if (!autoGeneratePlan) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl border border-flowday/20 bg-white p-6 shadow-sm">
+        <span className="absolute inset-x-0 top-0 h-0.5 bg-flowday" />
+        <p className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-flowday">
+          <span className="h-1.5 w-1.5 rounded-full bg-flowday" />
+          FlowDay · Planification IA
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Génération automatique désactivée dans tes paramètres.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-flowday/20 bg-white p-6 shadow-sm">

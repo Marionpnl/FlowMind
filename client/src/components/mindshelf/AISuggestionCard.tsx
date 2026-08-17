@@ -6,6 +6,7 @@ import {
   useResourceStore,
   type ReadingPatternSuggestion,
 } from "@/store/resourceStore";
+import { useAuthStore } from "@/store/authStore";
 
 export default function AISuggestionCard() {
   const fetchReadingPattern = useResourceStore((s) => s.fetchReadingPattern);
@@ -14,14 +15,31 @@ export default function AISuggestionCard() {
   );
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState(0);
+  const crossModuleSuggestions =
+    useAuthStore((s) => s.user?.preferences?.crossModuleSuggestions) ?? true;
 
   useEffect(() => {
+    if (!crossModuleSuggestions) return;
     fetchReadingPattern().then((result) => setSuggestion(result));
-  }, [fetchReadingPattern]);
+  }, [crossModuleSuggestions, fetchReadingPattern]);
 
   function handlePlan() {
     setSession((s) => s + 1);
     setOpen(true);
+  }
+
+  if (!crossModuleSuggestions) {
+    return (
+      <div className="rounded-2xl bg-[#2B2A28] p-6 text-white">
+        <p className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-white/80">
+          <Sparkles className="h-3.5 w-3.5" />
+          Suggestion IA
+        </p>
+        <p className="text-sm text-white/60">
+          Suggestions transversales désactivées dans tes paramètres.
+        </p>
+      </div>
+    );
   }
 
   if (!suggestion) {

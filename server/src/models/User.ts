@@ -1,12 +1,31 @@
 import { model, models, Schema, type Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
+interface IUserPreferences {
+  crossModuleSuggestions: boolean;
+  autoGeneratePlan: boolean;
+  dailyRediscovery: boolean;
+  aiTone: string;
+  aiLength: string;
+  animatedTransitions: boolean;
+  compactDensity: boolean;
+  readingHistory: boolean;
+  anonymousUsage: boolean;
+  crossModuleDataSharing: boolean;
+  dataRetentionMonths: number;
+}
+
 // 1. Define the IUser interface TypeScript to represent the user document structure
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
   location?: string;
+  timezone?: string;
+  language?: string;
+  theme: "papier" | "encre" | "systeme";
+  lastExportAt?: Date;
+  preferences: IUserPreferences;
   comparePassword?: (candidate: string) => Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +53,35 @@ const userSchema = new Schema<IUser>(
     location: {
       type: String,
       trim: true,
+    },
+    timezone: {
+      type: String,
+      trim: true,
+    },
+    language: {
+      type: String,
+      trim: true,
+    },
+    theme: {
+      type: String,
+      enum: ["papier", "encre", "systeme"],
+      default: "papier",
+    },
+    lastExportAt: {
+      type: Date,
+    },
+    preferences: {
+      crossModuleSuggestions: { type: Boolean, default: true },
+      autoGeneratePlan: { type: Boolean, default: true },
+      dailyRediscovery: { type: Boolean, default: true },
+      aiTone: { type: String, default: "Calme et encourageant", trim: true },
+      aiLength: { type: String, default: "Concise", trim: true },
+      animatedTransitions: { type: Boolean, default: true },
+      compactDensity: { type: Boolean, default: false },
+      readingHistory: { type: Boolean, default: true },
+      anonymousUsage: { type: Boolean, default: false },
+      crossModuleDataSharing: { type: Boolean, default: true },
+      dataRetentionMonths: { type: Number, default: 12 },
     },
   },
   {

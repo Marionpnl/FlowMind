@@ -1,9 +1,30 @@
 // ===== USER =====
+export type ThemeChoice = "papier" | "encre" | "systeme";
+
+export interface IUserPreferences {
+  crossModuleSuggestions: boolean;
+  autoGeneratePlan: boolean;
+  dailyRediscovery: boolean;
+  aiTone: string;
+  aiLength: string;
+  animatedTransitions: boolean;
+  compactDensity: boolean;
+  readingHistory: boolean;
+  anonymousUsage: boolean;
+  crossModuleDataSharing: boolean;
+  dataRetentionMonths: number;
+}
+
 export interface IUser {
   _id: string;
   email: string;
   name?: string;
   location?: string;
+  timezone?: string;
+  language?: string;
+  theme?: ThemeChoice;
+  lastExportAt?: string;
+  preferences?: IUserPreferences;
 }
 
 // ===== FLOWDAY =====

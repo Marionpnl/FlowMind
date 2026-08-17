@@ -11,6 +11,7 @@ import Habits from "./pages/Habits";
 import MindShelf from "./pages/MindShelf";
 import SparkTime from "./pages/SparkTime";
 import Calendar from "./pages/Calendar";
+import Settings from "./pages/Settings";
 
 export default function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
@@ -39,7 +40,7 @@ export default function App() {
           <Route path="/flowday/habits" element={<Habits />} />
           <Route path="/mindshelf" element={<MindShelf />} />
           <Route path="/sparktime" element={<SparkTime />} />
-          {/* Settings viendront plus tard */}
+          <Route path="/settings" element={<Settings />} />
           <Route path="/calendar" element={<Calendar />} />
         </Route>
       </Routes>

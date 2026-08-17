@@ -9,7 +9,7 @@ import NewActivityModal, {
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
-import { getMonday, toDateString, MONTH_LABELS } from "@/lib/dateUtils";
+import { getMonday, toDateString, formatPeriodLabel } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 import type { DayPlanBlock } from "@shared/types";
 
@@ -86,13 +86,12 @@ export default function Calendar() {
     activityModal?.mode === "edit" ? activityModal.block : undefined;
   const editingDate =
     activityModal?.mode === "edit" ? activityModal.date : undefined;
-  const pageTitle =
-    view === "month" ? `${MONTH_LABELS[month - 1]} ${year}` : "Calendrier";
+  const periodLabel = formatPeriodLabel(view, currentDate);
 
   return (
     <div className="min-h-screen">
       <PageHeader
-        title={pageTitle}
+        title="Calendrier"
         subtitle={
           view === "day" ? `${blocks.length} blocs planifiés` : undefined
         }
@@ -129,21 +128,24 @@ export default function Calendar() {
       />
 
       <main className="space-y-5 px-8 py-6">
-        <div className="flex items-center gap-1">
-          {(["day", "week", "month"] as ViewMode[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                view === v
-                  ? "bg-[#2B2A28] text-white"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {v === "day" ? "Jour" : v === "week" ? "Semaine" : "Mois"}
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-2xl italic">{periodLabel}</h2>
+          <div className="flex items-center gap-1">
+            {(["day", "week", "month"] as ViewMode[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  view === v
+                    ? "bg-[#2B2A28] text-white"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {v === "day" ? "Jour" : v === "week" ? "Semaine" : "Mois"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {view === "day" && (

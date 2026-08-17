@@ -316,6 +316,8 @@ export interface DayBilan {
 // FlowDay — Bilan de fin de journée
 export async function generateDayBilan(
   blocks: DayBlockSummary[],
+  tone: string,
+  length: string,
 ): Promise<DayBilan> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -328,6 +330,8 @@ export async function generateDayBilan(
 
   const prompt = `
 Tu es un assistant bienveillant qui résume la journée d'une utilisatrice pour l'application FlowMind, à partir des blocs de son planning du jour.
+
+Ton à adopter : ${tone}. Longueur des suggestions souhaitée : ${length}.
 
 Blocs de la journée :
 ${blockList}
@@ -393,6 +397,8 @@ function formatMinutesForPrompt(minutes: number): string {
 // Global — Bilan hebdomadaire (titre, points forts, synthèse, actions pour la semaine suivante)
 export async function generateWeeklyBilan(
   stats: WeeklyStatsInput,
+  tone: string,
+  length: string,
 ): Promise<WeeklyBilan> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -410,6 +416,8 @@ export async function generateWeeklyBilan(
 
   const prompt = `
 Tu es un assistant bienveillant qui écrit un bilan hebdomadaire pour l'application FlowMind, à partir de statistiques déjà calculées — n'invente AUCUN chiffre qui ne figure pas ci-dessous. Adresse-toi directement à l'utilisatrice en la tutoyant ("tu as", "ton focus"...), jamais à la première personne ("j'ai").
+
+Ton à adopter : ${tone}. Longueur des suggestions souhaitée : ${length}.
 
 Statistiques de la semaine :
 - Focus (FlowDay) : ${formatMinutesForPrompt(stats.focusMinutes)}, dont ${stats.morningFocusPercent}% le matin (avant midi) — ${stats.flowdayBlocksDone}/${stats.flowdayBlocksPlanned} blocs accomplis

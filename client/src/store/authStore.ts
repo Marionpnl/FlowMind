@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import apiCall from "../lib/api";
-import type { IUser } from "@shared/types";
+import type { IUser, IUserPreferences, ThemeChoice } from "@shared/types";
 
 // Response type for login/register API calls
 interface AuthResponse {
@@ -10,6 +10,15 @@ interface AuthResponse {
 }
 
 // Definition of the complete store: data + actions
+export interface ProfileUpdateInput {
+  name?: string;
+  location?: string;
+  timezone?: string;
+  language?: string;
+  theme?: ThemeChoice;
+  preferences?: Partial<IUserPreferences>;
+}
+
 interface AuthState {
   user: IUser | null;
   loading: boolean;
@@ -17,6 +26,9 @@ interface AuthState {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  updateProfile: (updates: ProfileUpdateInput) => Promise<boolean>;
+  deleteAccount: () => Promise<boolean>;
+  exportData: () => Promise<Record<string, unknown> | null>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -67,5 +79,44 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("token");
     set({ user: null });
+  },
+
+  updateProfile: async (updates) => {
+    try {
+      const res = await apiCall<{ success: boolean; data: IUser }>(
+        "/api/auth/me",
+        { method: "PUT", auth: true, body: JSON.stringify(updates) },
+      );
+      set({ user: res.data });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  deleteAccount: async () => {
+    try {
+      await apiCall<{ success: boolean }>("/api/auth/me", {
+        method: "DELETE",
+        auth: true,
+      });
+      localStorage.removeItem("token");
+      set({ user: null });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  exportData: async () => {
+    try {
+      const res = await apiCall<{
+        success: boolean;
+        data: Record<string, unknown>;
+      }>("/api/auth/export", { auth: true });
+      return res.data;
+    } catch {
+      return null;
+    }
   },
 }));
