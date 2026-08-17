@@ -4,7 +4,10 @@ import {
   fetchBookByISBN,
   searchBooksByTitle,
 } from "../services/openLibraryService";
-import { generateConnections, generateRediscovery } from "../services/aiService";
+import {
+  generateConnections,
+  generateReadingPatternSuggestion,
+} from "../services/aiService";
 import Resource from "../models/Resource";
 
 const router = Router();
@@ -41,6 +44,12 @@ router.get("/search/:query", async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: "Error during search" });
   }
 });
+
+function truncateWords(text: string, maxWords: number): string {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text;
+  return words.slice(0, maxWords).join(" ") + "…";
+}
 
 // POST /api/resources/connections - Find thematic connections between resources (not persisted)
 router.post("/connections", async (req: AuthRequest, res: Response) => {
@@ -81,7 +90,8 @@ router.post("/connections", async (req: AuthRequest, res: Response) => {
         seen.add(key);
         return true;
       })
-      .slice(0, 3);
+      .slice(0, 3)
+      .map((c) => ({ ...c, explanation: truncateWords(c.explanation, 20) }));
 
     res.json({ success: true, data: connections });
   } catch (error) {
@@ -90,58 +100,102 @@ router.post("/connections", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// POST /api/resources/rediscover - Suggest one neglected resource to revisit (not persisted)
-router.post("/rediscover", async (req: AuthRequest, res: Response) => {
+// GET /api/resources/rediscover?count=N - Surface N old notes, rotating deterministically by day.
+router.get("/rediscover", async (req: AuthRequest, res: Response) => {
   try {
     const resources = await Resource.find({ userId: req.userId }).select(
-      "title author status progress updatedAt",
+      "title notes",
     );
 
-    if (resources.length === 0) {
+    const allNotes = resources.flatMap((r) =>
+      r.notes.map((n) => ({
+        noteId: n.id,
+        resourceId: r._id.toString(),
+        resourceTitle: r.title,
+        content: n.content,
+        isQuote: n.isQuote,
+        page: n.page,
+        createdAt: n.createdAt,
+      })),
+    );
+
+    if (allNotes.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Not enough resources to suggest a rediscovery",
+        message: "No notes to surface a rediscovery",
       });
     }
 
-    const resourceById = new Map(resources.map((r) => [r._id.toString(), r]));
-    const summaries = resources.map((r) => ({
-      id: r._id.toString(),
-      title: r.title,
-      author: r.author,
-      status: r.status,
-      progress: r.progress,
-      updatedAt: r.updatedAt.toISOString().split("T")[0],
-    }));
+    allNotes.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-    const generated = await generateRediscovery(summaries);
+    const requestedCount = Math.max(
+      1,
+      Math.min(Number(req.query.count) || 1, allNotes.length),
+    );
 
-    const resourceId = resourceById.has(generated.resourceId)
-      ? generated.resourceId
-      : [...resources]
-          .filter((r) => r.status !== "done")
-          .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())[0]
-          ?._id.toString();
+    const startOfYear = new Date(new Date().getFullYear(), 0, 0);
+    const dayOfYear = Math.floor(
+      (Date.now() - startOfYear.getTime()) / 86400000,
+    );
+    const notes = Array.from(
+      { length: requestedCount },
+      (_, i) => allNotes[(dayOfYear + i) % allNotes.length],
+    );
 
-    if (!resourceId) {
-      return res.status(404).json({
+    res.json({ success: true, data: notes });
+  } catch (error) {
+    console.error("GET /api/resources/rediscover", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// POST /api/resources/reading-pattern - Detect this week's reading pattern and suggest
+// a related FlowDay practice session (not persisted) — the FlowDay/MindShelf bridge.
+router.post("/reading-pattern", async (req: AuthRequest, res: Response) => {
+  try {
+    const resources = await Resource.find({ userId: req.userId }).select(
+      "title tags notes",
+    );
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+    const recentActivity = resources
+      .map((r) => ({
+        resourceTitle: r.title,
+        tags: r.tags,
+        recentNoteExcerpts: r.notes
+          .filter((n) => n.createdAt >= sevenDaysAgo)
+          .map((n) => n.content),
+      }))
+      .filter((r) => r.recentNoteExcerpts.length > 0);
+
+    if (recentActivity.length === 0) {
+      return res.status(400).json({
         success: false,
-        message: "No resource to suggest",
+        message: "Not enough recent reading activity",
       });
     }
+
+    const generated = await generateReadingPatternSuggestion(recentActivity);
 
     res.json({
       success: true,
       data: {
-        resourceId,
-        reason:
-          typeof generated.reason === "string" && generated.reason
-            ? generated.reason
-            : "Une ressource qui mérite d'être reprise.",
+        title:
+          typeof generated.title === "string" && generated.title
+            ? generated.title
+            : "Session de pratique",
+        description:
+          typeof generated.description === "string" && generated.description
+            ? generated.description
+            : "Une session de pratique en lien avec tes lectures récentes ?",
+        duration:
+          typeof generated.duration === "number" && generated.duration > 0
+            ? generated.duration
+            : 30,
       },
     });
   } catch (error) {
-    console.error("POST /api/resources/rediscover", error);
+    console.error("POST /api/resources/reading-pattern", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

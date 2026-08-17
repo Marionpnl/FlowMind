@@ -224,7 +224,7 @@ Tu es un assistant qui repère des connexions thématiques entre les ressources 
 Ressources de la bibliothèque :
 ${resourceList}
 
-Identifie 2 à 3 paires de ressources qui partagent un thème, une idée ou une tension intéressante entre elles (pas juste le même auteur ou le même tag littéral — cherche un vrai lien de fond). Pour chaque paire, donne le id exact de chaque ressource (repris tel quel de la liste ci-dessus), un thème court, et une explication en une phrase de ce qui les relie.
+Identifie 2 à 3 paires de ressources qui partagent un thème, une idée ou une tension intéressante entre elles (pas juste le même auteur ou le même tag littéral — cherche un vrai lien de fond). Pour chaque paire, donne le id exact de chaque ressource (repris tel quel de la liste ci-dessus), un thème court, et une explication très courte (15-20 mots maximum, une phrase percutante) de ce qui les relie.
 
 Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
 {"connections": [{"resourceIdA": "...", "resourceIdB": "...", "theme": "...", "explanation": "..."}]}
@@ -243,49 +243,43 @@ Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
   return parsed.connections as GeneratedConnection[];
 }
 
-interface ResourceForRediscovery {
-  id: string;
+interface RecentActivitySummary {
+  resourceTitle: string;
+  tags: string[];
+  recentNoteExcerpts: string[];
+}
+
+export interface ReadingPatternSuggestion {
   title: string;
-  author?: string;
-  status: string;
-  progress: number;
-  updatedAt: string;
+  description: string;
+  duration: number;
 }
 
-export interface GeneratedRediscovery {
-  resourceId: string;
-  reason: string;
-}
-
-export async function generateRediscovery(
-  resources: ResourceForRediscovery[],
-): Promise<GeneratedRediscovery> {
+export async function generateReadingPatternSuggestion(
+  recentActivity: RecentActivitySummary[],
+): Promise<ReadingPatternSuggestion> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const resourceList = resources
+  const activityList = recentActivity
     .map((r) => {
-      const parts = [
-        `id: ${r.id}`,
-        `titre: "${r.title}"`,
-        `statut: ${r.status}`,
-        `progression: ${r.progress}%`,
-        `dernière mise à jour: ${r.updatedAt}`,
-      ];
-      if (r.author) parts.push(`auteur: ${r.author}`);
+      const parts = [`ressource: "${r.resourceTitle}"`];
+      if (r.tags.length) parts.push(`tags: ${r.tags.join(", ")}`);
+      if (r.recentNoteExcerpts.length)
+        parts.push(`notes récentes: ${r.recentNoteExcerpts.join(" / ")}`);
       return `- ${parts.join(" · ")}`;
     })
     .join("\n");
 
   const prompt = `
-Tu es un assistant qui aide une utilisatrice à redécouvrir une ressource délaissée dans sa bibliothèque personnelle, pour l'application FlowMind (module MindShelf).
+Tu es un assistant qui repère un pattern de lecture récent pour l'application FlowMind, et propose une session de pratique dans le module FlowDay en réponse — le pont entre MindShelf (lecture) et FlowDay (action). Ce n'est pas un résumé de lecture : c'est une suggestion concrète de ce qu'il faut FAIRE avec ce qui a été lu cette semaine.
 
-Ressources de la bibliothèque :
-${resourceList}
+Ressources sur lesquelles l'utilisatrice a pris des notes cette semaine :
+${activityList}
 
-Choisis UNE seule ressource qui mérite d'être reprise maintenant — par exemple une lecture commencée puis abandonnée, ou une ressource "à lire" depuis longtemps. Donne son id exact (repris tel quel de la liste ci-dessus) et une raison courte et engageante d'y revenir maintenant.
+Déduis le thème dominant de son activité de lecture récente, puis propose une session de pratique FlowDay concrète et actionnable en lien avec ce thème (ex: appliquer une technique lue, s'entraîner sur un concept, mettre en pratique une idée).
 
 Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
-{"resourceId": "...", "reason": "..."}
+{"title": "titre court de la session (ex: Pratique — Refactoring)", "description": "phrase d'insight de 30 à 35 mots maximum qui explique le pattern repéré et invite à planifier cette session, ex: Tu as beaucoup lu sur X cette semaine — veux-tu planifier une session de pratique ?", "duration": 30}
 `;
 
   const completion = await openai.chat.completions.create({
@@ -297,5 +291,5 @@ Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("Réponse vide de l'IA");
 
-  return JSON.parse(raw) as GeneratedRediscovery;
+  return JSON.parse(raw) as ReadingPatternSuggestion;
 }

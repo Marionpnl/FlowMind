@@ -1,7 +1,19 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { mindshelfInProgress, dailyQuote } from "@/lib/mockData";
+import { mindshelfInProgress } from "@/lib/mockData";
+import {
+  useResourceStore,
+  type RediscoveredNote,
+} from "@/store/resourceStore";
 
 export default function MindShelfCard() {
+  const fetchRediscovery = useResourceStore((s) => s.fetchRediscovery);
+  const [note, setNote] = useState<RediscoveredNote | null>(null);
+
+  useEffect(() => {
+    fetchRediscovery(1).then((result) => setNote(result[0] ?? null));
+  }, [fetchRediscovery]);
+
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-baseline justify-between">
@@ -38,15 +50,17 @@ export default function MindShelfCard() {
         ))}
       </div>
 
-      <div className="mt-4 rounded-xl bg-mindshelf-bg p-3">
-        <p className="text-xs font-medium uppercase text-mindshelf">
-          Redécouverte du jour
-        </p>
-        <p className="mt-1 text-sm italic">"{dailyQuote.text}"</p>
-        <p className="mt-1 text-xs font-mono text-muted-foreground">
-          {dailyQuote.source}
-        </p>
-      </div>
+      {note && (
+        <div className="mt-4 rounded-xl bg-mindshelf-bg p-3">
+          <p className="text-xs font-medium uppercase text-mindshelf">
+            Redécouverte du jour
+          </p>
+          <p className="mt-1 text-sm italic">"{note.content}"</p>
+          <p className="mt-1 text-xs font-mono text-muted-foreground">
+            {note.resourceTitle}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

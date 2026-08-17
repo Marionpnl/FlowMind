@@ -3,11 +3,12 @@ import { Command, Search, Filter, Plus, BookOpen } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import InProgressCard from "@/components/mindshelf/InProgressCard";
 import LibraryRow from "@/components/mindshelf/LibraryRow";
-import HighlightsPanel from "@/components/mindshelf/HighlightsPanel";
 import ConnectionsPanel from "@/components/mindshelf/ConnectionsPanel";
+import NotesRediscoveryPanel from "@/components/mindshelf/NotesRediscoveryPanel";
 import AISuggestionCard from "@/components/mindshelf/AISuggestionCard";
 import NewResourceModal from "@/components/mindshelf/NewResourceModal";
 import ResourceDetailsModal from "@/components/mindshelf/ResourceDetailsModal";
+import AllNotesModal from "@/components/mindshelf/AllNotesModal";
 import type { IResource } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { useResourceStore } from "@/store/resourceStore";
@@ -21,6 +22,7 @@ export default function MindShelf() {
   const [search, setSearch] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [allNotesOpen, setAllNotesOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState<IResource | null>(
     null,
   );
@@ -163,13 +165,24 @@ export default function MindShelf() {
             resources={resources}
             onSelectResource={setSelectedResource}
           />
-          <HighlightsPanel resources={resources} />
+          <NotesRediscoveryPanel
+            onOpenAllNotes={() => setAllNotesOpen(true)}
+          />
         </div>
       </main>
       <NewResourceModal open={modalOpen} onOpenChange={setModalOpen} />
       <ResourceDetailsModal
         resource={liveSelectedResource}
         onOpenChange={(open) => !open && setSelectedResource(null)}
+      />
+      <AllNotesModal
+        open={allNotesOpen}
+        onOpenChange={setAllNotesOpen}
+        resources={resources}
+        onSelectResource={(r) => {
+          setAllNotesOpen(false);
+          setSelectedResource(r);
+        }}
       />
     </div>
   );

@@ -41,14 +41,30 @@ interface ConnectionsResponse {
   data: ThematicConnection[];
 }
 
-export interface RediscoverySuggestion {
+export interface RediscoveredNote {
+  noteId: string;
   resourceId: string;
-  reason: string;
+  resourceTitle: string;
+  content: string;
+  isQuote: boolean;
+  page?: string;
+  createdAt: string;
 }
 
 interface RediscoveryResponse {
   success: boolean;
-  data: RediscoverySuggestion;
+  data: RediscoveredNote[];
+}
+
+export interface ReadingPatternSuggestion {
+  title: string;
+  description: string;
+  duration: number;
+}
+
+interface ReadingPatternResponse {
+  success: boolean;
+  data: ReadingPatternSuggestion;
 }
 
 interface CreateResourceInput {
@@ -85,7 +101,8 @@ interface ResourceState {
   ) => Promise<{ title: string; author?: string; coverUrl?: string } | null>;
   searchByTitle: (query: string) => Promise<BookSearchResult[]>;
   fetchConnections: () => Promise<ThematicConnection[]>;
-  fetchRediscovery: () => Promise<RediscoverySuggestion | null>;
+  fetchRediscovery: (count?: number) => Promise<RediscoveredNote[]>;
+  fetchReadingPattern: () => Promise<ReadingPatternSuggestion | null>;
 }
 
 export const useResourceStore = create<ResourceState>((set, get) => ({
@@ -244,10 +261,22 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
     }
   },
 
-  fetchRediscovery: async () => {
+  fetchRediscovery: async (count = 1) => {
     try {
       const res = await apiCall<RediscoveryResponse>(
-        "/api/resources/rediscover",
+        `/api/resources/rediscover?count=${count}`,
+        { auth: true },
+      );
+      return res.data;
+    } catch {
+      return [];
+    }
+  },
+
+  fetchReadingPattern: async () => {
+    try {
+      const res = await apiCall<ReadingPatternResponse>(
+        "/api/resources/reading-pattern",
         { method: "POST", auth: true },
       );
       return res.data;
