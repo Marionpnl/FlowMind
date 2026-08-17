@@ -9,23 +9,63 @@ import AISuggestionCard from "@/components/mindshelf/AISuggestionCard";
 import NewResourceModal from "@/components/mindshelf/NewResourceModal";
 import ResourceDetailsModal from "@/components/mindshelf/ResourceDetailsModal";
 import AllNotesModal from "@/components/mindshelf/AllNotesModal";
-import type { IResource } from "@shared/types";
+import FilterModal from "@/components/mindshelf/FilterModal";
+import type { IResource, ResourceStatus } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { useResourceStore } from "@/store/resourceStore";
 import { cn } from "@/lib/utils";
-
-type LibraryFilter = "all" | "done" | "to-read";
+import {
+  LIBRARY_STATUSES,
+  STATUS_LABELS,
+  type SortOption,
+} from "@/lib/resourceTypes";
 
 export default function MindShelf() {
   const resources = useResourceStore((s) => s.resources);
   const fetchResources = useResourceStore((s) => s.fetchResources);
   const [search, setSearch] = useState("");
-  const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
+  const [statuses, setStatuses] = useState<ResourceStatus[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [allNotesOpen, setAllNotesOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [minRating, setMinRating] = useState(0);
+  const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [notesOnly, setNotesOnly] = useState(false);
   const [selectedResource, setSelectedResource] = useState<IResource | null>(
     null,
   );
+
+  const filtersActive =
+    categories.length > 0 ||
+    minRating > 0 ||
+    sortBy !== "recent" ||
+    statuses.length > 0 ||
+    notesOnly;
+
+  function toggleStatus(status: ResourceStatus) {
+    setStatuses((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status],
+    );
+  }
+
+  function toggleCategory(category: string) {
+    setCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category],
+    );
+  }
+
+  function resetFilters() {
+    setStatuses([]);
+    setCategories([]);
+    setMinRating(0);
+    setSortBy("recent");
+    setNotesOnly(false);
+  }
 
   useEffect(() => {
     fetchResources();
@@ -39,11 +79,7 @@ export default function MindShelf() {
     : null;
 
   const filteredLibrary = resources
-    .filter((r) => {
-      if (libraryFilter === "done") return r.status === "done";
-      if (libraryFilter === "to-read") return r.status === "to-read";
-      return true;
-    })
+    .filter((r) => statuses.length === 0 || statuses.includes(r.status))
     .filter((r) => {
       const q = search.trim().toLowerCase();
       if (!q) return true;
@@ -52,6 +88,18 @@ export default function MindShelf() {
         (r.author?.toLowerCase().includes(q) ?? false) ||
         r.notes.some((n) => n.content.toLowerCase().includes(q))
       );
+    })
+    .filter(
+      (r) =>
+        categories.length === 0 || r.tags.some((t) => categories.includes(t)),
+    )
+    .filter((r) => !minRating || (r.rating ?? 0) >= minRating)
+    .filter((r) => !notesOnly || r.notes.length > 0)
+    .sort((a, b) => {
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      if (sortBy === "rating") return (b.rating ?? 0) - (a.rating ?? 0);
+      if (sortBy === "progress") return (b.progress ?? 0) - (a.progress ?? 0);
+      return 0;
     });
 
   return (
@@ -61,7 +109,15 @@ export default function MindShelf() {
         subtitle={`${resources.length} livres · ${totalNotes} notes · ${inProgress.length} en cours`}
         actions={
           <>
-            <button className="flex items-center gap-2 text-xs text-black/70 text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => setFilterOpen(true)}
+              className={cn(
+                "flex items-center gap-2 text-xs hover:text-foreground cursor-pointer",
+                filtersActive
+                  ? "text-black/60 font-medium"
+                  : "text-black/70 text-muted-foreground",
+              )}
+            >
               <Filter className="h-3.5 w-3.5" />
               Filtrer
             </button>
@@ -120,24 +176,33 @@ export default function MindShelf() {
                 Ta bibliothèque
               </h2>
               <div className="flex items-center gap-1">
-                {(["all", "done", "to-read"] as LibraryFilter[]).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setLibraryFilter(f)}
-                    className={cn(
-                      "rounded-full px-3 py-1 text-xs font-medium tracking-wider transition-colors cursor-pointer",
-                      libraryFilter === f
-                        ? "bg-[#2B2A28] text-white"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {f === "all"
-                      ? "Tous"
-                      : f === "done"
-                        ? "Terminés"
-                        : "À lire"}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setStatuses([])}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium tracking-wider transition-colors cursor-pointer",
+                    statuses.length === 0
+                      ? "bg-[#2B2A28] text-white"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Tous
+                </button>
+                {LIBRARY_STATUSES.filter((s) => s !== "in-progress").map(
+                  (s) => (
+                    <button
+                      key={s}
+                      onClick={() => toggleStatus(s)}
+                      className={cn(
+                        "rounded-full px-3 py-1 text-xs font-medium tracking-wider transition-colors cursor-pointer",
+                        statuses.includes(s)
+                          ? "bg-[#2B2A28] text-white"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {STATUS_LABELS[s]}
+                    </button>
+                  ),
+                )}
               </div>
             </div>
 
@@ -165,9 +230,7 @@ export default function MindShelf() {
             resources={resources}
             onSelectResource={setSelectedResource}
           />
-          <NotesRediscoveryPanel
-            onOpenAllNotes={() => setAllNotesOpen(true)}
-          />
+          <NotesRediscoveryPanel onOpenAllNotes={() => setAllNotesOpen(true)} />
         </div>
       </main>
       <NewResourceModal open={modalOpen} onOpenChange={setModalOpen} />
@@ -183,6 +246,22 @@ export default function MindShelf() {
           setAllNotesOpen(false);
           setSelectedResource(r);
         }}
+      />
+      <FilterModal
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        totalCount={resources.length}
+        statuses={statuses}
+        onToggleStatus={toggleStatus}
+        categories={categories}
+        onToggleCategory={toggleCategory}
+        minRating={minRating}
+        onMinRatingChange={setMinRating}
+        sortBy={sortBy}
+        onSortByChange={setSortBy}
+        notesOnly={notesOnly}
+        onNotesOnlyChange={setNotesOnly}
+        onReset={resetFilters}
       />
     </div>
   );

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { RESOURCE_TYPE_CONFIG } from "@/lib/resourceTypes";
+import { RESOURCE_TYPE_CONFIG, CATEGORIES } from "@/lib/resourceTypes";
 import { useResourceStore } from "@/store/resourceStore";
 import type { ResourceStatus, ResourceType } from "@shared/types";
 import { cn } from "@/lib/utils";
@@ -19,8 +19,6 @@ const STATUSES: { key: ResourceStatus; label: string }[] = [
   { key: "to-read", label: "À lire" },
   { key: "done", label: "Terminé" },
 ];
-
-const CATEGORIES = ["Tech", "Développement", "Essai", "Fiction", "Histoire"];
 
 interface BookCandidate {
   title: string;
