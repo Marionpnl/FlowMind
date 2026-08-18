@@ -46,17 +46,17 @@ export default function WeeklyBilanCard() {
 
   return (
     <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide">
-          <Calendar className="h-4 w-4 text-mindshelf" />
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-xs font-medium tracking-widest uppercase">
+          <Calendar className="h-4 w-4" />
           Bilan hebdomadaire
         </h2>
-        <span className="text-xs text-black/50 text-muted-foreground">
+        <span className="text-[10px] sm:text-xs font-mono text-black/50 text-muted-foreground">
           {rangeLabel}
         </span>
       </div>
 
-      <p className="mb-4 font-display text-lg italic leading-snug">
+      <p className="mb-4 font-display text-md sm:text-lg italic leading-snug">
         {headline}
       </p>
 
@@ -65,7 +65,7 @@ export default function WeeklyBilanCard() {
           <p className="text-[10px] font-medium uppercase tracking-widest text-flowday">
             Focus
           </p>
-          <p className="mt-1 font-mono text-base text-black">
+          <p className="mt-1 font-mono text-sm sm:text-base text-black">
             {formatDuration(stats?.focusMinutes ?? 0)}
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function WeeklyBilanCard() {
           <p className="text-[10px] font-medium uppercase tracking-widest text-mindshelf">
             Lecture
           </p>
-          <p className="mt-1 font-mono text-base text-black">
+          <p className="mt-1 font-mono text-sm sm:text-base text-black">
             {formatDuration(stats?.readingMinutes ?? 0)}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function WeeklyBilanCard() {
           <p className="text-[10px] font-medium uppercase tracking-widest text-sparktime">
             Sport
           </p>
-          <p className="mt-1 font-mono text-base text-black">
+          <p className="mt-1 font-mono text-sm sm:text-base text-black">
             {formatDuration(stats?.movementMinutes ?? 0)}
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function WeeklyBilanCard() {
 
       <Button
         onClick={handleOpen}
-        className="w-full bg-[#2B2A28] text-white hover:bg-[#2B2A28]/90 rounded-xl cursor-pointer"
+        className="w-full h-7 sm:h-8 bg-[#2B2A28] font-normal text-white text-xs sm:text-sm hover:bg-[#2B2A28]/90 rounded-xl cursor-pointer"
       >
         <Sparkles className="mr-1.5 h-4 w-4" />
         Générer le bilan par IA

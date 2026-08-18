@@ -18,13 +18,13 @@ export default function SparkTimeCard() {
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-sparktime">
+        <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-sparktime">
           <span className="h-1.5 w-1.5 rounded-full bg-sparktime" />
           SparkTime · Pour toi
         </p>
         <Link
           to="/sparktime"
-          className="text-xs text-muted-foreground hover:underline"
+          className="text-[10px] sm:text-xs text-black/70 text-muted-foreground hover:underline"
         >
           Régénérer
         </Link>
@@ -37,19 +37,19 @@ export default function SparkTimeCard() {
             className="flex items-center justify-between rounded-xl bg-cream-secondary p-3"
           >
             <div>
-              <p className="text-sm font-medium">{s.title}</p>
-              <div className=" flex justify-start items-center gap-1.5">
-                <Clock className="mt-1 h-3.5 w-3.5 text-black/70" />
-                <p className="text-xs font-mono text-black/70 text-muted-foreground">
+              <p className="text-xs sm:text-sm font-medium">{s.title}</p>
+              <div className="mt-1 flex justify-start items-center gap-1.5">
+                <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-black/70" />
+                <p className="text-[10px] sm:text-xs font-mono text-black/60 text-muted-foreground">
                   {s.detail}
                 </p>
               </div>
             </div>
             <button
               onClick={() => handlePlan(s)}
-              className="flex h-6 w-6 items-center justify-center rounded-full bg-sparktime-bg text-sparktime"
+              className="flex h-5.5 w-5.5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-sparktime-bg text-sparktime"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </button>
           </li>
         ))}

@@ -19,10 +19,12 @@ const moduleTextClass = {
 };
 
 interface HabitsWidgetProps {
-  layout?: "row" | "column";
+  layout?: "row" | "column" | "responsive";
 }
 
-export default function HabitsWidget({ layout = "row" }: HabitsWidgetProps) {
+export default function HabitsWidget({
+  layout = "row",
+}: HabitsWidgetProps) {
   const habits = useHabitStore((s) => s.habits);
   const fetchHabits = useHabitStore((s) => s.fetchHabits);
 
@@ -36,7 +38,7 @@ export default function HabitsWidget({ layout = "row" }: HabitsWidgetProps) {
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-          <TrendingUp className="h-4 w-4 text-flowday" />
+          <TrendingUp className="mr-1 h-4 w-4 text-flowday" />
           Habitudes - 30 derniers jours
         </h2>
         <Link
@@ -54,7 +56,9 @@ export default function HabitsWidget({ layout = "row" }: HabitsWidgetProps) {
       ) : (
         <div
           className={cn(
-            layout === "row" ? "grid grid-cols-3 gap-3" : "space-y-3",
+            layout === "row" && "grid grid-cols-3 gap-3",
+            layout === "column" && "space-y-3",
+            layout === "responsive" && "space-y-3 sm:grid sm:grid-cols-3 sm:gap-3 sm:space-y-0",
           )}
         >
           {habits.slice(0, 3).map((habit) => {
@@ -74,7 +78,7 @@ export default function HabitsWidget({ layout = "row" }: HabitsWidgetProps) {
                     >
                       {habit.emoji}
                     </span>
-                    <span className="text-xs font-semibold">{habit.name}</span>
+                    <span className="text-xs font-medium">{habit.name}</span>
                   </div>
                   <span
                     className={cn(

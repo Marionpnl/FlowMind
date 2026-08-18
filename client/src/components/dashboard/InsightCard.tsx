@@ -15,7 +15,7 @@ export default function InsightCard() {
 
   return (
     <div className="rounded-2xl bg-[#2B2A28] p-5 text-white">
-      <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white">
+      <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-white/80">
         <Sparkles className="h-3.5 w-3.5" />
         FlowMind · Insight transversal
       </p>
@@ -25,13 +25,13 @@ export default function InsightCard() {
       </p>
       <div className="flex items-center gap-3">
         <Button
-          size="sm"
+          size="lg"
           onClick={handlePlan}
-          className="bg-flowday rounded-xl text-white hover:bg-flowday/90"
+          className="h-7 sm:h-9 bg-flowday rounded-2xl text-xs sm:text-sm text-white hover:bg-flowday/90"
         >
           + Planifier de la pratique
         </Button>
-        <button className="text-xs text-white/60 rounded-xl hover:text-white">
+        <button className="text-xs sm:text-sm text-white/60 rounded-xl hover:text-white">
           Plus tard
         </button>
       </div>

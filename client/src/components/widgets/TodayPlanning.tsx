@@ -29,28 +29,28 @@ export default function TodayPlanning({
 
           {blocks.map((block) => (
             <li key={block.id} className="relative flex items-start gap-3">
-              <span className="w-12 shrink-0 pt-4 font-mono text-xs text-muted-foreground">
+              <span className="w-12 shrink-0 pt-4 font-mono text-black/70 text-xs text-muted-foreground">
                 {block.time}
               </span>
               <span
                 className={cn(
-                  "relative z-10 mt-4 mr-4 h-3 w-3 shrink-0 rounded-full",
+                  "relative z-10 mt-4 sm:mr-4 h-2 w-2 sm:h-3 sm:w-3 shrink-0 rounded-full",
                   moduleDotClass[block.module],
                 )}
               />
               <div
                 onClick={() => onEditBlock(block)}
-                className="group relative flex-1 cursor-pointer rounded-2xl bg-white p-4 shadow-sm"
+                className="group relative flex-1 cursor-pointer rounded-2xl bg-white p-3 sm:p-4 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2 sm:gap-3">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggleBlock(block.id);
                       }}
                       className={cn(
-                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                        "mt-0.5 flex h-3 w-3 sm:h-4 sm:w-4 shrink-0 items-center justify-center rounded-full border",
                         block.done
                           ? "border-flowday bg-flowday text-white"
                           : "border-black/20 text-transparent",
@@ -61,13 +61,13 @@ export default function TodayPlanning({
                     <div>
                       <p
                         className={cn(
-                          "text-sm font-medium",
+                          "text-xs sm:text-sm font-medium",
                           block.done && "text-muted-foreground line-through",
                         )}
                       >
                         {block.title}
                       </p>
-                      <p className="text-xs text-black/70 text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-black/70 text-muted-foreground">
                         {block.duration ? `${block.duration} min` : ""} ·{" "}
                         {block.subtitle}
                       </p>
@@ -75,7 +75,7 @@ export default function TodayPlanning({
                   </div>
                   <span
                     className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                      "shrink-0 rounded-full px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-medium uppercase tracking-wider",
                       moduleBadgeClass[block.module],
                     )}
                   >

@@ -106,7 +106,7 @@ export default function FlowDay() {
             <button
               onClick={openDaySummary}
               disabled={!currentPlan}
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-2 whitespace-nowrap text-[10px] text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 lg:text-sm"
             >
               <Sun className="h-4 w-4" />
               Bilan du jour

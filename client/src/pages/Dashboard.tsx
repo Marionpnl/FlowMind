@@ -70,13 +70,13 @@ export default function Dashboard() {
     <div className="min-h-screen">
       <PageHeader
         title={todayLabel}
-        subtitle={`Bonjour ${user?.name} · ${blocks.length} blocs planifiés`}
+        subtitle={`Bonjour ${user?.name}`}
         actions={
-          <>
+          <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
             <button
               onClick={openDaySummary}
               disabled={!currentPlan}
-              className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex items-center gap-2 whitespace-nowrap text-[10px] text-black/70 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 lg:text-sm"
             >
               <Sun className="h-4 w-4" />
               Bilan du jour
@@ -84,21 +84,23 @@ export default function Dashboard() {
             <Button
               size="lg"
               onClick={openNewActivity}
-              className="bg-[#2B2A28] text-white hover:bg-flowday/90 rounded-xl"
+              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-[#2B2A28] px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-flowday/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
             >
-              <Plus className="mr-1 h-4 w-4" />
+              <Plus className="h-2.5 w-2.5 sm:mr-1 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
               Nouvelle activité
             </Button>
-          </>
+          </div>
         }
       />
 
-      <main className="grid grid-cols-3 gap-5 px-8 py-6">
-        <div className="col-span-2 space-y-5">
+      <main className="grid grid-cols-1 gap-5 px-4 py-6 sm:px-8 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
           <FlowDayPlanCard date={today} />
           <div>
-            <h2 className="font-display text-2xl italic">Aujourd'hui</h2>
-            <p className="text-xs text-muted-foreground">
+            <h2 className="font-display text-xl sm:text-2xl italic">
+              Aujourd'hui
+            </h2>
+            <p className="pt-0.5 text-black/70 text-xs text-muted-foreground">
               {summarizeBlocks(blocks)}
             </p>
           </div>
@@ -108,7 +110,7 @@ export default function Dashboard() {
             onDeleteBlock={deleteBlock}
             onEditBlock={openEditBlock}
           />
-          <HabitsWidget />
+          <HabitsWidget layout="responsive" />
         </div>
         <div className="space-y-5">
           <InsightCard />

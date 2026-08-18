@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PanelLeft } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 interface PageHeaderProps {
   title: string;
@@ -14,25 +15,34 @@ export default function PageHeader({
   actions,
 }: PageHeaderProps) {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const toggleMobileMenu = useUIStore((s) => s.toggleMobileMenu);
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
   return (
-    <header className="flex items-center justify-between border-b border-black/5 px-8 py-5">
-      <div className="flex items-center gap-3">
+    <header className="flex items-center justify-between gap-x-4 border-b border-black/5 px-4 py-4 sm:px-8 sm:py-5">
+      <div className="flex min-w-0 items-center gap-3">
         <button
-          onClick={toggleSidebar}
-          className="text-muted-foreground hover:text-foreground"
+          onClick={isMobile ? toggleMobileMenu : toggleSidebar}
+          className="shrink-0 text-muted-foreground hover:text-foreground"
           aria-label="Replier/déplier la barre latérale"
         >
           <PanelLeft className="h-4 w-4 black/70" />
         </button>
-        <div className="flex items-baseline gap-3">
-          <p className="font-display text-xl italic capitalize p-2">{title}</p>
+        <span className="h-6 w-px shrink-0 bg-black/10" />
+        <div className="flex min-w-0 flex-col gap-0.5 lg:flex-row lg:items-baseline lg:gap-3">
+          <p className="shrink-0 whitespace-nowrap font-display text-xl italic capitalize">
+            {title}
+          </p>
           {subtitle && (
-            <span className="text-sm text-muted-foreground">{subtitle}</span>
+            <span className="truncate text-[10px] text-black/70 text-muted-foreground lg:text-sm">
+              {subtitle}
+            </span>
           )}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-3">{actions}</div>}
+      {actions && (
+        <div className="flex shrink-0 items-center gap-3">{actions}</div>
+      )}
     </header>
   );
 }
