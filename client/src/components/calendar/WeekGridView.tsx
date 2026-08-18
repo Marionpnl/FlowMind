@@ -54,14 +54,17 @@ export default function WeekGridView({
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
       {/* En-têtes des jours */}
-      <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-black/5">
+      <div className="grid grid-cols-[36px_repeat(7,1fr)] border-b border-black/5 sm:grid-cols-[64px_repeat(7,1fr)]">
         <div />
         {days.map((day, i) => (
-          <div key={i} className="border-l border-black/5 px-3 py-3">
-            <p className="text-xs text-black/60 font-medium uppercase tracking-widest text-muted-foreground">
+          <div
+            key={i}
+            className="border-l border-black/5 px-1 py-2 sm:px-3 sm:py-3"
+          >
+            <p className="text-[9px] text-black/60 font-medium uppercase tracking-widest text-muted-foreground sm:text-xs">
               {DAY_LABELS[i]}
             </p>
-            <p className="pt-1 font-mono text-sm text-black/70 tracking-widest font-medium">
+            <p className="pt-1 font-mono text-xs text-black/70 tracking-widest font-medium sm:text-sm">
               {day.getDate()}
             </p>
           </div>
@@ -69,7 +72,7 @@ export default function WeekGridView({
       </div>
 
       {/* Grille horaire */}
-      <div className="grid grid-cols-[64px_repeat(7,1fr)]">
+      <div className="grid grid-cols-[36px_repeat(7,1fr)] sm:grid-cols-[64px_repeat(7,1fr)]">
         {/* Colonne des heures — mêmes bordures que les colonnes de jours pour un alignement parfait */}
         <div>
           {hours.map((h, idx) => (
@@ -77,12 +80,15 @@ export default function WeekGridView({
               key={h}
               style={{ height: HOUR_HEIGHT }}
               className={cn(
-                "px-2 pt-1",
+                "px-1 pt-1 sm:px-2",
                 idx !== 0 && "border-t border-black/5",
               )}
             >
-              <span className="font-mono text-xs text-black/60 text-muted-foreground">
-                {String(h).padStart(2, "0")}:00
+              <span className="font-mono text-[10px] text-black/60 text-muted-foreground sm:text-xs">
+                <span className="sm:hidden">{String(h).padStart(2, "0")}h</span>
+                <span className="hidden sm:inline">
+                  {String(h).padStart(2, "0")}:00
+                </span>
               </span>
             </div>
           ))}
@@ -142,7 +148,7 @@ export default function WeekGridView({
                       <X className="h-3 w-3" />
                     </button>
                     {isCompact ? (
-                      <p className="truncate text-[11px] font-medium">
+                      <p className="truncate text-[8px] font-medium sm:text-[11px]">
                         {block.title}{" "}
                         <span
                           className={cn(
@@ -155,12 +161,12 @@ export default function WeekGridView({
                       </p>
                     ) : (
                       <>
-                        <p className="truncate text-xs font-medium leading-tight">
+                        <p className="truncate text-[8px] font-medium leading-tight sm:text-xs">
                           {block.title}
                         </p>
                         <p
                           className={cn(
-                            "truncate font-mono text-[10px] leading-tight",
+                            "truncate font-mono text-[7px] leading-tight sm:text-[10px]",
                             timeColorClass,
                           )}
                         >

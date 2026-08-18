@@ -145,7 +145,7 @@ export default function Sidebar() {
                     {isActive && (
                       <span
                         className={cn(
-                          "absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-md",
+                          "absolute left-0 top-1/2 h-5 sm:h-7 w-0.5 sm:w-1 -translate-y-1/2 rounded-r-md",
                           link.colorClass,
                         )}
                       />
@@ -197,7 +197,9 @@ export default function Sidebar() {
                   )
                 }
               >
-                <Icon className={cn("h-4 w-4", mobileCollapsedRail && "h-3 w-3")} />
+                <Icon
+                  className={cn("h-4 w-4", mobileCollapsedRail && "h-3 w-3")}
+                />
                 {!collapsed && label}
               </NavLink>
             ))}

@@ -34,7 +34,7 @@ export default function MonthGridView({
         {DAY_LABELS.map((label) => (
           <div
             key={label}
-            className="px-3 py-2 text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            className="px-1 py-1.5 text-[9px] text-black/70 font-medium uppercase tracking-widest text-muted-foreground sm:px-3 sm:py-2 sm:text-xs"
           >
             {label}
           </div>
@@ -47,7 +47,7 @@ export default function MonthGridView({
             return (
               <div
                 key={idx}
-                className="min-h-28 border-b border-l border-black/5"
+                className="min-h-16 border-b border-l border-black/5 sm:min-h-28"
               />
             );
           }
@@ -60,13 +60,13 @@ export default function MonthGridView({
           return (
             <div
               key={idx}
-              className="min-h-28 space-y-1 border-b border-l border-black/5 p-3.5"
+              className="min-h-16 space-y-1 border-b border-l border-black/5 p-1 sm:min-h-28 sm:p-3.5"
             >
               <p
                 className={cn(
-                  "text-xs text-black/60 font-medium tracking-widest",
+                  "text-[10px] text-black/60 font-medium tracking-widest sm:text-xs",
                   isToday &&
-                    "flex h-5 w-5 items-center justify-center rounded-full bg-flowday text-white",
+                    "flex h-4 w-4 items-center justify-center rounded-full bg-flowday text-white sm:h-5 sm:w-5",
                 )}
               >
                 {day.getDate()}
@@ -76,7 +76,7 @@ export default function MonthGridView({
                   key={block.id}
                   onClick={() => onEditBlock(block, dateStr)}
                   className={cn(
-                    "group relative cursor-pointer truncate rounded px-1.5 py-0.5 pr-4 text-[10px] font-medium",
+                    "group relative cursor-pointer truncate rounded px-1 py-0.5 pr-3 text-[8px] font-medium sm:px-1.5 sm:pr-4 sm:text-[10px]",
                     moduleBgSoft[block.module],
                   )}
                 >
@@ -94,7 +94,7 @@ export default function MonthGridView({
                 </div>
               ))}
               {blocks.length > 3 && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[8px] text-muted-foreground sm:text-[10px]">
                   +{blocks.length - 3} de plus
                 </p>
               )}

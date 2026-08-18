@@ -26,7 +26,7 @@ export default function PageHeader({
           className="shrink-0 text-muted-foreground hover:text-foreground"
           aria-label="Replier/déplier la barre latérale"
         >
-          <PanelLeft className="h-4 w-4 black/70" />
+          <PanelLeft className="h-4 w-4 text-black/70" />
         </button>
         <span className="h-6 w-px shrink-0 bg-black/10" />
         <div className="flex min-w-0 flex-col gap-0.5 lg:flex-row lg:items-baseline lg:gap-3">

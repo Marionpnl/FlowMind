@@ -75,11 +75,13 @@ export default function FlowDay() {
     if (view === "month") fetchMonthPlans(year, month);
   }, [view, weekStartStr, year, month, fetchWeekPlans, fetchMonthPlans]);
 
-  const todayLabel = new Date().toLocaleDateString("fr-FR", {
+  const todayLabelRaw = new Date().toLocaleDateString("fr-FR", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+  const todayLabel =
+    todayLabelRaw.charAt(0).toUpperCase() + todayLabelRaw.slice(1);
 
   const blocks = currentPlan?.blocks ?? [];
   const editingBlock =
@@ -87,7 +89,8 @@ export default function FlowDay() {
   const editingDate =
     activityModal?.mode === "edit" ? activityModal.date : undefined;
 
-  const headingTitle = view === "day" ? "Aujourd'hui" : formatPeriodLabel(view, now);
+  const headingTitle =
+    view === "day" ? "Aujourd'hui" : formatPeriodLabel(view, now);
   const periodBlocks =
     view === "day"
       ? blocks
@@ -100,55 +103,57 @@ export default function FlowDay() {
     <div className="min-h-screen">
       <PageHeader
         title="FlowDay"
-        subtitle={`${todayLabel} · ${blocks.length} blocs planifiés`}
+        subtitle={todayLabel}
         actions={
-          <>
+          <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
             <button
               onClick={openDaySummary}
               disabled={!currentPlan}
-              className="flex items-center gap-2 whitespace-nowrap text-[10px] text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 lg:text-sm"
+              className="flex items-center gap-2 whitespace-nowrap text-[10px] text-black/70 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 lg:text-sm"
             >
               <Sun className="h-4 w-4" />
               Bilan du jour
             </button>
             <Button
-              size="sm"
+              size="lg"
               onClick={openNewActivity}
-              className="bg-flowday text-white hover:bg-flowday/90"
+              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-flowday px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-flowday/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
             >
-              <Plus className="mr-1 h-4 w-4" />
+              <Plus className="h-2.5 w-2.5 sm:mr-1 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
               Planifier la pratique
             </Button>
-          </>
+          </div>
         }
       />
 
-      <main className="grid grid-cols-3 gap-5 px-8 py-6">
-        <div className="col-span-2 space-y-5">
+      <main className="grid grid-cols-1 gap-5 px-4 py-6 sm:px-8 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
           <FlowDayPlanCard date={today} />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-2xl italic">{headingTitle}</h2>
-              <p className="text-xs text-muted-foreground">
+          <div>
+            <h2 className="font-display text-xl italic sm:text-2xl">
+              {headingTitle}
+            </h2>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] text-black/70 text-muted-foreground sm:text-xs">
                 {headingSubtitle}
               </p>
-            </div>
-            <div className="flex items-center gap-1">
-              {(["day", "week", "month"] as ViewMode[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                    view === v
-                      ? "bg-[#2B2A28] text-white"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {v === "day" ? "Jour" : v === "week" ? "Semaine" : "Mois"}
-                </button>
-              ))}
+              <div className="flex items-center gap-0 sm:gap-1">
+                {(["day", "week", "month"] as ViewMode[]).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 sm:py-1 text-[10px] font-medium transition-colors sm:px-3 sm:text-xs",
+                      view === v
+                        ? "bg-[#2B2A28] text-white"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {v === "day" ? "Jour" : v === "week" ? "Semaine" : "Mois"}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
