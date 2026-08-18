@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bookmark, Quote } from "lucide-react";
-import {
-  useResourceStore,
-  type RediscoveredNote,
-} from "@/store/resourceStore";
+import { useResourceStore, type RediscoveredNote } from "@/store/resourceStore";
 import { useAuthStore } from "@/store/authStore";
 
 interface NotesRediscoveryPanelProps {
@@ -46,7 +43,7 @@ export default function NotesRediscoveryPanel({
         </h2>
         <button
           onClick={onOpenAllNotes}
-          className="text-xs text-black/70 text-muted-foreground hover:underline cursor-pointer"
+          className="text-[10px] sm:text-xs text-black/70 text-muted-foreground hover:underline cursor-pointer"
         >
           Tout voir
         </button>

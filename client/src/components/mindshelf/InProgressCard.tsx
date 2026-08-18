@@ -17,7 +17,7 @@ export default function InProgressCard({
       onClick={onClick}
       className="flex w-full items-start gap-4 rounded-2xl bg-white p-4 text-left border border-black/5 shadow-sm cursor-pointer"
     >
-      <div className="flex h-26 w-17 shrink-0 items-center justify-center overflow-hidden rounded-md bg-mindshelf-bg border border-black/5">
+      <div className="flex h-26 w-19 sm:w-17 shrink-0 items-center justify-center overflow-hidden rounded-md bg-mindshelf-bg border border-black/5">
         {resource.coverUrl ? (
           <img
             src={resource.coverUrl}

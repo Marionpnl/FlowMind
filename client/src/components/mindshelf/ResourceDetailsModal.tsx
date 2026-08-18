@@ -101,34 +101,34 @@ export default function ResourceDetailsModal({
             </DialogHeader>
 
             {/* Ligne de stats */}
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              <div className="rounded-xl border border-border bg-cream-secondary p-3">
-                <p className="flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
-                  <BookOpen className="h-3 w-3" />
-                  Statut
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="min-w-0 rounded-xl border border-border bg-cream-secondary p-2 sm:p-3">
+                <p className="flex items-center gap-1 truncate text-[8px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
+                  <BookOpen className="h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
+                  <span className="truncate">Statut</span>
                 </p>
-                <p className="mt-1.5 font-mono text-black/70 text-xs font-medium">
+                <p className="mt-1.5 truncate font-mono text-black/70 text-[10px] font-medium sm:text-xs">
                   {STATUS_LABELS[resource.status]}
                 </p>
               </div>
-              <div className="rounded-xl border border-border bg-cream-secondary p-3">
-                <p className="flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  Progression
+              <div className="min-w-0 rounded-xl border border-border bg-cream-secondary p-2 sm:p-3">
+                <p className="flex items-center gap-1 truncate text-[8px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
+                  <Clock className="h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
+                  <span className="truncate">Progression</span>
                 </p>
-                <p className="mt-1.5 font-mono text-xs text-black/70 font-medium">
+                <p className="mt-1.5 truncate font-mono text-[10px] text-black/70 font-medium sm:text-xs">
                   {resource.progress}%{" "}
                   {resource.currentPosition
                     ? `· ${resource.currentPosition}`
                     : ""}
                 </p>
               </div>
-              <div className="rounded-xl border border-border bg-cream-secondary p-3">
-                <p className="flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
-                  <Star className="h-3 w-3" />
-                  Note
+              <div className="min-w-0 rounded-xl border border-border bg-cream-secondary p-2 sm:p-3">
+                <p className="flex items-center gap-1 truncate text-[8px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
+                  <Star className="h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
+                  <span className="truncate">Note</span>
                 </p>
-                <div className="mt-1.5 flex gap-0.5">
+                <div className="mt-1.5 flex gap-0 sm:gap-0.5">
                   {Array.from({ length: 5 }, (_, i) => (
                     <button
                       key={i}
@@ -138,7 +138,7 @@ export default function ResourceDetailsModal({
                     >
                       <Star
                         className={cn(
-                          "h-3.5 w-3.5",
+                          "h-3 w-3 sm:h-3.5 sm:w-3.5",
                           resource.rating && i < resource.rating
                             ? "fill-mindshelf text-mindshelf"
                             : "text-black/15",
@@ -152,9 +152,9 @@ export default function ResourceDetailsModal({
           </div>
 
           {/* Contenu principal */}
-          <div className="space-y-4 overflow-y-auto p-8 pt-2">
+          <div className="space-y-4 overflow-y-auto p-5 pt-2 sm:p-8 sm:pt-2">
             {/* Changement de statut */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {STATUSES.map((s) => (
                 <button
                   key={s.key}
@@ -220,7 +220,7 @@ export default function ResourceDetailsModal({
                 rows={2}
                 className="w-full resize-none bg-transparent text-xs italic outline-none"
               />
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-1.5 text-xs text-black/60 text-muted-foreground">
                     <input

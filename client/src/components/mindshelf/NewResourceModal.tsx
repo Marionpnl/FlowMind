@@ -119,7 +119,7 @@ export default function NewResourceModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-cream p-8">
+      <DialogContent className="sm:max-w-lg bg-cream p-5 sm:p-8">
         <DialogHeader>
           <DialogTitle className="mt-3 font-display text-xl italic">
             Ajouter {type === "book" ? "un livre" : "une ressource"}
@@ -137,7 +137,7 @@ export default function NewResourceModal({
             <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
               Type
             </label>
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex flex-wrap gap-1">
               {(Object.keys(RESOURCE_TYPE_CONFIG) as ResourceType[]).map(
                 (t) => {
                   const { label, Icon } = RESOURCE_TYPE_CONFIG[t];
@@ -251,7 +251,7 @@ export default function NewResourceModal({
             <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
               Statut
             </label>
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex flex-wrap gap-2">
               {STATUSES.map((s) => (
                 <button
                   key={s.key}

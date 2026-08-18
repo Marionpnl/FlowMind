@@ -19,9 +19,9 @@ export default function LibraryRow({ resource, onClick }: LibraryRowProps) {
           📖
         </div>
         <div>
-          <p className="text-sm font-medium">{resource.title}</p>
+          <p className="text-xs sm:text-sm font-medium">{resource.title}</p>
           {resource.author && (
-            <p className="text-xs text-black/70 text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-black/70 text-muted-foreground">
               {resource.author}
             </p>
           )}
@@ -35,7 +35,7 @@ export default function LibraryRow({ resource, onClick }: LibraryRowProps) {
               <Star
                 key={i}
                 className={cn(
-                  "h-3.5 w-3.5",
+                  "h-3 w-3 sm:h-3.5 sm:w-3.5",
                   i < resource.rating!
                     ? "fill-mindshelf text-mindshelf"
                     : "text-black/15",
