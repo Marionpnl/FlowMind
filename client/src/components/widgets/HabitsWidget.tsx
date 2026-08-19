@@ -3,19 +3,13 @@ import { Link } from "react-router-dom";
 import { TrendingUp } from "lucide-react";
 import { useHabitStore } from "@/store/habitStore";
 import { calculateStreak, getLast30Days } from "@/lib/streak";
-import { moduleDotClass } from "@/lib/moduleStyles";
+import { moduleDotClass, moduleTextClass } from "@/lib/moduleStyles";
 import { cn } from "@/lib/utils";
 
 const moduleBgSoft = {
   FlowDay: "bg-flowday-bg",
   MindShelf: "bg-mindshelf-bg",
   SparkTime: "bg-sparktime-bg",
-};
-
-const moduleTextClass = {
-  FlowDay: "text-flowday",
-  MindShelf: "text-mindshelf",
-  SparkTime: "text-sparktime",
 };
 
 interface HabitsWidgetProps {

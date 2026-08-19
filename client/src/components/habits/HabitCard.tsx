@@ -1,21 +1,19 @@
 import { Check, Flame, Trash2 } from "lucide-react";
-import { moduleBadgeClass, moduleDotClass } from "@/lib/moduleStyles";
-import { calculateStreak, getLast30Days } from "@/lib/streak";
+import {
+  moduleBadgeClass,
+  moduleDotClass,
+  moduleTextClass,
+} from "@/lib/moduleStyles";
+import { calculateStreak, getLast30Days, toLocalDateString } from "@/lib/streak";
 import { useHabitStore } from "@/store/habitStore";
 import type { IHabit } from "@shared/types";
 import { cn } from "@/lib/utils";
-
-const moduleTextClass = {
-  FlowDay: "text-flowday",
-  MindShelf: "text-mindshelf",
-  SparkTime: "text-sparktime",
-};
 
 export default function HabitCard({ habit }: { habit: IHabit }) {
   const toggleCheck = useHabitStore((s) => s.toggleCheck);
   const deleteHabit = useHabitStore((s) => s.deleteHabit);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateString();
   const isCheckedToday = habit.completedDates.includes(today);
   const streak = calculateStreak(habit.completedDates);
   const last30Days = getLast30Days();
@@ -97,11 +95,14 @@ export default function HabitCard({ habit }: { habit: IHabit }) {
           const daysAgo = 29 - idx;
           const isDone = habit.completedDates.includes(date);
           return (
-            <div
+            <button
               key={date}
+              type="button"
+              onClick={() => toggleCheck(habit._id, date)}
               title={daysAgo === 0 ? "Aujourd'hui" : `J-${daysAgo}`}
+              aria-label={`${isDone ? "Décocher" : "Cocher"} ${daysAgo === 0 ? "aujourd'hui" : `il y a ${daysAgo} jours`}`}
               className={cn(
-                "aspect-square rounded-xs cursor-pointer",
+                "aspect-square rounded-xs cursor-pointer transition-opacity hover:opacity-70",
                 isDone ? moduleDotClass[habit.module] : "bg-black/5",
               )}
             />

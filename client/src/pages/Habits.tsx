@@ -6,7 +6,7 @@ import NewHabitModal from "@/components/habits/NewHabitModal";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useHabitStore } from "@/store/habitStore";
-import { calculateStreak } from "@/lib/streak";
+import { calculateStreak, toLocalDateString } from "@/lib/streak";
 
 export default function Habits() {
   const habits = useHabitStore((s) => s.habits);
@@ -19,7 +19,7 @@ export default function Habits() {
     fetchHabits();
   }, [fetchHabits]);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateString();
   const checkedToday = habits.filter((h) =>
     h.completedDates.includes(today),
   ).length;

@@ -1,21 +1,31 @@
+// toISOString() convertit en UTC avant de formater : entre minuit et 1-2h du
+// matin (heure de Suisse), ça fait retomber "aujourd'hui" sur la veille.
+// On construit donc la date directement depuis les getters locaux.
+export function toLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function calculateStreak(
   completedDates: string[],
   asOf: Date = new Date(),
 ): number {
   const set = new Set(completedDates);
   const cursor = new Date(asOf);
-  let dateStr = cursor.toISOString().split("T")[0];
+  let dateStr = toLocalDateString(cursor);
 
   if (!set.has(dateStr)) {
     cursor.setDate(cursor.getDate() - 1);
-    dateStr = cursor.toISOString().split("T")[0];
+    dateStr = toLocalDateString(cursor);
   }
 
   let streak = 0;
   while (set.has(dateStr)) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
-    dateStr = cursor.toISOString().split("T")[0];
+    dateStr = toLocalDateString(cursor);
   }
   return streak;
 }
@@ -26,7 +36,7 @@ export function getLast30Days(): string[] {
   for (let i = 29; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().split("T")[0]);
+    days.push(toLocalDateString(d));
   }
   return days;
 }

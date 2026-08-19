@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { HabitModule, IHabit } from "@shared/types";
 import apiCall from "../lib/api";
+import { toLocalDateString } from "../lib/streak";
 
 interface HabitResponse {
   success: boolean;
@@ -62,7 +63,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
 
   // Check/Uncheck a habit (Check-in 1-clic)
   toggleCheck: async (id: string, date?: string) => {
-    const targetDate = date || new Date().toISOString().split("T")[0];
+    const targetDate = date || toLocalDateString();
 
     // Update optimistically in the interface (immediate reaction)
     const previousHabits = get().habits;
