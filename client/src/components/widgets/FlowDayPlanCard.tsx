@@ -1,21 +1,38 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { WandSparkles } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import { useAuthStore } from "@/store/authStore";
+
+const DEFAULT_EXAMPLE =
+  "Énergie moyenne, deux heures pour coder ce matin, envie d'une sortie running ce soir.";
 
 interface FlowDayPlanCardProps {
   date: string;
 }
 
 export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
-  const [userInput, setUserInput] = useState(
-    "Énergie moyenne, deux heures pour coder ce matin, envie d'une sortie running ce soir.",
-  );
+  const [userInput, setUserInput] = useState(DEFAULT_EXAMPLE);
   const generatePlan = useDayPlanStore((s) => s.generatePlan);
   const generating = useDayPlanStore((s) => s.generating);
   const autoGeneratePlan =
     useAuthStore((s) => s.user?.preferences?.autoGeneratePlan) ?? true;
+
+  function handleGenerate() {
+    if (generating || !userInput.trim()) return;
+    generatePlan(userInput, date);
+  }
+
+  function handleFocus() {
+    if (userInput === DEFAULT_EXAMPLE) setUserInput("");
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleGenerate();
+    }
+  }
 
   if (!autoGeneratePlan) {
     return (
@@ -44,6 +61,8 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
       <textarea
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
+        onFocus={handleFocus}
+        onKeyDown={handleKeyDown}
         rows={2}
         className="w-full resize-none border-none bg-transparent font-display text-[18px] sm:text-lg italic leading-snug outline-none placeholder:text-muted-foreground"
         placeholder="Décris ta journée... Énergie moyenne, deux heures pour coder ce matin, envie d'une sortie
@@ -60,7 +79,7 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
         <Button
           size="sm"
           className="h-6 px-2 text-[10px] sm:h-7 sm:px-2.5 sm:text-[0.8rem] bg-flowday text-white hover:bg-flowday/90 rounded-xl"
-          onClick={() => generatePlan(userInput, date)}
+          onClick={handleGenerate}
           disabled={generating || !userInput.trim()}
         >
           {generating ? "Génération..." : "Générer le planning →"}
