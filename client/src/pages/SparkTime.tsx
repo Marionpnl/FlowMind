@@ -69,14 +69,14 @@ export default function SparkTime() {
         subtitle={`${sparks.length} idée${sparks.length > 1 ? "s" : ""} générée${sparks.length > 1 ? "s" : ""}`}
         actions={
           <Button
-            size="sm"
+            size="lg"
             disabled={sparksLoading || interests.length === 0}
             onClick={handleGenerate}
-            className="bg-sparktime text-white rounded-xl hover:bg-sparktime/90"
+            className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-sparktime px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-sparktime/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
           >
             <RefreshCw
               className={cn(
-                "mr-1.5 h-3.5 w-3.5",
+                "h-2.5 w-2.5 sm:mr-1 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4",
                 sparksLoading && "animate-spin",
               )}
             />
@@ -85,12 +85,12 @@ export default function SparkTime() {
         }
       />
 
-      <main className="grid grid-cols-3 gap-5 px-8 py-6">
-        <div className="col-span-2 space-y-6">
+      <main className="grid grid-cols-1 gap-5 px-4 py-6 sm:px-8 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           <ContextBanner />
 
           <div>
-            <h2 className="font-display text-2xl italic">
+            <h2 className="font-display text-xl italic sm:text-2xl">
               Pour toi, maintenant
             </h2>
             <p className="mb-4 mt-0.5 text-xs text-black/70 text-muted-foreground">
@@ -124,7 +124,7 @@ export default function SparkTime() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {sparks.map((spark) => (
                   <SparkCard
                     key={spark._id}
