@@ -1,7 +1,7 @@
-import { Schema, model, models, Document } from "mongoose";
+import { Schema, model, models, Document, Model, Types } from "mongoose";
 
 export interface IInterestDocument extends Document {
-  userId: Schema.Types.ObjectId;
+  userId: Types.ObjectId;
   name: string;
   emoji: string;
   category?: string;
@@ -48,6 +48,6 @@ const interestSchema = new Schema<IInterestDocument>(
 
 interestSchema.index({ userId: 1, name: 1 }, { unique: true });
 
-const Interest =
+const Interest: Model<IInterestDocument> =
   models.Interest || model<IInterestDocument>("Interest", interestSchema);
 export default Interest;

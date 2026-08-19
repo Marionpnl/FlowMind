@@ -1,7 +1,7 @@
-import { Schema, model, models, Document } from "mongoose";
+import { Schema, model, models, Document, Model, Types } from "mongoose";
 
 export interface ISparkDocument extends Document {
-  userId: Schema.Types.ObjectId;
+  userId: Types.ObjectId;
   title: string;
   description: string;
   emoji: string;
@@ -59,5 +59,6 @@ const sparkSchema = new Schema<ISparkDocument>(
   { timestamps: true },
 );
 
-const Spark = models.Spark || model<ISparkDocument>("Spark", sparkSchema);
+const Spark: Model<ISparkDocument> =
+  models.Spark || model<ISparkDocument>("Spark", sparkSchema);
 export default Spark;

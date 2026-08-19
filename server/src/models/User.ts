@@ -1,4 +1,4 @@
-import { model, models, Schema, type Document } from "mongoose";
+import { model, models, Schema, type Document, type Model } from "mongoose";
 import bcrypt from "bcryptjs";
 
 interface IUserPreferences {
@@ -28,7 +28,7 @@ export interface IUser extends Document {
   resetPasswordTokenHash?: string;
   resetPasswordExpires?: Date;
   preferences: IUserPreferences;
-  comparePassword?: (candidate: string) => Promise<boolean>;
+  comparePassword: (candidate: string) => Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -118,5 +118,5 @@ userSchema.methods.comparePassword = async function (candidate: string) {
   return bcrypt.compare(candidate, this.password);
 };
 
-const User = models.User || model<IUser>("User", userSchema);
+const User: Model<IUser> = models.User || model<IUser>("User", userSchema);
 export default User;

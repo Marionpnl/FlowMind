@@ -1,4 +1,11 @@
-import { model, models, Schema, type Document } from "mongoose";
+import {
+  model,
+  models,
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
 
 interface INoteSchema {
   id: string;
@@ -9,7 +16,7 @@ interface INoteSchema {
 }
 
 export interface IResourceDocument extends Document {
-  userId: Schema.Types.ObjectId;
+  userId: Types.ObjectId;
   type: "book" | "article" | "video" | "podcast";
   title: string;
   author?: string;
@@ -66,6 +73,6 @@ const resourceSchema = new Schema<IResourceDocument>(
   { timestamps: true },
 );
 
-const Resource =
+const Resource: Model<IResourceDocument> =
   models.Resource || model<IResourceDocument>("Resource", resourceSchema);
 export default Resource;

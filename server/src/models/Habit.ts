@@ -1,7 +1,7 @@
-import { Schema, model, models, Document } from "mongoose";
+import { Schema, model, models, Document, Model, Types } from "mongoose";
 
 export interface IHabitDocument extends Document {
-  userId: Schema.Types.ObjectId;
+  userId: Types.ObjectId;
   name: string;
   emoji: string;
   goal?: string;
@@ -44,5 +44,6 @@ const habitSchema = new Schema<IHabitDocument>(
   { timestamps: true },
 );
 
-const Habit = models.Habit || model<IHabitDocument>("Habit", habitSchema);
+const Habit: Model<IHabitDocument> =
+  models.Habit || model<IHabitDocument>("Habit", habitSchema);
 export default Habit;

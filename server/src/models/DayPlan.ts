@@ -1,4 +1,11 @@
-import { model, models, Schema, type Document } from "mongoose";
+import {
+  model,
+  models,
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
 
 interface IDayPlanBlock {
   id: string;
@@ -12,7 +19,7 @@ interface IDayPlanBlock {
 }
 
 export interface IDayPlanDocument extends Document {
-  userId: Schema.Types.ObjectId;
+  userId: Types.ObjectId;
   date: string;
   userInput?: string;
   blocks: IDayPlanBlock[];
@@ -78,6 +85,6 @@ const dayPlanSchema = new Schema<IDayPlanDocument>(
 // Un seul DayPlan par utilisatrice et par date
 dayPlanSchema.index({ userId: 1, date: 1 }, { unique: true });
 
-const DayPlan =
+const DayPlan: Model<IDayPlanDocument> =
   models.DayPlan || model<IDayPlanDocument>("DayPlan", dayPlanSchema);
 export default DayPlan;
