@@ -24,12 +24,8 @@ import type { DayPlanBlock } from "@shared/types";
 
 type ViewMode = "day" | "week" | "month";
 
-function getTodayDateString() {
-  return new Date().toISOString().split("T")[0];
-}
-
 export default function FlowDay() {
-  const today = getTodayDateString();
+  const today = toDateString(new Date());
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const weekPlans = useDayPlanStore((s) => s.weekPlans);
   const monthPlans = useDayPlanStore((s) => s.monthPlans);

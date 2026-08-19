@@ -15,6 +15,7 @@ import {
   moduleTextClass,
   moduleButtonClass,
 } from "@/lib/moduleStyles";
+import { toDateString } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 
 const MODULES: {
@@ -81,7 +82,7 @@ export default function NewActivityModal({
   const [form, setForm] = useState({
     module: defaultModule,
     title: defaultTitle,
-    date: defaultDate ?? new Date().toISOString().split("T")[0],
+    date: defaultDate ?? toDateString(new Date()),
     time: defaultTime ?? "09:00",
     duration: defaultDuration ?? 30,
     notes: defaultNotes,

@@ -15,16 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Sun, Plus } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useDayPlanStore } from "@/store/dayPlanStore";
-import { summarizeBlocks } from "@/lib/dateUtils";
+import { summarizeBlocks, toDateString } from "@/lib/dateUtils";
 import type { DayPlanBlock } from "@shared/types";
-
-function getTodayDateString() {
-  return new Date().toISOString().split("T")[0];
-}
 
 export default function Dashboard() {
   const user = useAuthStore((s) => s.user);
-  const today = getTodayDateString();
+  const today = toDateString(new Date());
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
   const toggleBlock = useDayPlanStore((s) => s.toggleBlock);
