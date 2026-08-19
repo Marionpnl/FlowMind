@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import User from "../models/User";
 import Habit from "../models/Habit";
 import Resource from "../models/Resource";
@@ -7,6 +8,13 @@ import Spark from "../models/Spark";
 import Interest from "../models/Interest";
 import DayPlan from "../models/DayPlan";
 import { requireAuth, AuthRequest } from "../middleware/auth";
+import { sendPasswordResetEmail } from "../services/emailService";
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
+
+function hashResetToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 const router = Router();
 
@@ -73,6 +81,80 @@ router.post("/login", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error POST /api/auth/login:", error);
     res.status(500).json({ success: false, error: "Unable to login" });
+  }
+});
+
+// POST /api/auth/forgot-password
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    // Même réponse que l'utilisateur existe ou non, pour ne pas révéler
+    // quels emails sont enregistrés (énumération de comptes).
+    if (user) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      user.resetPasswordTokenHash = hashResetToken(rawToken);
+      user.resetPasswordExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+      await user.save();
+
+      const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+      const resetUrl = `${clientUrl}/reset-password/${rawToken}`;
+      await sendPasswordResetEmail(user.email, resetUrl);
+    }
+
+    res.json({
+      success: true,
+      message:
+        "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé.",
+    });
+  } catch (err) {
+    console.error("POST /api/auth/forgot-password error:", err);
+    res.status(500).json({ success: false, error: "Unable to process request" });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Token and password are required" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters",
+      });
+    }
+
+    const user = await User.findOne({
+      resetPasswordTokenHash: hashResetToken(token),
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid or expired reset link" });
+    }
+
+    user.password = password; // re-hashé par le pre-save hook du modèle
+    user.resetPasswordTokenHash = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ success: true, message: "Password updated" });
+  } catch (err) {
+    console.error("POST /api/auth/reset-password error:", err);
+    res.status(500).json({ success: false, error: "Unable to reset password" });
   }
 });
 

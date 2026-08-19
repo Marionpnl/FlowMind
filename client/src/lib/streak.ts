@@ -1,6 +1,3 @@
-// toISOString() convertit en UTC avant de formater : entre minuit et 1-2h du
-// matin (heure de Suisse), ça fait retomber "aujourd'hui" sur la veille.
-// On construit donc la date directement depuis les getters locaux.
 export function toLocalDateString(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");

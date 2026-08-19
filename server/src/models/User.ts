@@ -25,6 +25,8 @@ export interface IUser extends Document {
   language?: string;
   theme: "papier" | "encre" | "systeme";
   lastExportAt?: Date;
+  resetPasswordTokenHash?: string;
+  resetPasswordExpires?: Date;
   preferences: IUserPreferences;
   comparePassword?: (candidate: string) => Promise<boolean>;
   createdAt: Date;
@@ -69,6 +71,16 @@ const userSchema = new Schema<IUser>(
     },
     lastExportAt: {
       type: Date,
+    },
+    // select: false — jamais renvoyés par défaut (ex: GET /me, GET /export),
+    // même s'ils sont hashés, par précaution.
+    resetPasswordTokenHash: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
     },
     preferences: {
       crossModuleSuggestions: { type: Boolean, default: true },

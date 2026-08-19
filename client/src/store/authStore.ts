@@ -24,6 +24,8 @@ interface AuthState {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (token: string, password: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
   updateProfile: (updates: ProfileUpdateInput) => Promise<boolean>;
@@ -74,6 +76,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
     localStorage.setItem("token", res.token);
     set({ user: res.user });
+  },
+
+  forgotPassword: async (email) => {
+    const res = await apiCall<{ success: boolean; message: string }>(
+      "/api/auth/forgot-password",
+      { method: "POST", body: JSON.stringify({ email }) },
+    );
+    return res.message;
+  },
+
+  resetPassword: async (token, password) => {
+    await apiCall<{ success: boolean; message: string }>(
+      "/api/auth/reset-password",
+      { method: "POST", body: JSON.stringify({ token, password }) },
+    );
   },
 
   logout: () => {
