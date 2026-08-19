@@ -82,9 +82,13 @@ Stats déterministes (Focus/Lecture/Mouvement) affichées immédiatement, synth�
 Une sélection de choix volontairement assumés — le détail complet est documenté dans `CLAUDE.md`.
 
 - **Aucun champ `streak` stocké en base** : calculé à la volée depuis l'historique des habitudes, pour ne jamais risquer une désynchronisation entre la valeur affichée et la réalité.
+
 - **Validation défensive systématique des réponses IA côté backend** — jamais de confiance aveugle dans une génération, même quand le prompt fonctionne bien en test.
+
 - **Mode Redécouverte MindShelf sans appel IA** : rotation déterministe par jour de l'année plutôt qu'une sélection par IA — gratuit, prévisible, zéro risque d'hallucination pour une fonctionnalité qui doit juste "refaire remonter une vieille note".
+
 - **Sections Paramètres sans base technique réelle affichées comme "Bientôt disponible"** plutôt que simulées avec de faux toggles.
+
 - **Fonctionnalité "mot de passe oublié"** : toute la logique de sécurité (token à usage unique, hashé, expiration 1h) est réelle et testée ; l'envoi d'e-mail est pour l'instant simulé (loggé côté serveur) faute de fournisseur configuré — isolé dans une seule fonction à remplacer le jour venu.
 
 ---
