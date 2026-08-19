@@ -37,7 +37,7 @@ export default function ApparenceSection() {
         L'ambiance visuelle de ton journal
       </p>
 
-      <div className="mb-6 grid grid-cols-3 gap-3">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {THEMES.map((t) => (
           <button
             key={t.key}
@@ -53,14 +53,14 @@ export default function ApparenceSection() {
               Thème
               {theme === t.key && <Check className="h-3.5 w-3.5 text-flowday" />}
             </div>
-            <p className="text-sm font-medium">
-              {t.label}
+            <div className="flex flex-wrap items-center gap-1">
+              <p className="text-sm font-medium">{t.label}</p>
               {t.key === "encre" && (
-                <span className="ml-2 rounded-full bg-black/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="rounded-full bg-black/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                   Bientôt
                 </span>
               )}
-            </p>
+            </div>
             <p className="text-xs text-muted-foreground">{t.sub}</p>
           </button>
         ))}

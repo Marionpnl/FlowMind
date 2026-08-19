@@ -48,7 +48,7 @@ export default function DangerZoneSection() {
       <p className="mb-4 text-xs text-muted-foreground">
         Exporter, supprimer ou réinitialiser tes données
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <Button
           variant="outline"
           onClick={handleExport}

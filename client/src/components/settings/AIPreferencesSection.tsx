@@ -102,7 +102,7 @@ export default function AIPreferencesSection() {
         <h2 className="mb-4 text-sm font-semibold tracking-wide">
           Ton de l'IA
         </h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
               Style

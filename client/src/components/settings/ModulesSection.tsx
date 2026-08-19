@@ -17,7 +17,7 @@ export default function ModulesSection() {
       <h2 className="mb-4 text-sm font-semibold tracking-wide">
         Modules actifs
       </h2>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {MODULES.map((m) => (
           <div
             key={m.name}

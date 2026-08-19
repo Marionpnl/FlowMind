@@ -62,7 +62,7 @@ export default function Settings() {
     <div className="min-h-screen">
       <PageHeader title="Paramètres" subtitle="Personnalise ton FlowMind" />
 
-      <main className="grid grid-cols-[220px_1fr] gap-5 px-8 py-6">
+      <main className="grid grid-cols-1 gap-5 px-4 py-6 sm:px-8 lg:grid-cols-[220px_1fr]">
         <SettingsNav items={NAV_ITEMS} active={active} onSelect={setActive} />
 
         <div className="space-y-5">
