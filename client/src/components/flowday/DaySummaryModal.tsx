@@ -132,7 +132,7 @@ export default function DaySummaryModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl bg-cream p-7">
+      <DialogContent className="sm:max-w-xl bg-cream p-4 sm:p-7">
         <DialogHeader className="gap-1">
           <DialogTitle className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-black/60">
             <Sun className="h-3.5 w-3.5 text-flowday" />
@@ -159,28 +159,28 @@ export default function DaySummaryModal({
               {result.title}
             </p>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-flowday-bg p-4">
-                <p className="text-xs font-medium uppercase tracking-widest text-flowday">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="min-w-0 rounded-xl bg-flowday-bg p-4">
+                <p className="truncate text-[10px] font-medium tracking-normal text-flowday uppercase sm:text-xs sm:tracking-widest">
                   Focus
                 </p>
-                <p className="mt-1 font-mono text-lg font-normal text-black">
+                <p className="mt-1 truncate font-mono text-[16px] font-normal text-black sm:text-lg">
                   {formatDuration(focusMinutes)}
                 </p>
               </div>
-              <div className="rounded-xl bg-mindshelf-bg p-4">
-                <p className="text-xs font-medium uppercase tracking-widest text-mindshelf">
+              <div className="min-w-0 rounded-xl bg-mindshelf-bg p-4">
+                <p className="truncate text-[10px] font-medium tracking-normal text-mindshelf uppercase sm:text-xs sm:tracking-widest">
                   Lecture
                 </p>
-                <p className="mt-1 font-mono text-lg font-normal text-black">
+                <p className="mt-1 truncate font-mono text-[16px] font-normal text-black sm:text-lg">
                   {formatDuration(readingMinutes)}
                 </p>
               </div>
-              <div className="rounded-xl bg-sparktime-bg p-4">
-                <p className="text-xs font-medium uppercase tracking-widest text-sparktime">
+              <div className="min-w-0 rounded-xl bg-sparktime-bg p-4">
+                <p className="truncate text-[10px] font-medium tracking-normal text-sparktime uppercase sm:text-xs sm:tracking-widest">
                   Mouvement
                 </p>
-                <p className="mt-1 font-mono text-lg font-normal text-black">
+                <p className="mt-1 truncate font-mono text-[16px] font-normal text-black sm:text-lg">
                   {formatDuration(movementMinutes)}
                 </p>
               </div>
