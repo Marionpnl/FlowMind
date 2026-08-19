@@ -5,7 +5,7 @@ import type { DayPlanBlock, IDayPlan } from "@shared/types";
 
 const START_HOUR = 7;
 const END_HOUR = 15;
-const HOUR_HEIGHT = 88;
+const HOUR_HEIGHT = 60;
 
 const moduleBgSoft = {
   FlowDay: "bg-flowday-bg text-flowday",

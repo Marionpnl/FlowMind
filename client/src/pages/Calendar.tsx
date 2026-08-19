@@ -96,7 +96,7 @@ export default function Calendar() {
           view === "day" ? `${blocks.length} blocs planifiés` : undefined
         }
         actions={
-          <>
+          <div className="flex items-center gap-1 sm:gap-3">
             <button
               onClick={goToPrevious}
               className="text-muted-foreground hover:text-foreground"
@@ -105,7 +105,7 @@ export default function Calendar() {
             </button>
             <button
               onClick={goToToday}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="whitespace-nowrap text-[10px] text-black/70 text-muted-foreground hover:text-foreground lg:text-sm"
             >
               Aujourd'hui
             </button>
@@ -116,27 +116,29 @@ export default function Calendar() {
               <ChevronRight className="h-4 w-4" />
             </button>
             <Button
-              size="sm"
+              size="lg"
               onClick={openNewActivity}
-              className="bg-flowday text-white hover:bg-flowday/90"
+              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-flowday px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-flowday/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
             >
-              <Plus className="mr-1 h-4 w-4" />
+              <Plus className="h-2.5 w-2.5 sm:mr-1 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
               Bloc
             </Button>
-          </>
+          </div>
         }
       />
 
-      <main className="space-y-5 px-8 py-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl italic">{periodLabel}</h2>
-          <div className="flex items-center gap-1">
+      <main className="space-y-5 px-4 py-6 sm:px-8">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="min-w-0 flex-1 truncate font-display text-lg italic sm:text-2xl">
+            {periodLabel}
+          </h2>
+          <div className="flex shrink-0 items-center gap-0 sm:gap-1">
             {(["day", "week", "month"] as ViewMode[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  "whitespace-nowrap rounded-full px-1.5 py-1 text-[10px] font-medium transition-colors sm:px-3 sm:text-xs",
                   view === v
                     ? "bg-[#2B2A28] text-white"
                     : "text-muted-foreground hover:text-foreground",
