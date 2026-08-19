@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ContextBanner from "@/components/sparktime/ContextBanner";
@@ -29,9 +29,11 @@ export default function SparkTime() {
   const [maxDistance, setMaxDistance] = useState(5);
   const [energyIndex, setEnergyIndex] = useState(1);
   const [interestsModalOpen, setInterestsModalOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selectedSpark, setSelectedSpark] = useState<ISpark | null>(null);
   const [schedulingSpark, setSchedulingSpark] = useState<ISpark | null>(null);
   const [scheduleSession, setScheduleSession] = useState(0);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const liveSelectedSpark = selectedSpark
     ? (sparks.find((s) => s._id === selectedSpark._id) ?? null)
@@ -62,6 +64,18 @@ export default function SparkTime() {
     });
   }
 
+  function toggleCategoryFilter(category: string) {
+    setCategoryFilter((prev) => (prev === category ? null : category));
+    suggestionsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  const visibleSparks = categoryFilter
+    ? sparks.filter((s) => (s.category || "Autre") === categoryFilter)
+    : sparks;
+
   return (
     <div className="min-h-screen">
       <PageHeader
@@ -89,12 +103,25 @@ export default function SparkTime() {
         <div className="space-y-6 lg:col-span-2">
           <ContextBanner />
 
-          <div>
+          <div ref={suggestionsRef}>
             <h2 className="font-display text-xl italic sm:text-2xl">
               Pour toi, maintenant
             </h2>
             <p className="mb-4 mt-0.5 text-xs text-black/70 text-muted-foreground">
-              {sparks.length} idée{sparks.length > 1 ? "s" : ""} à explorer
+              {visibleSparks.length} idée{visibleSparks.length > 1 ? "s" : ""}{" "}
+              à explorer
+              {categoryFilter && (
+                <>
+                  {" "}
+                  ·{" "}
+                  <button
+                    onClick={() => setCategoryFilter(null)}
+                    className="underline hover:text-foreground cursor-pointer"
+                  >
+                    Réinitialiser le filtre
+                  </button>
+                </>
+              )}
             </p>
 
             {sparks.length === 0 ? (
@@ -123,9 +150,15 @@ export default function SparkTime() {
                   </Button>
                 )}
               </div>
+            ) : visibleSparks.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-black/10 bg-white p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Aucune idée dans cette catégorie.
+                </p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {sparks.map((spark) => (
+                {visibleSparks.map((spark) => (
                   <SparkCard
                     key={spark._id}
                     spark={spark}
@@ -139,7 +172,11 @@ export default function SparkTime() {
         </div>
 
         <div className="space-y-5">
-          <CategoriesPanel sparks={sparks} />
+          <CategoriesPanel
+            sparks={sparks}
+            activeCategory={categoryFilter}
+            onSelectCategory={toggleCategoryFilter}
+          />
           <InterestsPanel
             interests={interests}
             onManage={() => setInterestsModalOpen(true)}
