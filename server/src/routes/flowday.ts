@@ -180,14 +180,22 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
 
     const generatedBlocks = await generateDayPlan(userInput);
 
+    const VALID_MODULES = ["FlowDay", "MindShelf", "SparkTime"];
+    const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
     const blocks = generatedBlocks.map((b, index) => ({
       id: `block-${Date.now()}-${index}`,
-      time: b.time,
-      title: b.title,
+      time: typeof b.time === "string" && TIME_PATTERN.test(b.time)
+        ? b.time
+        : "09:00",
+      title:
+        typeof b.title === "string" && b.title.trim()
+          ? b.title.trim()
+          : "Activité",
       subtitle: b.subtitle,
       duration:
         typeof b.duration === "number" && b.duration > 0 ? b.duration : 30,
-      module: b.module,
+      module: VALID_MODULES.includes(b.module) ? b.module : "FlowDay",
       done: false,
     }));
 
@@ -310,6 +318,9 @@ router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "Block not found" });
     }
 
+    const validDuration =
+      typeof duration === "number" && duration > 0 ? duration : undefined;
+
     if (typeof date === "string" && date && date !== plan.date) {
       const block = plan.blocks.find((b) => b.id === blockId)!;
       const movedBlock = {
@@ -317,25 +328,27 @@ router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
         time: time !== undefined ? time : block.time,
         title: title !== undefined ? title : block.title,
         subtitle: subtitle !== undefined ? subtitle : block.subtitle,
-        duration: duration !== undefined ? duration : block.duration,
+        duration: validDuration !== undefined ? validDuration : block.duration,
         module: module !== undefined ? module : block.module,
         done: block.done,
         sparkId: block.sparkId,
       };
 
-      plan.blocks = plan.blocks.filter(
-        (b) => b.id !== blockId,
-      ) as typeof plan.blocks;
-      await plan.save();
-
+      // Le push vers le plan cible doit réussir avant qu'on retire le bloc
+      // du plan source, sinon un échec de validation ferait perdre le bloc.
       const targetPlan = await DayPlan.findOneAndUpdate(
         { userId: req.userId, date },
         {
           $push: { blocks: movedBlock },
           $setOnInsert: { userId: req.userId, date },
         },
-        { new: true, upsert: true },
+        { new: true, upsert: true, runValidators: true },
       );
+
+      plan.blocks = plan.blocks.filter(
+        (b) => b.id !== blockId,
+      ) as typeof plan.blocks;
+      await plan.save();
 
       return res.json({ success: true, data: targetPlan });
     }
@@ -343,14 +356,15 @@ router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
     const setFields: Record<string, unknown> = {};
     if (title !== undefined) setFields["blocks.$.title"] = title;
     if (time !== undefined) setFields["blocks.$.time"] = time;
-    if (duration !== undefined) setFields["blocks.$.duration"] = duration;
+    if (validDuration !== undefined)
+      setFields["blocks.$.duration"] = validDuration;
     if (subtitle !== undefined) setFields["blocks.$.subtitle"] = subtitle;
     if (module !== undefined) setFields["blocks.$.module"] = module;
 
     const updatedPlan = await DayPlan.findOneAndUpdate(
       { userId: req.userId, "blocks.id": blockId },
       { $set: setFields },
-      { new: true },
+      { new: true, runValidators: true },
     );
 
     res.json({ success: true, data: updatedPlan });

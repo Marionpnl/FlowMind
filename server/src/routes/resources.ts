@@ -285,7 +285,7 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
     const resource = await Resource.findOneAndUpdate(
       { _id: id, userId: req.userId },
       updates,
-      { new: true },
+      { new: true, runValidators: true },
     );
 
     if (!resource) {

@@ -34,7 +34,7 @@ router.post("/", async (req: AuthRequest, res: Response) => {
       name,
       emoji: emoji || "⚡",
       goal: goal,
-      module: module || "Flowday",
+      module: module || "FlowDay",
     });
 
     res.status(201).json({ success: true, data: habit });
