@@ -7,7 +7,6 @@ import {
   Leaf,
   BookOpen,
   Sparkles,
-  Flame,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useUIStore } from "@/store/uiStore";
@@ -206,21 +205,11 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        {/* Streak + utilisateur */}
+        {/* Utilisateur */}
         <div className="space-y-3">
           {!collapsed ? (
             <div className="rounded-2xl bg-white p-4 shadow-sm">
-              <p className="mb-2 text-xs font-medium uppercase tracking-widest text-black/70">
-                <Flame className="mr-2 inline-block h-4 w-4 text-accent-danger" />
-                Streak · 12 jours
-              </p>
-              <div className="flex gap-0.5">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="h-6 flex-1 rounded-full bg-flowday" />
-                ))}
-              </div>
-
-              <div className="flex justify-between pt-3">
+              <div className="flex justify-between">
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sparktime-bg text-sm font-medium text-sparktime">
                     {user?.name?.[0] ?? "?"}
