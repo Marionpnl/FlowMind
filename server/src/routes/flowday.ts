@@ -15,7 +15,9 @@ router.use(requireAuth);
 
 // Fingerprint of a day's blocks (id + done status) — used to detect whether the
 // end-of-day bilan is stale relative to the current state of the plan.
-function computeBlocksSignature(blocks: { id: string; done: boolean }[]): string {
+function computeBlocksSignature(
+  blocks: { id: string; done: boolean }[],
+): string {
   return blocks
     .map((b) => `${b.id}:${b.done ? 1 : 0}`)
     .sort()
@@ -178,16 +180,31 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const generatedBlocks = await generateDayPlan(userInput);
+    // Le planning déjà présent pour ce jour est donné à l'IA comme contexte
+    // (pour qu'elle complète plutôt que d'ignorer ce qui existe), puis fusionné
+    // avec les nouveaux blocs — un second appel à "Générer" ne doit jamais
+    // effacer ce qui a été planifié plus tôt dans la journée.
+    const existingPlan = await DayPlan.findOne({ userId: req.userId, date });
+    const existingBlocks = existingPlan?.blocks ?? [];
+
+    const generatedBlocks = await generateDayPlan(
+      userInput,
+      existingBlocks.map((b) => ({
+        time: b.time,
+        duration: b.duration,
+        title: b.title,
+      })),
+    );
 
     const VALID_MODULES = ["FlowDay", "MindShelf", "SparkTime"];
     const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-    const blocks = generatedBlocks.map((b, index) => ({
+    const newBlocks = generatedBlocks.map((b, index) => ({
       id: `block-${Date.now()}-${index}`,
-      time: typeof b.time === "string" && TIME_PATTERN.test(b.time)
-        ? b.time
-        : "09:00",
+      time:
+        typeof b.time === "string" && TIME_PATTERN.test(b.time)
+          ? b.time
+          : "09:00",
       title:
         typeof b.title === "string" && b.title.trim()
           ? b.title.trim()
@@ -199,10 +216,21 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
       done: false,
     }));
 
-    // Upsert : create a new plan if it doesn't exist, or update the existing one
+    // Upsert : create a new plan if it doesn't exist, or update the existing one.
+    // `$set` ciblé (pas de document de remplacement) : ne touche que
+    // `userInput`/`blocks`, laisse `endOfDaySummary`/`endOfDayInsight` intacts —
+    // leur mécanisme de péremption existant (comparaison de
+    // `endOfDayBlocksSignature`) les régénérera de lui-même si besoin.
     const plan = await DayPlan.findOneAndUpdate(
       { userId: req.userId, date },
-      { userId: req.userId, date, userInput, blocks },
+      {
+        $set: {
+          userId: req.userId,
+          date,
+          userInput,
+          blocks: [...existingBlocks, ...newBlocks],
+        },
+      },
       { new: true, upsert: true },
     );
 

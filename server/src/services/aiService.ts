@@ -9,15 +9,25 @@ export interface GeneratedBlock {
 }
 
 // FlowDay — Génération de planning (texte libre → blocs structurés)
+// `existingBlocks` : les blocs déjà planifiés pour ce jour (générés plus tôt,
+// ajoutés à la main, ou venus d'un autre module) — passés à l'IA pour qu'elle
+// complète le planning autour d'eux plutôt que de les ignorer et risquer un
+// chevauchement. La fusion avec les blocs existants elle-même se fait côté
+// route (`server/src/routes/flowday.ts`), pas ici.
 export async function generateDayPlan(
   userInput: string,
+  existingBlocks: ExistingBlockSummary[] = [],
 ): Promise<GeneratedBlock[]> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const existingBlocksSection = existingBlocks.length
+    ? `\nVoici les blocs déjà planifiés aujourd'hui, à ne pas reproduire ni chevaucher :\n${existingBlocks.map((b) => `- ${b.time} (${b.duration} min) : ${b.title}`).join("\n")}\n\nGénère uniquement de nouveaux blocs qui complètent ce planning existant, sans occuper ces créneaux.\n`
+    : "";
 
   const prompt = `
 Tu es un assistant de planification bienveillant pour l'application FlowMind.
 L'utilisatrice décrit sa journée ainsi : "${userInput}"
-
+${existingBlocksSection}
 Génère un planning structuré en blocs horaires réalistes et équilibrés.
 Chaque bloc doit avoir : time (format "HH:MM"), title (court, actionnable), subtitle (détail optionnel), duration (durée en minutes, un nombre réaliste comme 30, 45, 60, 90), module ("FlowDay" pour le travail/focus, "MindShelf" pour la lecture/apprentissage, "SparkTime" pour le bien-être/sport/pauses).
 
@@ -143,7 +153,7 @@ export interface SuggestedSlot {
   duration: number;
 }
 
-interface ExistingBlockSummary {
+export interface ExistingBlockSummary {
   time: string;
   duration: number;
   title: string;
