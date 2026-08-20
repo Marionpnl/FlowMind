@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import apiCall from "@/lib/api";
-import type { IDayPlan, HabitModule } from "@shared/types";
+import type { IDayPlan, DayPlanBlock, HabitModule } from "@shared/types";
 
 interface DayPlanResponse {
   success: boolean;
@@ -62,6 +62,7 @@ interface DayPlanState {
   toggleBlock: (blockId: string) => Promise<void>;
   scheduleActivity: (input: ScheduleActivityInput) => Promise<IDayPlan | null>;
   updateBlock: (blockId: string, updates: UpdateBlockInput) => Promise<void>;
+  reorderDayBlocks: (planId: string, blocks: DayPlanBlock[]) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
   submitDaySummary: (planId: string) => Promise<IDayPlan | null>;
 }
@@ -184,7 +185,32 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
   },
 
   updateBlock: async (blockId, updates) => {
-    set({ error: null });
+    const previousPlan = get().currentPlan;
+    const previousWeekPlans = get().weekPlans;
+    const previousMonthPlans = get().monthPlans;
+
+    // Update optimiste sur les champs modifiés (ex. `time`) : un changement de
+    // `date` ne déplace pas le bloc entre plans ici (on ne sait pas encore si
+    // le plan du nouveau jour est déjà en cache) — ça reste géré par
+    // stripBlockElsewhere/mergeIntoList une fois la vraie réponse serveur reçue.
+    const patchBlocks = (blocks: typeof previousMonthPlans[number]["blocks"]) =>
+      blocks.map((b) => (b.id === blockId ? { ...b, ...updates } : b));
+
+    set((state) => ({
+      currentPlan: state.currentPlan
+        ? { ...state.currentPlan, blocks: patchBlocks(state.currentPlan.blocks) }
+        : state.currentPlan,
+      weekPlans: state.weekPlans.map((p) => ({
+        ...p,
+        blocks: patchBlocks(p.blocks),
+      })),
+      monthPlans: state.monthPlans.map((p) => ({
+        ...p,
+        blocks: patchBlocks(p.blocks),
+      })),
+      error: null,
+    }));
+
     try {
       const res = await apiCall<DayPlanResponse>(
         `/api/flowday/blocks/${blockId}`,
@@ -224,7 +250,60 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error updating block";
-      set({ error: message });
+      set({
+        currentPlan: previousPlan,
+        weekPlans: previousWeekPlans,
+        monthPlans: previousMonthPlans,
+        error: message,
+      });
+    }
+  },
+
+  // Réordonne les blocs au sein d'un même plan (ex. échanger deux blocs du
+  // même jour en vue Mois) — `updateBlock` ne peut pas faire ça, il ne
+  // modifie que les champs d'un bloc, jamais l'ordre du tableau. On envoie
+  // le tableau complet réordonné via la route PUT existante (déjà utilisée
+  // par `toggleBlock`).
+  reorderDayBlocks: async (planId, blocks) => {
+    const previousPlan = get().currentPlan;
+    const previousWeekPlans = get().weekPlans;
+    const previousMonthPlans = get().monthPlans;
+
+    const applyReorder = (plans: IDayPlan[]) =>
+      plans.map((p) => (p._id === planId ? { ...p, blocks } : p));
+
+    set((state) => ({
+      currentPlan:
+        state.currentPlan?._id === planId
+          ? { ...state.currentPlan, blocks }
+          : state.currentPlan,
+      weekPlans: applyReorder(state.weekPlans),
+      monthPlans: applyReorder(state.monthPlans),
+      error: null,
+    }));
+
+    try {
+      const res = await apiCall<DayPlanResponse>(`/api/flowday/${planId}`, {
+        method: "PUT",
+        auth: true,
+        body: JSON.stringify({ blocks }),
+      });
+      const updated = res.data;
+      set((state) => ({
+        currentPlan:
+          state.currentPlan?._id === planId ? updated : state.currentPlan,
+        weekPlans: mergeIntoList(state.weekPlans, updated),
+        monthPlans: mergeIntoList(state.monthPlans, updated),
+      }));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error reordering blocks";
+      set({
+        currentPlan: previousPlan,
+        weekPlans: previousWeekPlans,
+        monthPlans: previousMonthPlans,
+        error: message,
+      });
     }
   },
 

@@ -1,6 +1,20 @@
+import { useState, type ReactNode } from "react";
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  type DragEndEvent,
+  type DragMoveEvent,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DAY_LABELS, getMonthGrid, toDateString } from "@/lib/dateUtils";
+import { pointerFirstCollisionDetection } from "@/lib/dndCollision";
+import { useDayPlanStore } from "@/store/dayPlanStore";
 import type { DayPlanBlock, IDayPlan } from "@shared/types";
 
 const moduleBgSoft = {
@@ -8,6 +22,19 @@ const moduleBgSoft = {
   MindShelf: "bg-mindshelf-bg text-mindshelf",
   SparkTime: "bg-sparktime-bg text-sparktime",
 };
+
+interface BlockDropData {
+  date: string;
+}
+
+// Aperçu en direct de l'échange, cf. WeekGridView pour le détail du calcul.
+// Pas de `height` ici : les chips du mois n'ont pas d'axe horaire, leur
+// taille ne dépend pas d'une durée à faire tenir.
+interface SwapPreview {
+  targetId: string;
+  dx: number;
+  dy: number;
+}
 
 interface MonthGridViewProps {
   year: number;
@@ -24,84 +51,236 @@ export default function MonthGridView({
   onDeleteBlock,
   onEditBlock,
 }: MonthGridViewProps) {
+  const updateBlock = useDayPlanStore((s) => s.updateBlock);
+  const reorderDayBlocks = useDayPlanStore((s) => s.reorderDayBlocks);
   const grid = getMonthGrid(year, month);
   const planByDate = new Map(plans.map((p) => [p.date, p]));
   const today = toDateString(new Date());
+  const [swapPreview, setSwapPreview] = useState<SwapPreview | null>(null);
+
+  // Un mouvement de quelques pixels ne déclenche pas de drag — ça laisse le
+  // clic simple (ouvrir la modale d'édition) fonctionner normalement.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  function handleDragMove(event: DragMoveEvent) {
+    const { active, over } = event;
+    const overData = over?.data.current as BlockDropData | undefined;
+    if (!over || !overData || over.id === active.id) {
+      setSwapPreview(null);
+      return;
+    }
+    // Une seule mesure par cible survolée — cf. WeekGridView pour le détail
+    // (recalculer à chaque tick réutiliserait la position déjà déplacée par
+    // notre propre transform d'aperçu, empêchant la cible de rejoindre
+    // complètement sa destination).
+    setSwapPreview((prev) => {
+      if (prev && prev.targetId === over.id) return prev;
+      const activeRect = active.rect.current.initial;
+      const overRect = over.rect;
+      if (!activeRect) return null;
+      return {
+        targetId: over.id as string,
+        dx: activeRect.left - overRect.left,
+        dy: activeRect.top - overRect.top,
+      };
+    });
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    setSwapPreview(null);
+    const { active, over } = event;
+    if (!over) return;
+    const data = active.data.current as { blockId: string; date: string };
+
+    // Lâché directement sur un autre bloc : les deux échangent leur jour.
+    // Séquencé (la seconde requête attend la première) : un échange entre
+    // deux jours modifie deux documents via un "lire puis sauvegarder" côté
+    // serveur qui n'est pas atomique — deux requêtes concurrentes sur la
+    // même paire de jours peuvent s'écraser l'une l'autre et perdre des blocs.
+    const overData = over.data.current as BlockDropData | undefined;
+    if (overData && over.id !== active.id) {
+      if (overData.date === data.date) {
+        // Même jour : rien à échanger côté date, on réordonne plutôt les
+        // deux blocs au sein du jour — utile puisque seuls les 3 premiers
+        // sont affichés (le reste passe dans "+N de plus").
+        const plan = planByDate.get(data.date);
+        if (!plan) return;
+        const idxActive = plan.blocks.findIndex((b) => b.id === data.blockId);
+        const idxOver = plan.blocks.findIndex((b) => b.id === over.id);
+        if (idxActive === -1 || idxOver === -1) return;
+        const reordered = [...plan.blocks];
+        [reordered[idxActive], reordered[idxOver]] = [
+          reordered[idxOver],
+          reordered[idxActive],
+        ];
+        await reorderDayBlocks(plan._id, reordered);
+        return;
+      }
+      await updateBlock(data.blockId, { date: overData.date });
+      await updateBlock(over.id as string, { date: data.date });
+      return;
+    }
+
+    const newDate = over.id as string;
+    if (newDate === data.date) return;
+    updateBlock(data.blockId, { date: newDate });
+  }
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-      <div className="grid grid-cols-7 border-b border-black/5">
-        {DAY_LABELS.map((label) => (
-          <div
-            key={label}
-            className="px-1 py-1.5 text-[9px] text-black/70 font-medium uppercase tracking-widest text-muted-foreground sm:px-3 sm:py-2 sm:text-xs"
-          >
-            {label}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7">
-        {grid.map((day, idx) => {
-          if (!day) {
-            return (
-              <div
-                key={idx}
-                className="min-h-16 border-b border-l border-black/5 sm:min-h-28"
-              />
-            );
-          }
-
-          const dateStr = toDateString(day);
-          const plan = planByDate.get(dateStr);
-          const blocks = plan?.blocks ?? [];
-          const isToday = dateStr === today;
-
-          return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={pointerFirstCollisionDetection}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setSwapPreview(null)}
+    >
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+        <div className="grid grid-cols-7 border-b border-black/5">
+          {DAY_LABELS.map((label) => (
             <div
-              key={idx}
-              className="min-h-16 space-y-1 border-b border-l border-black/5 p-1 sm:min-h-28 sm:p-3.5"
+              key={label}
+              className="px-1 py-1.5 text-[9px] text-black/70 font-medium uppercase tracking-widest text-muted-foreground sm:px-3 sm:py-2 sm:text-xs"
             >
-              <p
-                className={cn(
-                  "text-[10px] text-black/60 font-medium tracking-widest sm:text-xs",
-                  isToday &&
-                    "flex h-4 w-4 items-center justify-center rounded-full bg-flowday text-white sm:h-5 sm:w-5",
-                )}
-              >
-                {day.getDate()}
-              </p>
-              {blocks.slice(0, 3).map((block) => (
+              {label}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7">
+          {grid.map((day, idx) => {
+            if (!day) {
+              return (
                 <div
-                  key={block.id}
-                  onClick={() => onEditBlock(block, dateStr)}
+                  key={idx}
+                  className="min-h-16 border-b border-l border-black/5 sm:min-h-28"
+                />
+              );
+            }
+
+            const dateStr = toDateString(day);
+            const plan = planByDate.get(dateStr);
+            const blocks = plan?.blocks ?? [];
+            const isToday = dateStr === today;
+
+            return (
+              <DayCell key={idx} dateStr={dateStr}>
+                <p
                   className={cn(
-                    "group relative cursor-pointer truncate rounded px-1 py-0.5 pr-3 text-[8px] font-medium sm:px-1.5 sm:pr-4 sm:text-[10px]",
-                    moduleBgSoft[block.module],
+                    "text-[10px] text-black/60 font-medium tracking-widest sm:text-xs",
+                    isToday &&
+                      "flex h-4 w-4 items-center justify-center rounded-full bg-flowday text-white sm:h-5 sm:w-5",
                   )}
                 >
-                  {block.title}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteBlock(block.id);
-                    }}
-                    className="absolute right-0 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/70 p-0.5 group-hover:block"
-                    aria-label="Supprimer ce bloc"
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </button>
-                </div>
-              ))}
-              {blocks.length > 3 && (
-                <p className="text-[8px] text-muted-foreground sm:text-[10px]">
-                  +{blocks.length - 3} de plus
+                  {day.getDate()}
                 </p>
-              )}
-            </div>
-          );
-        })}
+                {blocks.slice(0, 3).map((block) => (
+                  <DraggableChip
+                    key={block.id}
+                    block={block}
+                    dateStr={dateStr}
+                    onEditBlock={onEditBlock}
+                    onDeleteBlock={onDeleteBlock}
+                    swapPreview={
+                      swapPreview?.targetId === block.id ? swapPreview : null
+                    }
+                  />
+                ))}
+                {blocks.length > 3 && (
+                  <p className="text-[8px] text-muted-foreground sm:text-[10px]">
+                    +{blocks.length - 3} de plus
+                  </p>
+                )}
+              </DayCell>
+            );
+          })}
+        </div>
       </div>
+    </DndContext>
+  );
+}
+
+function DayCell({
+  dateStr,
+  children,
+}: {
+  dateStr: string;
+  children: ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: dateStr });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "min-h-16 space-y-1 border-b border-l border-black/5 p-1 transition-colors sm:min-h-28 sm:p-3.5",
+        isOver && "bg-flowday/5",
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableChip({
+  block,
+  dateStr,
+  onEditBlock,
+  onDeleteBlock,
+  swapPreview,
+}: {
+  block: DayPlanBlock;
+  dateStr: string;
+  onEditBlock: (block: DayPlanBlock, date: string) => void;
+  onDeleteBlock: (blockId: string) => void;
+  swapPreview: SwapPreview | null;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: block.id,
+      data: { blockId: block.id, date: dateStr },
+    });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: block.id,
+    data: { date: dateStr } satisfies BlockDropData,
+  });
+
+  const previewTransform = swapPreview
+    ? `translate3d(${swapPreview.dx}px, ${swapPreview.dy}px, 0)`
+    : undefined;
+
+  return (
+    <div
+      ref={(node) => {
+        setNodeRef(node);
+        setDropRef(node);
+      }}
+      {...listeners}
+      {...attributes}
+      style={{
+        transform: transform ? CSS.Translate.toString(transform) : previewTransform,
+        transition: previewTransform ? "transform 150ms ease" : undefined,
+        touchAction: "none",
+      }}
+      onClick={() => onEditBlock(block, dateStr)}
+      className={cn(
+        "group relative cursor-grab truncate rounded px-1 py-0.5 pr-3 text-[8px] font-medium active:cursor-grabbing sm:px-1.5 sm:pr-4 sm:text-[10px]",
+        isDragging && "z-20 shadow-md",
+        swapPreview && "z-10 ring-2 ring-white",
+        moduleBgSoft[block.module],
+      )}
+    >
+      {block.title}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDeleteBlock(block.id);
+        }}
+        className="absolute right-0 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/70 p-0.5 group-hover:block"
+        aria-label="Supprimer ce bloc"
+      >
+        <X className="h-2.5 w-2.5" />
+      </button>
     </div>
   );
 }

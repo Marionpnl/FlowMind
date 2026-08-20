@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Leaf, BookOpen, Sparkles, Wand2, type LucideIcon } from "lucide-react";
+import {
+  Leaf,
+  BookOpen,
+  Sparkles,
+  Wand2,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -75,7 +82,9 @@ export default function NewActivityModal({
 }: NewActivityModalProps) {
   const scheduleActivity = useDayPlanStore((s) => s.scheduleActivity);
   const updateBlock = useDayPlanStore((s) => s.updateBlock);
+  const deleteBlock = useDayPlanStore((s) => s.deleteBlock);
   const isEditing = !!editingBlockId;
+  const [deleting, setDeleting] = useState(false);
 
   // Initialisé une seule fois au montage : le parent force un remount (via `key`)
   // à chaque nouvelle ouverture pour repartir d'un formulaire vierge/pré-rempli.
@@ -119,6 +128,17 @@ export default function NewActivityModal({
       }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!editingBlockId) return;
+    setDeleting(true);
+    try {
+      await deleteBlock(editingBlockId);
+      onOpenChange(false);
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -236,21 +256,35 @@ export default function NewActivityModal({
           </div>
         )}
 
-        <div className="mt-4 flex items-center justify-end gap-3">
-          <button
-            onClick={() => onOpenChange(false)}
-            className="text-xs text-black/60 text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            Annuler
-          </button>
-          <Button
-            size="sm"
-            disabled={submitting || !title.trim()}
-            onClick={handleSubmit}
-            className={cn("text-white rounded-xl", moduleButtonClass[module])}
-          >
-            {isEditing ? "Enregistrer" : "+ Ajouter"}
-          </Button>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          {isEditing ? (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="flex items-center gap-1.5 text-xs text-accent-danger hover:underline disabled:opacity-50 cursor-pointer"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {deleting ? "Suppression..." : "Supprimer"}
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onOpenChange(false)}
+              className="text-xs text-black/60 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              Annuler
+            </button>
+            <Button
+              size="sm"
+              disabled={submitting || !title.trim()}
+              onClick={handleSubmit}
+              className={cn("text-white rounded-xl", moduleButtonClass[module])}
+            >
+              {isEditing ? "Enregistrer" : "+ Ajouter"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
