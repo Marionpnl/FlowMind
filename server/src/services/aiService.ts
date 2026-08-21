@@ -100,11 +100,15 @@ export interface GeneratedSpark {
 }
 
 // SparkTime — Génération de suggestions d'activités (profil + localisation)
+
 // `avoidTitles` : titres déjà proposés récemment (encore affichés, ou
 // supprimés récemment par l'utilisatrice) — pour favoriser la rotation des
 // suggestions plutôt que de reproposer la même idée juste après l'avoir vue.
+// `interests` : passés déjà triés par importance décroissante (cf. routes/sparks.ts)
+// et annotés dans le prompt pour que l'IA priorise les centres d'intérêt
+// que l'utilisatrice a marqués comme les plus importants.
 export async function generateSparks(
-  interestNames: string[],
+  interests: { name: string; importance: number }[],
   location: string | undefined,
   maxDuration?: number,
   energyLevel?: string,
@@ -113,10 +117,16 @@ export async function generateSparks(
 ): Promise<GeneratedSpark[]> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+  const interestNames = interests.map((i) => i.name);
+  const interestsList = interests
+    .map((i) => `${i.name} (importance ${i.importance}/5)`)
+    .join(", ");
+
   const prompt = `
 Tu es un assistant qui suggère des activités concrètes pour l'application FlowMind (module SparkTime), à partir des centres d'intérêt d'une utilisatrice.
 
-Ses centres d'intérêt : ${interestNames.join(", ")}
+Ses centres d'intérêt, avec le niveau d'importance qu'elle leur a attribué (1 = peu important, 5 = très important) : ${interestsList}
+Priorise la génération de suggestions autour des centres d'intérêt à l'importance la plus haute, sans négliger complètement les autres si pertinent.
 Sa localisation (indicative, à utiliser si pertinent) : ${location || "non renseignée"}
 ${maxDuration ? `Durée maximale par activité : ${maxDuration} minutes` : ""}
 ${energyLevel ? `Niveau d'énergie recherché : ${energyLevel}` : ""}
@@ -129,7 +139,7 @@ Chaque suggestion doit avoir :
 - description (1-2 phrases)
 - emoji (un seul emoji représentatif)
 - duration (durée en minutes, un nombre réaliste comme 15, 30, 45, 60${maxDuration ? `, ne dépassant pas ${maxDuration}` : ""})
-- interestName (doit correspondre exactement à l'un des centres d'intérêt listés ci-dessus)
+- interestName (doit correspondre exactement à l'un de ces noms, sans la mention d'importance : ${interestNames.join(", ")})
 - category (une catégorie courte parmi Sport, Créatif, Bien-être, Social, Culture, Nature, ou une autre si aucune ne convient)
 - detail (une courte ligne contextuelle optionnelle : distance, lieu, niveau de difficulté — ex: "8 km · centre-ville" ou "niveau facile". Ne répète JAMAIS la durée dans ce champ, elle est déjà affichée ailleurs)
 - energyLevel (le niveau d'énergie que demande CETTE activité précise, parmi Basse, Basse-Moyenne, Moyenne, Moyenne-Haute, Haute)

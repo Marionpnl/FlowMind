@@ -17,7 +17,9 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
 
     const [interests, user, visibleSparks, recentlyDismissed] =
       await Promise.all([
-        Interest.find({ userId: req.userId }).select("name category"),
+        Interest.find({ userId: req.userId }).select(
+          "name category importance",
+        ),
         User.findById(req.userId).select("location"),
         Spark.find({ userId: req.userId, dismissed: false }).select("title"),
         Spark.find({ userId: req.userId, dismissed: true })
@@ -37,6 +39,12 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
     const categoryByInterestName = new Map(
       interests.map((i) => [i.name, i.category]),
     );
+    // Triés par importance décroissante pour que le prompt liste d'abord les
+    // centres d'intérêt prioritaires — cf. aiService.ts pour comment l'IA
+    // s'en sert.
+    const rankedInterests = [...interests]
+      .sort((a, b) => b.importance - a.importance)
+      .map((i) => ({ name: i.name, importance: i.importance }));
     const validMaxDuration =
       typeof maxDuration === "number" && maxDuration > 0
         ? maxDuration
@@ -50,7 +58,7 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
     );
 
     const generated = await generateSparks(
-      interestNames,
+      rankedInterests,
       user?.location,
       validMaxDuration,
       typeof energyLevel === "string" ? energyLevel : undefined,
