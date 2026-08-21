@@ -334,8 +334,8 @@ function DraggableBlock({
       }}
       onClick={() => onEditBlock(block, dateStr)}
       className={cn(
-        "group absolute left-1 right-1 cursor-grab overflow-hidden rounded-lg px-2 active:cursor-grabbing",
-        isDragging && "z-20 shadow-lg",
+        "group absolute left-1 right-1 cursor-grab overflow-visible rounded-lg px-2 active:cursor-grabbing",
+        isDragging ? "z-20 shadow-lg" : "hover:z-10",
         swapPreview && "z-10 ring-2 ring-white",
         isCompact ? "flex items-center py-0" : "py-1",
         isSolid ? moduleBgSolid[block.module] : moduleBgSoft[block.module],
@@ -346,10 +346,7 @@ function DraggableBlock({
           e.stopPropagation();
           onDeleteBlock(block.id);
         }}
-        className={cn(
-          "absolute right-1 top-1 hidden rounded-full p-0.5 group-hover:block",
-          isSolid ? "hover:bg-white/20" : "hover:bg-black/10",
-        )}
+        className="absolute -right-2 -top-2 z-10 hidden h-5 w-5 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
         aria-label="Supprimer ce bloc"
       >
         <X className="h-3 w-3" />

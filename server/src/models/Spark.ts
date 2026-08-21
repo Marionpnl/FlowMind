@@ -10,6 +10,8 @@ export interface ISparkDocument extends Document {
   category?: string;
   detail?: string;
   energyLevel?: string;
+  dismissed: boolean;
+  dismissedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +56,17 @@ const sparkSchema = new Schema<ISparkDocument>(
     energyLevel: {
       type: String,
       trim: true,
+    },
+    // Suppression douce : un Spark supprimé par l'utilisatrice n'est pas
+    // effacé, juste masqué — son titre reste connu de l'IA pour éviter de le
+    // reproposer tout de suite (favorise la rotation des suggestions), sans
+    // l'exclure définitivement pour autant.
+    dismissed: {
+      type: Boolean,
+      default: false,
+    },
+    dismissedAt: {
+      type: Date,
     },
   },
   { timestamps: true },

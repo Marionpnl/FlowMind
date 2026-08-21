@@ -15,10 +15,16 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
   try {
     const { maxDuration, energyLevel, maxDistance } = req.body;
 
-    const [interests, user] = await Promise.all([
-      Interest.find({ userId: req.userId }).select("name category"),
-      User.findById(req.userId).select("location"),
-    ]);
+    const [interests, user, visibleSparks, recentlyDismissed] =
+      await Promise.all([
+        Interest.find({ userId: req.userId }).select("name category"),
+        User.findById(req.userId).select("location"),
+        Spark.find({ userId: req.userId, dismissed: false }).select("title"),
+        Spark.find({ userId: req.userId, dismissed: true })
+          .sort({ dismissedAt: -1 })
+          .limit(10)
+          .select("title"),
+      ]);
 
     if (interests.length === 0) {
       return res.status(400).json({
@@ -39,6 +45,9 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
       typeof maxDistance === "number" && maxDistance > 0
         ? maxDistance
         : undefined;
+    const avoidTitles = [...visibleSparks, ...recentlyDismissed].map(
+      (s) => s.title,
+    );
 
     const generated = await generateSparks(
       interestNames,
@@ -46,6 +55,7 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
       validMaxDuration,
       typeof energyLevel === "string" ? energyLevel : undefined,
       validMaxDistance,
+      avoidTitles,
     );
 
     const sparksData = generated.map((s) => {
@@ -88,15 +98,39 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// GET /api/sparks - Spark list
+// GET /api/sparks - Spark list (dismissed ones stay hidden but aren't erased)
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
-    const sparks = await Spark.find({ userId: req.userId }).sort({
-      createdAt: -1,
-    });
+    const sparks = await Spark.find({
+      userId: req.userId,
+      dismissed: false,
+    }).sort({ createdAt: -1 });
     res.json({ success: true, data: sparks });
   } catch (error) {
     console.error("GET /api/sparks error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// DELETE /api/sparks/:id - Dismiss a spark (soft delete: hidden, kept for AI rotation context)
+router.delete("/:id", async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const spark = await Spark.findOneAndUpdate(
+      { _id: id, userId: req.userId },
+      { dismissed: true, dismissedAt: new Date() },
+      { new: true },
+    );
+
+    if (!spark) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Spark not found" });
+    }
+
+    res.json({ success: true, data: spark });
+  } catch (error) {
+    console.error("DELETE /api/sparks/:id error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

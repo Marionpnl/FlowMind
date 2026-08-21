@@ -80,7 +80,7 @@ export default function Sidebar() {
       )}
       <aside
         className={cn(
-          "flex h-screen flex-col justify-between border-r border-black/5 bg-cream-secondary pt-7 pb-5 transition-all duration-200",
+          "flex h-screen flex-col justify-between border-r border-black/5 bg-cream-secondary pt-7 pb-5 transition-all duration-400",
           isMobile && mobileMenuOpen && "fixed inset-y-0 left-0 z-50 shadow-xl",
           widthClass,
         )}
@@ -90,20 +90,27 @@ export default function Sidebar() {
           <Link
             to="/"
             className={cn(
-              "mb-8 flex items-center gap-2",
-              collapsed ? "justify-center" : "",
+              "mb-8 flex items-center",
+              collapsed ? "justify-center" : "gap-2",
             )}
           >
             <div
               className={cn(
-                "flex items-center justify-center rounded-xl bg-black font-display italic text-white",
+                "flex shrink-0 items-center justify-center rounded-xl bg-black font-display italic text-white",
                 mobileCollapsedRail ? "h-7 w-7 text-sm" : "h-10 w-10",
               )}
             >
               F
             </div>
-            {!collapsed && (
-              <div>
+            <div
+              className={cn(
+                "grid transition-all duration-400",
+                collapsed
+                  ? "grid-cols-[0fr] grid-rows-[0fr] opacity-0"
+                  : "grid-cols-[1fr] grid-rows-[1fr] opacity-100",
+              )}
+            >
+              <div className="min-h-0 min-w-0 overflow-hidden whitespace-nowrap">
                 <p className="font-display text-2xl italic leading-none">
                   FlowMind
                 </p>
@@ -111,15 +118,20 @@ export default function Sidebar() {
                   V2.0 · JUIN 2026
                 </p>
               </div>
-            )}
+            </div>
           </Link>
 
           {/* Modules */}
-          {!collapsed && (
-            <p className="mb-2 text-xs text-black/65 font-medium uppercase tracking-widest text-muted-foreground">
+          <div
+            className={cn(
+              "grid transition-all duration-400",
+              collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100",
+            )}
+          >
+            <p className="mb-2 min-h-0 overflow-hidden whitespace-nowrap text-xs text-black/65 font-medium uppercase tracking-widest text-muted-foreground">
               Modules
             </p>
-          )}
+          </div>
           <nav className="mb-8 space-y-1">
             {MODULE_LINKS.map((link) => (
               <NavLink
@@ -127,11 +139,12 @@ export default function Sidebar() {
                 to={link.to}
                 className={({ isActive }) =>
                   cn(
-                    "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
-                    collapsed &&
-                      (mobileCollapsedRail
-                        ? "justify-center px-1"
-                        : "justify-center px-2"),
+                    "relative flex items-center rounded-xl px-3 py-2 text-sm transition-colors",
+                    collapsed
+                      ? (mobileCollapsedRail
+                          ? "justify-center px-1"
+                          : "justify-center px-2")
+                      : "gap-3",
                     isActive
                       ? "bg-white shadow-sm"
                       : "text-muted-foreground hover:bg-white/60",
@@ -151,13 +164,20 @@ export default function Sidebar() {
                     )}
                     <link.Icon
                       className={cn(
-                        "h-4 w-4 text-black/70",
+                        "h-4 w-4 shrink-0 text-black/70",
                         isActive ? link.textClass : "",
                         mobileCollapsedRail && "h-3 w-3",
                       )}
                     />
-                    {!collapsed && (
-                      <span className="flex flex-col">
+                    <span
+                      className={cn(
+                        "grid transition-all duration-400",
+                        collapsed
+                          ? "grid-cols-[0fr] grid-rows-[0fr] opacity-0"
+                          : "grid-cols-[1fr] grid-rows-[1fr] opacity-100",
+                      )}
+                    >
+                      <span className="flex min-h-0 min-w-0 flex-col overflow-hidden whitespace-nowrap">
                         <span className="flex font-medium items-center gap-2">
                           {link.label}
                         </span>
@@ -165,7 +185,7 @@ export default function Sidebar() {
                           {link.sub}
                         </span>
                       </span>
-                    )}
+                    </span>
                   </>
                 )}
               </NavLink>
@@ -173,11 +193,16 @@ export default function Sidebar() {
           </nav>
 
           {/* Espace */}
-          {!collapsed && (
-            <p className="mb-2 text-xs text-black/65 font-medium uppercase tracking-widest text-muted-foreground">
+          <div
+            className={cn(
+              "grid transition-all duration-400",
+              collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100",
+            )}
+          >
+            <p className="mb-2 min-h-0 overflow-hidden whitespace-nowrap text-xs text-black/65 font-medium uppercase tracking-widest text-muted-foreground">
               Espace
             </p>
-          )}
+          </div>
           <nav className="space-y-1">
             {SPACE_LINKS.map(({ to, label, Icon }) => (
               <NavLink
@@ -185,11 +210,12 @@ export default function Sidebar() {
                 to={to}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                    collapsed &&
-                      (mobileCollapsedRail
-                        ? "justify-center px-1"
-                        : "justify-center px-2"),
+                    "flex items-center rounded-lg px-3 py-2 text-sm transition-colors",
+                    collapsed
+                      ? (mobileCollapsedRail
+                          ? "justify-center px-1"
+                          : "justify-center px-2")
+                      : "gap-2",
                     isActive
                       ? "bg-white font-medium shadow-sm"
                       : "text-muted-foreground hover:bg-white/60",
@@ -197,9 +223,23 @@ export default function Sidebar() {
                 }
               >
                 <Icon
-                  className={cn("h-4 w-4", mobileCollapsedRail && "h-3 w-3")}
+                  className={cn(
+                    "h-4 w-4 shrink-0",
+                    mobileCollapsedRail && "h-3 w-3",
+                  )}
                 />
-                {!collapsed && label}
+                <span
+                  className={cn(
+                    "grid transition-all duration-400",
+                    collapsed
+                      ? "grid-cols-[0fr] opacity-0"
+                      : "grid-cols-[1fr] opacity-100",
+                  )}
+                >
+                  <span className="min-w-0 overflow-hidden whitespace-nowrap">
+                    {label}
+                  </span>
+                </span>
               </NavLink>
             ))}
           </nav>
@@ -208,18 +248,18 @@ export default function Sidebar() {
         {/* Utilisateur */}
         <div className="space-y-3">
           {!collapsed ? (
-            <div className="rounded-2xl bg-white p-4 shadow-sm">
+            <div className="overflow-hidden rounded-2xl bg-white p-4 shadow-sm">
               <div className="flex justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sparktime-bg text-sm font-medium text-sparktime">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sparktime-bg text-sm font-medium text-sparktime">
                     {user?.name?.[0] ?? "?"}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium leading-none">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium leading-none">
                       {user?.name}
                     </p>
                     {user?.location && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground">
                         {user.location}
                       </p>
                     )}
@@ -227,7 +267,7 @@ export default function Sidebar() {
                 </div>
                 <button
                   onClick={logout}
-                  className="text-muted-foreground hover:text-accent-danger"
+                  className="shrink-0 text-muted-foreground hover:text-accent-danger"
                   aria-label="Se déconnecter"
                 >
                   <LogOut className="h-4 w-4" />

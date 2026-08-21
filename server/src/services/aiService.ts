@@ -9,11 +9,10 @@ export interface GeneratedBlock {
 }
 
 // FlowDay — Génération de planning (texte libre → blocs structurés)
+
 // `existingBlocks` : les blocs déjà planifiés pour ce jour (générés plus tôt,
 // ajoutés à la main, ou venus d'un autre module) — passés à l'IA pour qu'elle
-// complète le planning autour d'eux plutôt que de les ignorer et risquer un
-// chevauchement. La fusion avec les blocs existants elle-même se fait côté
-// route (`server/src/routes/flowday.ts`), pas ici.
+// complète le planning autour d'eux plutôt que de les ignorer et risquer un chevauchement.
 export async function generateDayPlan(
   userInput: string,
   existingBlocks: ExistingBlockSummary[] = [],
@@ -101,12 +100,16 @@ export interface GeneratedSpark {
 }
 
 // SparkTime — Génération de suggestions d'activités (profil + localisation)
+// `avoidTitles` : titres déjà proposés récemment (encore affichés, ou
+// supprimés récemment par l'utilisatrice) — pour favoriser la rotation des
+// suggestions plutôt que de reproposer la même idée juste après l'avoir vue.
 export async function generateSparks(
   interestNames: string[],
   location: string | undefined,
   maxDuration?: number,
   energyLevel?: string,
   maxDistance?: number,
+  avoidTitles: string[] = [],
 ): Promise<GeneratedSpark[]> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -118,6 +121,7 @@ Sa localisation (indicative, à utiliser si pertinent) : ${location || "non rens
 ${maxDuration ? `Durée maximale par activité : ${maxDuration} minutes` : ""}
 ${energyLevel ? `Niveau d'énergie recherché : ${energyLevel}` : ""}
 ${maxDistance ? `Distance maximale autour de sa localisation : ${maxDistance} km (indicative, pour les activités qui impliquent un déplacement)` : ""}
+${avoidTitles.length ? `Idées déjà proposées récemment, à éviter de reproposer telles quelles pour favoriser la variété : ${avoidTitles.join(", ")}` : ""}
 
 Propose 3 suggestions d'activités concrètes et réalisables, variées, chacune liée à l'un de ses centres d'intérêt.
 Chaque suggestion doit avoir :

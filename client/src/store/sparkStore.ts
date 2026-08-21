@@ -19,6 +19,7 @@ interface SparkState {
   error: string | null;
   fetchSparks: () => Promise<void>;
   generateSparks: (filters?: GenerateSparksFilters) => Promise<void>;
+  deleteSpark: (id: string) => Promise<void>;
 }
 
 export const useSparkStore = create<SparkState>((set, get) => ({
@@ -52,6 +53,20 @@ export const useSparkStore = create<SparkState>((set, get) => ({
       const message =
         err instanceof Error ? err.message : "Error generating sparks";
       set({ error: message, loading: false });
+    }
+  },
+
+  deleteSpark: async (id) => {
+    const previousSparks = get().sparks;
+
+    set({ sparks: previousSparks.filter((s) => s._id !== id) });
+
+    try {
+      await apiCall(`/api/sparks/${id}`, { method: "DELETE", auth: true });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Error deleting spark";
+      set({ sparks: previousSparks, error: message });
     }
   },
 }));

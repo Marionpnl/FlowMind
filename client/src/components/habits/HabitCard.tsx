@@ -1,4 +1,4 @@
-import { Check, Flame, Trash2 } from "lucide-react";
+import { Check, Flame, X } from "lucide-react";
 import {
   moduleBadgeClass,
   moduleDotClass,
@@ -23,7 +23,14 @@ export default function HabitCard({ habit }: { habit: IHabit }) {
   const last30Days = getLast30Days();
 
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 shadow-sm sm:px-8 sm:py-6">
+    <div className="group relative rounded-2xl bg-white px-4 py-4 shadow-sm sm:px-8 sm:py-6">
+      <button
+        onClick={() => deleteHabit(habit._id)}
+        className="absolute -right-2 -top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+        aria-label="Supprimer l'habitude"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <button
@@ -81,13 +88,6 @@ export default function HabitCard({ habit }: { habit: IHabit }) {
             <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             {streak}j
           </span>
-          <button
-            onClick={() => deleteHabit(habit._id)}
-            className="text-muted-foreground text-black/50 hover:text-accent-danger"
-            aria-label="Supprimer"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
         </div>
       </div>
 

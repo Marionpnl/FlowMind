@@ -264,19 +264,19 @@ function DraggableChip({
       }}
       onClick={() => onEditBlock(block, dateStr)}
       className={cn(
-        "group relative cursor-grab truncate rounded px-1 py-0.5 pr-3 text-[8px] font-medium active:cursor-grabbing sm:px-1.5 sm:pr-4 sm:text-[10px]",
-        isDragging && "z-20 shadow-md",
+        "group relative cursor-grab rounded px-1 py-0.5 text-[8px] font-medium active:cursor-grabbing sm:px-1.5 sm:text-[10px]",
+        isDragging ? "z-20 shadow-md" : "hover:z-10",
         swapPreview && "z-10 ring-2 ring-white",
         moduleBgSoft[block.module],
       )}
     >
-      {block.title}
+      <span className="block truncate">{block.title}</span>
       <button
         onClick={(e) => {
           e.stopPropagation();
           onDeleteBlock(block.id);
         }}
-        className="absolute right-0 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/70 p-0.5 group-hover:block"
+        className="absolute -right-1.5 -top-1.5 z-10 hidden h-4 w-4 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
         aria-label="Supprimer ce bloc"
       >
         <X className="h-2.5 w-2.5" />

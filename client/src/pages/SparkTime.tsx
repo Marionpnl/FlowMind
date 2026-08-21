@@ -21,6 +21,7 @@ export default function SparkTime() {
   const sparksLoading = useSparkStore((s) => s.loading);
   const fetchSparks = useSparkStore((s) => s.fetchSparks);
   const generateSparks = useSparkStore((s) => s.generateSparks);
+  const deleteSpark = useSparkStore((s) => s.deleteSpark);
 
   const interests = useInterestStore((s) => s.interests);
   const fetchInterests = useInterestStore((s) => s.fetchInterests);
@@ -164,6 +165,7 @@ export default function SparkTime() {
                     spark={spark}
                     onDetails={() => setSelectedSpark(spark)}
                     onPlan={() => planSpark(spark)}
+                    onDelete={() => deleteSpark(spark._id)}
                   />
                 ))}
               </div>

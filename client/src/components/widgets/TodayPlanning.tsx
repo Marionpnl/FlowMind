@@ -12,7 +12,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, Trash2 } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { moduleBadgeClass, moduleDotClass } from "@/lib/moduleStyles";
 import { cn } from "@/lib/utils";
 import { useDayPlanStore } from "@/store/dayPlanStore";
@@ -190,10 +190,10 @@ function SortableBlock({
             e.stopPropagation();
             onDeleteBlock(block.id);
           }}
-          className="absolute bottom-3 right-3 text-black/30 opacity-0 transition-opacity hover:text-accent-danger group-hover:opacity-100"
+          className="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
           aria-label="Supprimer ce bloc"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <X className="h-3.5 w-3.5" />
         </button>
       </div>
     </li>

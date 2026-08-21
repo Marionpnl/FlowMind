@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import type { ISpark } from "@shared/types";
 import { Button } from "@/components/ui/button";
 
@@ -5,15 +6,27 @@ interface SparkCardProps {
   spark: ISpark;
   onDetails: () => void;
   onPlan: () => void;
+  onDelete: () => void;
 }
 
 export default function SparkCard({
   spark,
   onDetails,
   onPlan,
+  onDelete,
 }: SparkCardProps) {
   return (
-    <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+    <div className="group relative rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        className="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+        aria-label="Supprimer ce Spark"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
       <div className="mb-3 flex items-center justify-between">
         {spark.category && (
           <span className="rounded-full bg-sparktime-bg px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-sparktime">
