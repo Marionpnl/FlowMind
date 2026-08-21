@@ -7,6 +7,8 @@ FlowMind est une application de productivité personnelle qui réunit trois modu
 🔗 **Démo live** : [flow-mind-gamma.vercel.app](https://flow-mind-gamma.vercel.app)
 _(le backend est hébergé sur un tier gratuit Railway — la toute première requête après une période d'inactivité peut prendre quelques secondes le temps que le serveur se réveille)_
 
+<img src="docs/screenshots/GIF-Demo-FlowMind.gif" alt="Démo animée de FlowMind" />
+
 ---
 
 ## Aperçu
