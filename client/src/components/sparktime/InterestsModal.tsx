@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Compass, Plus, Sparkles, Wand2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Compass, Pencil, Plus, Sparkles, Wand2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { useInterestStore, type DetectedInterest } from "@/store/interestStore";
 import { CATEGORIES } from "@/lib/sparktime";
 import { cn } from "@/lib/utils";
+import type { IInterest } from "@shared/types";
 
 const sliderColorClass = cn(
   "[&_[data-slot=slider-track]]:bg-black/10",
@@ -32,10 +33,10 @@ export default function InterestsModal({
 }: InterestsModalProps) {
   const interests = useInterestStore((s) => s.interests);
   const addInterest = useInterestStore((s) => s.addInterest);
-  const deleteInterest = useInterestStore((s) => s.deleteInterest);
   const detectInterests = useInterestStore((s) => s.detectInterests);
 
   const [tab, setTab] = useState<Tab>("add");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [importance, setImportance] = useState(3);
@@ -266,41 +267,13 @@ export default function InterestsModal({
           ) : (
             <div className="space-y-2">
               {interests.map((i) => (
-                <div
+                <InterestRow
                   key={i._id}
-                  className="flex items-center justify-between rounded-3xl border border-black/5 bg-cream-secondary py-2.5 px-5"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {i.emoji} {i.name}
-                    </p>
-                    {i.category && (
-                      <p className="mt-1 font-mono text-xs text-black/60 text-muted-foreground">
-                        {i.category}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-5">
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: 5 }, (_, idx) => (
-                        <span
-                          key={idx}
-                          className={cn(
-                            "h-1.5 w-1.5 rounded-full",
-                            idx < i.importance ? "bg-sparktime" : "bg-black/15",
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => deleteInterest(i._id)}
-                      className="text-black/30 hover:text-accent-danger"
-                      aria-label="Supprimer ce centre d'intérêt"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
+                  interest={i}
+                  editing={editingId === i._id}
+                  onStartEdit={() => setEditingId(i._id)}
+                  onStopEdit={() => setEditingId(null)}
+                />
               ))}
             </div>
           )}
@@ -322,5 +295,170 @@ export default function InterestsModal({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function InterestRow({
+  interest,
+  editing,
+  onStartEdit,
+  onStopEdit,
+}: {
+  interest: IInterest;
+  editing: boolean;
+  onStartEdit: () => void;
+  onStopEdit: () => void;
+}) {
+  const updateInterest = useInterestStore((s) => s.updateInterest);
+  const deleteInterest = useInterestStore((s) => s.deleteInterest);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [draftName, setDraftName] = useState(interest.name);
+  const draftNameRef = useRef(draftName);
+  useEffect(() => {
+    draftNameRef.current = draftName;
+  });
+
+  // Réinitialise le brouillon à l'ouverture de l'édition — différé en
+  // microtâche pour ne pas déclencher de setState synchrone en tout début
+  // d'effet (cf. le même pattern pour handleDetect plus haut dans ce fichier).
+  useEffect(() => {
+    if (!editing) return;
+    void Promise.resolve().then(() => setDraftName(interest.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
+
+  function commitAndClose() {
+    const trimmed = draftNameRef.current.trim();
+    if (trimmed && trimmed !== interest.name) {
+      updateInterest(interest._id, { name: trimmed });
+    }
+    onStopEdit();
+  }
+
+  // Un clic hors de la ligne valide et referme l'édition — `commitAndClose`
+  // lit toujours `draftNameRef.current` (jamais périmé), donc peu importe
+  // que ce handler garde la version de la fonction créée à l'ouverture de
+  // l'édition (l'effet ne se redéclenche pas à chaque frappe).
+  useEffect(() => {
+    if (!editing) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (rowRef.current && !rowRef.current.contains(e.target as Node)) {
+        commitAndClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
+
+  return (
+    <div
+      ref={rowRef}
+      className="group relative flex items-center justify-between rounded-3xl border border-black/5 bg-cream-secondary py-2.5 px-5 hover:z-10"
+    >
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <input
+            autoFocus
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitAndClose();
+              }
+            }}
+            className="w-full bg-transparent text-sm font-medium outline-none"
+          />
+        ) : (
+          <p className="truncate text-sm font-medium">
+            {interest.emoji} {interest.name}
+          </p>
+        )}
+
+        {editing ? (
+          <select
+            value={interest.category ?? ""}
+            onChange={(e) =>
+              updateInterest(interest._id, {
+                category: e.target.value || undefined,
+              })
+            }
+            className="mt-1 bg-transparent font-mono text-xs text-black/60 outline-none"
+          >
+            <option value="">—</option>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        ) : (
+          interest.category && (
+            <p className="mt-1 truncate font-mono text-xs text-black/60 text-muted-foreground">
+              {interest.category}
+            </p>
+          )
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-5">
+        <div className="flex gap-0.5">
+          {Array.from({ length: 5 }, (_, idx) =>
+            editing ? (
+              // -m-1.5 compense le p-1.5 : la zone cliquable réelle est bien
+              // plus grande que le point visuel (6x6px, imprécis à la souris),
+              // sans que ça ne change l'espacement visible entre les points.
+              <button
+                key={idx}
+                type="button"
+                onClick={() =>
+                  updateInterest(interest._id, { importance: idx + 1 })
+                }
+                aria-label={`Importance ${idx + 1}`}
+                className="-m-1.5 cursor-pointer p-1.5"
+              >
+                <span
+                  className={cn(
+                    "block h-1.5 w-1.5 rounded-full transition-opacity hover:opacity-70",
+                    idx < interest.importance ? "bg-sparktime" : "bg-black/15",
+                  )}
+                />
+              </button>
+            ) : (
+              <span
+                key={idx}
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  idx < interest.importance ? "bg-sparktime" : "bg-black/15",
+                )}
+              />
+            ),
+          )}
+        </div>
+
+        {!editing && (
+          <button
+            onClick={onStartEdit}
+            className="text-black/30 hover:text-sparktime"
+            aria-label="Modifier ce centre d'intérêt"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          deleteInterest(interest._id);
+        }}
+        className="absolute -right-2 -top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+        aria-label="Supprimer ce centre d'intérêt"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 }
