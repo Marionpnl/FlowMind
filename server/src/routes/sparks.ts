@@ -4,6 +4,7 @@ import Spark from "../models/Spark";
 import Interest from "../models/Interest";
 import User from "../models/User";
 import { generateSparks } from "../services/aiService";
+import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const router = Router();
 router.use(requireAuth);
 
 // POST /api/sparks/generate - Generate and persist new activity suggestions
-router.post("/generate", async (req: AuthRequest, res: Response) => {
+router.post("/generate", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { maxDuration, energyLevel, maxDistance } = req.body;
 
@@ -39,9 +40,7 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
     const categoryByInterestName = new Map(
       interests.map((i) => [i.name, i.category]),
     );
-    // Triés par importance décroissante pour que le prompt liste d'abord les
-    // centres d'intérêt prioritaires — cf. aiService.ts pour comment l'IA
-    // s'en sert.
+    // Triés par importance décroissante pour que le prompt liste d'abord les centres d'intérêt prioritaires
     const rankedInterests = [...interests]
       .sort((a, b) => b.importance - a.importance)
       .map((i) => ({ name: i.name, importance: i.importance }));
@@ -86,8 +85,7 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
           (typeof s.category === "string" && s.category
             ? s.category
             : undefined),
-        detail:
-          typeof s.detail === "string" && s.detail ? s.detail : undefined,
+        detail: typeof s.detail === "string" && s.detail ? s.detail : undefined,
         energyLevel:
           typeof s.energyLevel === "string" && s.energyLevel
             ? s.energyLevel

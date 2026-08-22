@@ -10,6 +10,7 @@ import {
 } from "../services/aiService";
 import Resource from "../models/Resource";
 import { truncateWords } from "../utils/text";
+import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.get("/search/:query", async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/resources/connections - Find thematic connections between resources (not persisted)
-router.post("/connections", async (req: AuthRequest, res: Response) => {
+router.post("/connections", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const resources = await Resource.find({ userId: req.userId }).select(
       "title author tags notes",
@@ -146,7 +147,7 @@ router.get("/rediscover", async (req: AuthRequest, res: Response) => {
 
 // POST /api/resources/reading-pattern - Detect this week's reading pattern and suggest
 // a related FlowDay practice session (not persisted) — the FlowDay/MindShelf bridge.
-router.post("/reading-pattern", async (req: AuthRequest, res: Response) => {
+router.post("/reading-pattern", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const resources = await Resource.find({ userId: req.userId }).select(
       "title tags notes",

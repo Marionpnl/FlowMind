@@ -4,6 +4,7 @@ import Interest from "../models/Interest";
 import Habit from "../models/Habit";
 import Resource from "../models/Resource";
 import { detectInterests } from "../services/aiService";
+import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -62,7 +63,7 @@ router.post("/", async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/interests/detect - Suggest interests from existing habits/resources (does not persist)
-router.post("/detect", async (req: AuthRequest, res: Response) => {
+router.post("/detect", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const [habits, resources, existingInterests] = await Promise.all([
       Habit.find({ userId: req.userId }).select("name"),

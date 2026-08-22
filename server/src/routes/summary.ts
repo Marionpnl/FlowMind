@@ -10,6 +10,7 @@ import {
   type WeeklyStatsInput,
 } from "../services/aiService";
 import { truncateWords } from "../utils/text";
+import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -116,7 +117,7 @@ router.get("/weekly/stats", async (req: AuthRequest, res: Response) => {
 // POST /api/summary/weekly - AI-generated weekly bilan (title, highlights,
 // synthesis, actions) built from the same stats, across FlowDay, MindShelf,
 // SparkTime and habits. Not persisted, generated on demand.
-router.post("/weekly", async (req: AuthRequest, res: Response) => {
+router.post("/weekly", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { weekStart } = req.body;
     if (!weekStart) {

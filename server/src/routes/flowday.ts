@@ -8,6 +8,7 @@ import {
   generateDayBilan,
 } from "../services/aiService";
 import { truncateWords } from "../utils/text";
+import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
@@ -121,7 +122,7 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
 });
 
 // PATCH /api/flowday/:id/summary - Generate and save the end-of-day narrative bilan
-router.patch("/:id/summary", async (req: AuthRequest, res: Response) => {
+router.patch("/:id/summary", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -169,7 +170,7 @@ router.patch("/:id/summary", async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/flowday/generate - Generate a new day plan based on user input
-router.post("/generate", async (req: AuthRequest, res: Response) => {
+router.post("/generate", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { userInput, date } = req.body;
 
@@ -247,7 +248,7 @@ router.post("/generate", async (req: AuthRequest, res: Response) => {
 // POST /api/flowday/blocks - Schedule a new activity block, anywhere from a module
 // (SparkTime "Planifier", MindShelf "Planifier une lecture", FlowDay's own "Add bloc")
 // date/time/duration are optional: whatever is left blank gets filled in by AI
-router.post("/blocks", async (req: AuthRequest, res: Response) => {
+router.post("/blocks", aiLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { title, notes, duration, date, time, module, sparkId } = req.body;
 
