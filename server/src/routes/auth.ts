@@ -19,7 +19,7 @@ function hashResetToken(token: string): string {
 
 const router = Router();
 
-// POST /api/auth/register
+// POST /api/auth/register - Create a new account and return a JWT
 router.post("/register", authLimiter, async (req: Request, res: Response) => {
   try {
     const { name, email, password, location } = req.body;
@@ -58,7 +58,7 @@ router.post("/register", authLimiter, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/auth/login
+// POST /api/auth/login - Verify credentials and return a JWT
 router.post("/login", authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -85,7 +85,7 @@ router.post("/login", authLimiter, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/auth/forgot-password
+// POST /api/auth/forgot-password - Generate a reset token and email it
 router.post(
   "/forgot-password",
   authLimiter,
@@ -108,7 +108,16 @@ router.post(
 
         const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
         const resetUrl = `${clientUrl}/reset-password/${rawToken}`;
-        await sendPasswordResetEmail(user.email, resetUrl);
+        // Isolé de son propre try/catch : un échec d'envoi ne doit jamais
+        // changer la réponse renvoyée, sinon ça révèle qu'un compte existe.
+        try {
+          await sendPasswordResetEmail(user.email, resetUrl);
+        } catch (emailErr) {
+          console.error(
+            "POST /api/auth/forgot-password email send error:",
+            emailErr,
+          );
+        }
       }
 
       res.json({
@@ -125,7 +134,7 @@ router.post(
   },
 );
 
-// POST /api/auth/reset-password
+// POST /api/auth/reset-password - Consume a valid, unexpired reset token to set a new password
 router.post(
   "/reset-password",
   authLimiter,
@@ -170,7 +179,7 @@ router.post(
   },
 );
 
-// GET /api/auth/me
+// GET /api/auth/me - Return the authenticated user's profile
 router.get("/me", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const user = await User.findById(req.userId).select("-password");
@@ -196,7 +205,7 @@ const BOOLEAN_PREFERENCES = [
 const STRING_PREFERENCES = ["aiTone", "aiLength"] as const;
 const NUMBER_PREFERENCES = ["dataRetentionMonths"] as const;
 
-// PUT /api/auth/me
+// PUT /api/auth/me - Update profile fields and AI/display preferences
 router.put("/me", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { name, location, timezone, language, theme, preferences } = req.body;
