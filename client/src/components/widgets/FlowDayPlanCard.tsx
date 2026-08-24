@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { WandSparkles } from "lucide-react";
 import { useDayPlanStore } from "@/store/dayPlanStore";
@@ -11,16 +11,46 @@ interface FlowDayPlanCardProps {
   date: string;
 }
 
+// Libellé "aujourd'hui"/"demain" plutôt qu'une date brute, quand c'est
+// pertinent — sinon la date formatée en français.
+function labelForDate(target: string, referenceDate: string): string {
+  if (target === referenceDate) return "aujourd'hui";
+  const tomorrow = new Date(referenceDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (target === tomorrow.toISOString().slice(0, 10)) return "demain";
+  return new Date(target).toLocaleDateString("fr-CH", {
+    day: "numeric",
+    month: "long",
+  });
+}
+
 export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
   const [userInput, setUserInput] = useState(DEFAULT_EXAMPLE);
   const generatePlan = useDayPlanStore((s) => s.generatePlan);
   const generating = useDayPlanStore((s) => s.generating);
+  const lastGenerationSummary = useDayPlanStore(
+    (s) => s.lastGenerationSummary,
+  );
   const autoGeneratePlan =
     useAuthStore((s) => s.user?.preferences?.autoGeneratePlan) ?? true;
+  // N'affiche le résumé qu'après une génération déclenchée depuis CETTE
+  // carte — `lastGenerationSummary` est un état global, il resterait sinon
+  // affiché indéfiniment (ou réapparaîtrait) sans lien avec l'action en cours.
+  const [showSummary, setShowSummary] = useState(false);
 
-  function handleGenerate() {
+  // Simple bulle de confirmation qui se referme toute seule après quelques
+  // secondes, plutôt qu'un message qui reste tant qu'on ne retape pas.
+  useEffect(() => {
+    if (!showSummary) return;
+    const timer = setTimeout(() => setShowSummary(false), 4000);
+    return () => clearTimeout(timer);
+  }, [showSummary]);
+
+  async function handleGenerate() {
     if (generating || !userInput.trim()) return;
-    generatePlan(userInput, date);
+    setShowSummary(false);
+    await generatePlan(userInput, date);
+    setShowSummary(true);
   }
 
   function handleFocus() {
@@ -60,7 +90,10 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
 
       <textarea
         value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
+        onChange={(e) => {
+          setUserInput(e.target.value);
+          setShowSummary(false);
+        }}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         rows={2}
@@ -85,6 +118,17 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
           {generating ? "Génération..." : "Générer le planning →"}
         </Button>
       </div>
+
+      {showSummary && lastGenerationSummary && lastGenerationSummary.length > 0 && (
+        <p className="mt-3 text-xs text-flowday">
+          {lastGenerationSummary
+            .map(
+              (s) =>
+                `${s.count} bloc${s.count > 1 ? "s" : ""} ajouté${s.count > 1 ? "s" : ""} ${labelForDate(s.date, date)}`,
+            )
+            .join(" · ")}
+        </p>
+      )}
     </div>
   );
 }

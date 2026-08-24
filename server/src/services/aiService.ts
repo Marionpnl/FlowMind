@@ -6,32 +6,37 @@ export interface GeneratedBlock {
   subtitle?: string;
   duration: number;
   module: "FlowDay" | "MindShelf" | "SparkTime";
+  date?: string;
 }
 
 // FlowDay — Génération de planning (texte libre → blocs structurés)
 
-// `existingBlocks` : les blocs déjà planifiés pour ce jour (générés plus tôt,
-// ajoutés à la main, ou venus d'un autre module) — passés à l'IA pour qu'elle
-// complète le planning autour d'eux plutôt que de les ignorer et risquer un chevauchement.
+// `existingBlocks` : les blocs déjà planifiés pour `referenceDate` (générés
+// plus tôt, ajoutés à la main, ou venus d'un autre module) — passés à l'IA
+// pour qu'elle complète le planning autour d'eux plutôt que de les ignorer et
+// risquer un chevauchement. Ne couvre que `referenceDate` : on ne connaît pas
+// encore les autres dates concernées avant que l'IA ait répondu.
 export async function generateDayPlan(
   userInput: string,
+  referenceDate: string,
   existingBlocks: ExistingBlockSummary[] = [],
 ): Promise<GeneratedBlock[]> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   const existingBlocksSection = existingBlocks.length
-    ? `\nVoici les blocs déjà planifiés aujourd'hui, à ne pas reproduire ni chevaucher :\n${existingBlocks.map((b) => `- ${b.time} (${b.duration} min) : ${b.title}`).join("\n")}\n\nGénère uniquement de nouveaux blocs qui complètent ce planning existant, sans occuper ces créneaux.\n`
+    ? `\nVoici les blocs déjà planifiés le ${referenceDate}, à ne pas reproduire ni chevaucher :\n${existingBlocks.map((b) => `- ${b.time} (${b.duration} min) : ${b.title}`).join("\n")}\n\nGénère uniquement de nouveaux blocs qui complètent ce planning existant, sans occuper ces créneaux.\n`
     : "";
 
   const prompt = `
 Tu es un assistant de planification bienveillant pour l'application FlowMind.
-L'utilisatrice décrit sa journée ainsi : "${userInput}"
+Nous sommes le ${referenceDate} (format AAAA-MM-JJ) — c'est la date de référence pour "aujourd'hui".
+L'utilisatrice décrit sa journée (et parfois les jours suivants) ainsi : "${userInput}"
 ${existingBlocksSection}
 Génère un planning structuré en blocs horaires réalistes et équilibrés.
-Chaque bloc doit avoir : time (format "HH:MM"), title (court, actionnable), subtitle (détail optionnel), duration (durée en minutes, un nombre réaliste comme 30, 45, 60, 90), module ("FlowDay" pour le travail/focus, "MindShelf" pour la lecture/apprentissage, "SparkTime" pour le bien-être/sport/pauses).
+Chaque bloc doit avoir : time (format "HH:MM"), title (court, actionnable), subtitle (détail optionnel), duration (durée en minutes, un nombre réaliste comme 30, 45, 60, 90), module ("FlowDay" pour le travail/focus, "MindShelf" pour la lecture/apprentissage, "SparkTime" pour le bien-être/sport/pauses), date (format "AAAA-MM-JJ" — résous "aujourd'hui" en ${referenceDate}, "demain" en le jour suivant, une date explicite mentionnée telle quelle ; si rien n'indique un autre jour, utilise ${referenceDate}).
 
 Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
-{"blocks": [{"time": "09:00", "title": "...", "subtitle": "...", "duration": 30, "module": "FlowDay"}]}
+{"blocks": [{"time": "09:00", "title": "...", "subtitle": "...", "duration": 30, "module": "FlowDay", "date": "${referenceDate}"}]}
 `;
 
   const completion = await openai.chat.completions.create({

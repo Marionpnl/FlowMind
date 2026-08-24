@@ -7,6 +7,16 @@ interface DayPlanResponse {
   data: IDayPlan;
 }
 
+export interface GenerationSummaryEntry {
+  date: string;
+  count: number;
+}
+
+interface GeneratePlanResponse {
+  success: boolean;
+  data: { plans: IDayPlan[]; summary: GenerationSummaryEntry[] };
+}
+
 export interface ScheduleActivityInput {
   title: string;
   notes?: string;
@@ -55,6 +65,7 @@ interface DayPlanState {
   loading: boolean;
   generating: boolean;
   error: string | null;
+  lastGenerationSummary: GenerationSummaryEntry[] | null;
   fetchPlan: (date: string) => Promise<void>;
   fetchWeekPlans: (weekStart: string) => Promise<void>;
   fetchMonthPlans: (year: number, month: number) => Promise<void>;
@@ -74,6 +85,7 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
   loading: false,
   generating: false,
   error: null,
+  lastGenerationSummary: null,
 
   fetchPlan: async (date) => {
     set({ loading: true, error: null });
@@ -117,12 +129,23 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
   generatePlan: async (userInput, date) => {
     set({ generating: true, error: null });
     try {
-      const res = await apiCall<DayPlanResponse>("/api/flowday/generate", {
-        method: "POST",
-        auth: true,
-        body: JSON.stringify({ userInput, date }),
-      });
-      set({ currentPlan: res.data, generating: false });
+      const res = await apiCall<GeneratePlanResponse>(
+        "/api/flowday/generate",
+        {
+          method: "POST",
+          auth: true,
+          body: JSON.stringify({ userInput, date }),
+        },
+      );
+      const { plans, summary } = res.data;
+      const todayPlan = plans.find((p) => p.date === date);
+      set((state) => ({
+        currentPlan: todayPlan ?? state.currentPlan,
+        weekPlans: plans.reduce(mergeIntoList, state.weekPlans),
+        monthPlans: plans.reduce(mergeIntoList, state.monthPlans),
+        generating: false,
+        lastGenerationSummary: summary,
+      }));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erreur lors de la génération";

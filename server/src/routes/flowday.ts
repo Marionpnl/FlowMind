@@ -122,52 +122,56 @@ router.put("/:id", async (req: AuthRequest, res: Response) => {
 });
 
 // PATCH /api/flowday/:id/summary - Generate and save the end-of-day narrative bilan
-router.patch("/:id/summary", aiLimiter, async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
+router.patch(
+  "/:id/summary",
+  aiLimiter,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
 
-    const plan = await DayPlan.findOne({ _id: id, userId: req.userId });
-    if (!plan) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Day plan not found" });
+      const plan = await DayPlan.findOne({ _id: id, userId: req.userId });
+      if (!plan) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Day plan not found" });
+      }
+
+      if (plan.blocks.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No blocks to summarize",
+        });
+      }
+
+      const user = await User.findById(req.userId).select("preferences");
+      const bilan = await generateDayBilan(
+        plan.blocks.map((b) => ({
+          time: b.time,
+          title: b.title,
+          module: b.module,
+          duration: b.duration,
+          done: b.done,
+        })),
+        user?.preferences?.aiTone || "Calme et encourageant",
+        user?.preferences?.aiLength || "Concise",
+      );
+
+      if (bilan.title.trim()) {
+        plan.endOfDaySummary = truncateWords(bilan.title.trim(), 20);
+      }
+      if (bilan.insight.trim()) {
+        plan.endOfDayInsight = truncateWords(bilan.insight.trim(), 40);
+      }
+      plan.endOfDayBlocksSignature = computeBlocksSignature(plan.blocks);
+      await plan.save();
+
+      res.json({ success: true, data: plan });
+    } catch (error) {
+      console.error("PATCH /api/flowday/:id/summary error:", error);
+      res.status(500).json({ success: false, message: "Server error" });
     }
-
-    if (plan.blocks.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No blocks to summarize",
-      });
-    }
-
-    const user = await User.findById(req.userId).select("preferences");
-    const bilan = await generateDayBilan(
-      plan.blocks.map((b) => ({
-        time: b.time,
-        title: b.title,
-        module: b.module,
-        duration: b.duration,
-        done: b.done,
-      })),
-      user?.preferences?.aiTone || "Calme et encourageant",
-      user?.preferences?.aiLength || "Concise",
-    );
-
-    if (bilan.title.trim()) {
-      plan.endOfDaySummary = truncateWords(bilan.title.trim(), 20);
-    }
-    if (bilan.insight.trim()) {
-      plan.endOfDayInsight = truncateWords(bilan.insight.trim(), 40);
-    }
-    plan.endOfDayBlocksSignature = computeBlocksSignature(plan.blocks);
-    await plan.save();
-
-    res.json({ success: true, data: plan });
-  } catch (error) {
-    console.error("PATCH /api/flowday/:id/summary error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+  },
+);
 
 // POST /api/flowday/generate - Generate a new day plan based on user input
 router.post("/generate", aiLimiter, async (req: AuthRequest, res: Response) => {
@@ -181,15 +185,14 @@ router.post("/generate", aiLimiter, async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Le planning déjà présent pour ce jour est donné à l'IA comme contexte
-    // (pour qu'elle complète plutôt que d'ignorer ce qui existe), puis fusionné
-    // avec les nouveaux blocs — un second appel à "Générer" ne doit jamais
-    // effacer ce qui a été planifié plus tôt dans la journée.
+    // Le planning déjà présent pour la date de référence est donné à l'IA
+    // comme contexte (pour qu'elle complète plutôt que d'ignorer ce qui existe)
     const existingPlan = await DayPlan.findOne({ userId: req.userId, date });
     const existingBlocks = existingPlan?.blocks ?? [];
 
     const generatedBlocks = await generateDayPlan(
       userInput,
+      date,
       existingBlocks.map((b) => ({
         time: b.time,
         duration: b.duration,
@@ -199,43 +202,106 @@ router.post("/generate", aiLimiter, async (req: AuthRequest, res: Response) => {
 
     const VALID_MODULES = ["FlowDay", "MindShelf", "SparkTime"];
     const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+    const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+    const MAX_DAYS_AHEAD = 30;
+    const maxDate = new Date(date);
+    maxDate.setDate(maxDate.getDate() + MAX_DAYS_AHEAD);
+    const maxDateStr = maxDate.toISOString().slice(0, 10);
 
-    const newBlocks = generatedBlocks.map((b, index) => ({
-      id: `block-${Date.now()}-${index}`,
-      time:
-        typeof b.time === "string" && TIME_PATTERN.test(b.time)
-          ? b.time
-          : "09:00",
-      title:
-        typeof b.title === "string" && b.title.trim()
-          ? b.title.trim()
-          : "Activité",
-      subtitle: b.subtitle,
-      duration:
-        typeof b.duration === "number" && b.duration > 0 ? b.duration : 30,
-      module: VALID_MODULES.includes(b.module) ? b.module : "FlowDay",
-      done: false,
-    }));
+    // Une date hors de cette fenêtre (dans le passé, ou trop lointaine —
+    // signe probable d'une hallucination) retombe sur la date de référence
+    // plutôt que d'être prise telle quelle.
+    function resolveDate(candidate: unknown): string {
+      if (
+        typeof candidate === "string" &&
+        DATE_PATTERN.test(candidate) &&
+        candidate >= date &&
+        candidate <= maxDateStr
+      ) {
+        return candidate;
+      }
+      return date;
+    }
+
+    const newBlocksByDate = new Map<
+      string,
+      {
+        id: string;
+        time: string;
+        title: string;
+        subtitle?: string;
+        duration: number;
+        module: string;
+        done: boolean;
+      }[]
+    >();
+    generatedBlocks.forEach((b, index) => {
+      const blockDate = resolveDate(b.date);
+      const block = {
+        id: `block-${Date.now()}-${index}`,
+        time:
+          typeof b.time === "string" && TIME_PATTERN.test(b.time)
+            ? b.time
+            : "09:00",
+        title:
+          typeof b.title === "string" && b.title.trim()
+            ? b.title.trim()
+            : "Activité",
+        subtitle: b.subtitle,
+        duration:
+          typeof b.duration === "number" && b.duration > 0 ? b.duration : 30,
+        module: VALID_MODULES.includes(b.module) ? b.module : "FlowDay",
+        done: false,
+      };
+      const list = newBlocksByDate.get(blockDate) ?? [];
+      list.push(block);
+      newBlocksByDate.set(blockDate, list);
+    });
+
+    // Les blocs déjà présents sur les AUTRES dates concernées n'ont pas été
+    // chargés plus haut (seule la date de référence l'a été) — il faut les
+    // récupérer avant d'écrire, sinon le $set ci-dessous effacerait tout ce
+    // qui existait déjà sur ces jours-là.
+    const otherDates = [...newBlocksByDate.keys()].filter((d) => d !== date);
+    const otherPlans = otherDates.length
+      ? await DayPlan.find({ userId: req.userId, date: { $in: otherDates } })
+      : [];
+    const existingBlocksByDate = new Map<string, typeof existingBlocks>(
+      otherPlans.map((p) => [p.date, p.blocks]),
+    );
+    existingBlocksByDate.set(date, existingBlocks);
 
     // Upsert : create a new plan if it doesn't exist, or update the existing one.
     // `$set` ciblé (pas de document de remplacement) : ne touche que
     // `userInput`/`blocks`, laisse `endOfDaySummary`/`endOfDayInsight` intacts —
     // leur mécanisme de péremption existant (comparaison de
     // `endOfDayBlocksSignature`) les régénérera de lui-même si besoin.
-    const plan = await DayPlan.findOneAndUpdate(
-      { userId: req.userId, date },
-      {
-        $set: {
-          userId: req.userId,
-          date,
-          userInput,
-          blocks: [...existingBlocks, ...newBlocks],
-        },
-      },
-      { new: true, upsert: true },
-    );
 
-    res.status(201).json({ success: true, data: plan });
+    const plans = [];
+    for (const [blockDate, blocks] of newBlocksByDate) {
+      const plan = await DayPlan.findOneAndUpdate(
+        { userId: req.userId, date: blockDate },
+        {
+          $set: {
+            userId: req.userId,
+            date: blockDate,
+            ...(blockDate === date ? { userInput } : {}),
+            blocks: [...(existingBlocksByDate.get(blockDate) ?? []), ...blocks],
+          },
+        },
+        { new: true, upsert: true },
+      );
+      plans.push(plan);
+    }
+
+    // Nombre de blocs NOUVEAUX par date (pas le total du planning) — pour que
+    // le client puisse afficher "X blocs ajoutés aujourd'hui, Y demain".
+    const summary = [...newBlocksByDate.entries()].map(([d, blocks]) => ({
+      date: d,
+      count: blocks.length,
+    }));
+
+    res.status(201).json({ success: true, data: { plans, summary } });
   } catch (error) {
     console.error("POST /api/flowday/generate", error);
     res.status(500).json({
