@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Star } from "lucide-react";
 import { STATUS_LABELS } from "@/lib/resourceTypes";
 import type { IResource } from "@shared/types";
@@ -9,14 +10,28 @@ interface LibraryRowProps {
 }
 
 export default function LibraryRow({ resource, onClick }: LibraryRowProps) {
+  // Certaines couvertures OpenLibrary redirigent vers un chemin d'extraction
+  // archive.org peu fiable (parfois cassé) — repli sur l'emoji si l'image
+  // échoue réellement à charger, plutôt qu'une case vide.
+  const [coverFailed, setCoverFailed] = useState(false);
+
   return (
     <button
       onClick={onClick}
       className="flex w-full items-center justify-between border-b border-black/5 py-3 text-left last:border-0 cursor-pointer"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-mindshelf-bg border border-black/5 text-mindshelf">
-          📖
+        <div className="flex h-12 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-mindshelf-bg border border-black/5 text-mindshelf">
+          {resource.coverUrl && !coverFailed ? (
+            <img
+              src={resource.coverUrl}
+              alt=""
+              onError={() => setCoverFailed(true)}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            "📖"
+          )}
         </div>
         <div>
           <p className="text-xs sm:text-sm font-medium">{resource.title}</p>

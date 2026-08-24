@@ -324,6 +324,93 @@ Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
   return JSON.parse(raw) as ReadingPatternSuggestion;
 }
 
+interface LibraryBookSummary {
+  title: string;
+  author?: string;
+  tags: string[];
+  status: string;
+  rating?: number;
+  noteExcerpts: string[];
+}
+
+interface InterestSummary {
+  name: string;
+  category?: string;
+}
+
+export interface SuggestedBook {
+  title: string;
+  author: string;
+  reason: string;
+}
+
+// MindShelf — Suggestion de nouveaux livres, basée sur la bibliothèque, les
+// notes et les centres d'intérêt (cross-module, issus de SparkTime). Chaque
+// titre/auteur renvoyé ici est ensuite vérifié auprès d'OpenLibrary côté
+// route avant d'être affiché — jamais de confiance aveugle sur un titre de
+// livre généré, risque d'hallucination bien connu pour ce type de réponse.
+export async function generateBookSuggestions(
+  library: LibraryBookSummary[],
+  interests: InterestSummary[],
+): Promise<SuggestedBook[]> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  const libraryList =
+    library
+      .map((b) => {
+        const parts = [`titre: "${b.title}"`];
+        if (b.author) parts.push(`auteur: ${b.author}`);
+        parts.push(`statut: ${b.status}`);
+        if (b.rating) parts.push(`note: ${b.rating}/5`);
+        if (b.tags.length) parts.push(`tags: ${b.tags.join(", ")}`);
+        if (b.noteExcerpts.length)
+          parts.push(`extraits de notes: ${b.noteExcerpts.join(" / ")}`);
+        return `- ${parts.join(" · ")}`;
+      })
+      .join("\n") || "(bibliothèque vide)";
+
+  const interestsList = interests.length
+    ? interests
+        .map((i) => `${i.name}${i.category ? ` (${i.category})` : ""}`)
+        .join(", ")
+    : "(aucun renseigné)";
+
+  const existingTitles = library.map((b) => b.title).join(", ") || "aucun";
+
+  const prompt = `
+Tu es un assistant qui suggère de nouveaux livres à lire pour l'application FlowMind (module MindShelf), à partir de la bibliothèque actuelle d'une utilisatrice et de ses centres d'intérêt.
+
+Sa bibliothèque actuelle :
+${libraryList}
+
+Ses centres d'intérêt (issus des autres modules de l'app) : ${interestsList}
+
+Propose 7 suggestions de livres RÉELS et EXISTANTS (jamais inventés — ces suggestions seront vérifiées après coup, une suggestion introuvable sera rejetée), qui prolongent ou complètent ses lectures et intérêts actuels. Varie les suggestions plutôt que de rester sur un seul thème.
+
+Ne suggère aucun des titres déjà présents dans sa bibliothèque : ${existingTitles}
+
+Pour chaque suggestion, donne :
+- title (titre exact du livre)
+- author (nom complet de l'auteur·ice)
+- reason (15-20 mots maximum expliquant le lien avec sa bibliothèque ou ses intérêts)
+
+Réponds UNIQUEMENT en JSON valide, sans aucun texte autour, sous cette forme :
+{"suggestions": [{"title": "...", "author": "...", "reason": "..."}]}
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("Réponse vide de l'IA");
+
+  const parsed = JSON.parse(raw);
+  return parsed.suggestions as SuggestedBook[];
+}
+
 interface DayBlockSummary {
   time: string;
   title: string;

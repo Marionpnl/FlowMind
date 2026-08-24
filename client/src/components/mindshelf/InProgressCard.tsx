@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BookOpen } from "lucide-react";
 import type { IResource } from "@shared/types";
 
@@ -11,6 +12,10 @@ export default function InProgressCard({
   onClick,
 }: InProgressCardProps) {
   const notesCount = resource.notes.length;
+  // Certaines couvertures OpenLibrary redirigent vers un chemin d'extraction
+  // archive.org peu fiable (parfois cassé) — repli sur l'icône si l'image
+  // échoue réellement à charger, plutôt qu'une case vide.
+  const [coverFailed, setCoverFailed] = useState(false);
 
   return (
     <button
@@ -18,10 +23,11 @@ export default function InProgressCard({
       className="flex w-full items-start gap-4 rounded-2xl bg-white p-4 text-left border border-black/5 shadow-sm cursor-pointer"
     >
       <div className="flex h-26 w-19 sm:w-17 shrink-0 items-center justify-center overflow-hidden rounded-md bg-mindshelf-bg border border-black/5">
-        {resource.coverUrl ? (
+        {resource.coverUrl && !coverFailed ? (
           <img
             src={resource.coverUrl}
             alt={resource.title}
+            onError={() => setCoverFailed(true)}
             className="h-full w-full object-cover"
           />
         ) : (

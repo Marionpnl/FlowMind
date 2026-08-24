@@ -67,6 +67,19 @@ interface ReadingPatternResponse {
   data: ReadingPatternSuggestion;
 }
 
+export interface SuggestedBook {
+  title: string;
+  author?: string;
+  coverUrl?: string;
+  isbn?: string;
+  reason: string;
+}
+
+interface BookSuggestionsResponse {
+  success: boolean;
+  data: SuggestedBook[];
+}
+
 interface CreateResourceInput {
   type: ResourceType;
   title: string;
@@ -103,6 +116,7 @@ interface ResourceState {
   fetchConnections: () => Promise<ThematicConnection[]>;
   fetchRediscovery: (count?: number) => Promise<RediscoveredNote[]>;
   fetchReadingPattern: () => Promise<ReadingPatternSuggestion | null>;
+  fetchBookSuggestions: () => Promise<SuggestedBook[]>;
 }
 
 export const useResourceStore = create<ResourceState>((set, get) => ({
@@ -282,6 +296,18 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
       return res.data;
     } catch {
       return null;
+    }
+  },
+
+  fetchBookSuggestions: async () => {
+    try {
+      const res = await apiCall<BookSuggestionsResponse>(
+        "/api/resources/suggestions",
+        { method: "POST", auth: true },
+      );
+      return res.data;
+    } catch {
+      return [];
     }
   },
 }));

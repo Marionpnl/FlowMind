@@ -7,8 +7,10 @@ import {
 import {
   generateConnections,
   generateReadingPatternSuggestion,
+  generateBookSuggestions,
 } from "../services/aiService";
 import Resource from "../models/Resource";
+import Interest from "../models/Interest";
 import { truncateWords } from "../utils/text";
 import { aiLimiter } from "../middleware/rateLimiter";
 
@@ -48,53 +50,57 @@ router.get("/search/:query", async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/resources/connections - Find thematic connections between resources (not persisted)
-router.post("/connections", aiLimiter, async (req: AuthRequest, res: Response) => {
-  try {
-    const resources = await Resource.find({ userId: req.userId }).select(
-      "title author tags notes",
-    );
+router.post(
+  "/connections",
+  aiLimiter,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const resources = await Resource.find({ userId: req.userId }).select(
+        "title author tags notes",
+      );
 
-    if (resources.length < 2) {
-      return res.status(400).json({
-        success: false,
-        message: "Not enough resources to find connections",
-      });
+      if (resources.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Not enough resources to find connections",
+        });
+      }
+
+      const resourceIds = new Set(resources.map((r) => r._id.toString()));
+      const summaries = resources.map((r) => ({
+        id: r._id.toString(),
+        title: r.title,
+        author: r.author,
+        tags: r.tags,
+        noteExcerpts: r.notes.slice(0, 3).map((n) => n.content),
+      }));
+
+      const generated = await generateConnections(summaries);
+
+      const seen = new Set<string>();
+      const connections = generated
+        .filter(
+          (c) =>
+            resourceIds.has(c.resourceIdA) &&
+            resourceIds.has(c.resourceIdB) &&
+            c.resourceIdA !== c.resourceIdB,
+        )
+        .filter((c) => {
+          const key = [c.resourceIdA, c.resourceIdB].sort().join("|");
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 3)
+        .map((c) => ({ ...c, explanation: truncateWords(c.explanation, 20) }));
+
+      res.json({ success: true, data: connections });
+    } catch (error) {
+      console.error("POST /api/resources/connections", error);
+      res.status(500).json({ success: false, message: "Server error" });
     }
-
-    const resourceIds = new Set(resources.map((r) => r._id.toString()));
-    const summaries = resources.map((r) => ({
-      id: r._id.toString(),
-      title: r.title,
-      author: r.author,
-      tags: r.tags,
-      noteExcerpts: r.notes.slice(0, 3).map((n) => n.content),
-    }));
-
-    const generated = await generateConnections(summaries);
-
-    const seen = new Set<string>();
-    const connections = generated
-      .filter(
-        (c) =>
-          resourceIds.has(c.resourceIdA) &&
-          resourceIds.has(c.resourceIdB) &&
-          c.resourceIdA !== c.resourceIdB,
-      )
-      .filter((c) => {
-        const key = [c.resourceIdA, c.resourceIdB].sort().join("|");
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 3)
-      .map((c) => ({ ...c, explanation: truncateWords(c.explanation, 20) }));
-
-    res.json({ success: true, data: connections });
-  } catch (error) {
-    console.error("POST /api/resources/connections", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+  },
+);
 
 // GET /api/resources/rediscover?count=N - Surface N old notes, rotating deterministically by day.
 router.get("/rediscover", async (req: AuthRequest, res: Response) => {
@@ -147,54 +153,167 @@ router.get("/rediscover", async (req: AuthRequest, res: Response) => {
 
 // POST /api/resources/reading-pattern - Detect this week's reading pattern and suggest
 // a related FlowDay practice session (not persisted) — the FlowDay/MindShelf bridge.
-router.post("/reading-pattern", aiLimiter, async (req: AuthRequest, res: Response) => {
-  try {
-    const resources = await Resource.find({ userId: req.userId }).select(
-      "title tags notes",
-    );
+router.post(
+  "/reading-pattern",
+  aiLimiter,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const resources = await Resource.find({ userId: req.userId }).select(
+        "title tags notes",
+      );
 
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
-    const recentActivity = resources
-      .map((r) => ({
-        resourceTitle: r.title,
-        tags: r.tags,
-        recentNoteExcerpts: r.notes
-          .filter((n) => n.createdAt >= sevenDaysAgo)
-          .map((n) => n.content),
-      }))
-      .filter((r) => r.recentNoteExcerpts.length > 0);
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+      const recentActivity = resources
+        .map((r) => ({
+          resourceTitle: r.title,
+          tags: r.tags,
+          recentNoteExcerpts: r.notes
+            .filter((n) => n.createdAt >= sevenDaysAgo)
+            .map((n) => n.content),
+        }))
+        .filter((r) => r.recentNoteExcerpts.length > 0);
 
-    if (recentActivity.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Not enough recent reading activity",
+      if (recentActivity.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Not enough recent reading activity",
+        });
+      }
+
+      const generated = await generateReadingPatternSuggestion(recentActivity);
+
+      res.json({
+        success: true,
+        data: {
+          title:
+            typeof generated.title === "string" && generated.title
+              ? generated.title
+              : "Session de pratique",
+          description:
+            typeof generated.description === "string" && generated.description
+              ? generated.description
+              : "Une session de pratique en lien avec tes lectures récentes ?",
+          duration:
+            typeof generated.duration === "number" && generated.duration > 0
+              ? generated.duration
+              : 30,
+        },
       });
+    } catch (error) {
+      console.error("POST /api/resources/reading-pattern", error);
+      res.status(500).json({ success: false, message: "Server error" });
     }
+  },
+);
 
-    const generated = await generateReadingPatternSuggestion(recentActivity);
+// POST /api/resources/suggestions - Suggest new books to add, based on the
+// library, notes and cross-module interests (not persisted).
+router.post(
+  "/suggestions",
+  aiLimiter,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const [resources, interests] = await Promise.all([
+        Resource.find({ userId: req.userId }).select(
+          "title author tags status rating notes",
+        ),
+        Interest.find({ userId: req.userId }).select("name category"),
+      ]);
 
-    res.json({
-      success: true,
-      data: {
-        title:
-          typeof generated.title === "string" && generated.title
-            ? generated.title
-            : "Session de pratique",
-        description:
-          typeof generated.description === "string" && generated.description
-            ? generated.description
-            : "Une session de pratique en lien avec tes lectures récentes ?",
-        duration:
-          typeof generated.duration === "number" && generated.duration > 0
-            ? generated.duration
-            : 30,
-      },
-    });
-  } catch (error) {
-    console.error("POST /api/resources/reading-pattern", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
+      if (resources.length === 0 && interests.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Not enough data to suggest books",
+        });
+      }
+
+      const library = resources.map((r) => ({
+        title: r.title,
+        author: r.author,
+        tags: r.tags,
+        status: r.status,
+        rating: r.rating,
+        noteExcerpts: r.notes.slice(0, 3).map((n) => n.content),
+      }));
+
+      const generated = await generateBookSuggestions(
+        library,
+        interests.map((i) => ({ name: i.name, category: i.category })),
+      );
+
+      const existingTitlesLower = new Set(
+        resources.map((r) => r.title.toLowerCase().trim()),
+      );
+
+      const candidates = (generated || []).filter(
+        (s) =>
+          typeof s.title === "string" &&
+          s.title.trim() &&
+          !existingTitlesLower.has(s.title.trim().toLowerCase()),
+      );
+
+      // OpenLibrary est un catalogue crowdsourcé : les livres populaires y ont
+      // souvent des entrées parasites (workbooks/résumés/guides non officiels
+      // publiés par des tiers) qui peuvent matcher la recherche avant le vrai
+      // livre. On les écarte explicitement plutôt que de risquer d'afficher un
+      // faux résultat.
+      const JUNK_TITLE_PATTERN =
+        /\b(workbook|summary of|summary and analysis|companion to|study guide|guide to)\b/i;
+
+      const verifiedResults = await Promise.all(
+        candidates.map(async (s) => {
+          const results = (
+            await searchBooksByTitle(`${s.title} ${s.author || ""}`.trim())
+          ).filter((r) => !JUNK_TITLE_PATTERN.test(r.title));
+
+          const wantedTitle = s.title.trim().toLowerCase();
+          // Égalité stricte d'abord, puis tolérance sur les sous-titres (le
+          // titre exact stocké sur OpenLibrary diffère parfois de celui
+          // suggéré par l'IA, ex: "Can't Hurt Me" vs "Can't Hurt Me: Master
+          // Your Mind and Defy the Odds").
+          const match =
+            results.find((r) => r.title.toLowerCase() === wantedTitle) ||
+            results.find((r) => {
+              const found = r.title.toLowerCase();
+              return (
+                found.startsWith(wantedTitle) || wantedTitle.startsWith(found)
+              );
+            });
+          // Pas de repli sur le premier résultat générique : mieux vaut
+          // écarter la suggestion que d'afficher un livre potentiellement
+          // sans rapport avec ce que l'IA a proposé.
+          if (!match) return null;
+          if (existingTitlesLower.has(match.title.toLowerCase().trim()))
+            return null;
+
+          return {
+            title: match.title,
+            author: match.author || s.author,
+            coverUrl: match.coverUrl,
+            isbn: match.isbn,
+            reason: typeof s.reason === "string" ? s.reason : "",
+          };
+        }),
+      );
+
+      const seenTitles = new Set<string>();
+      const suggestions = verifiedResults
+        .filter((v): v is NonNullable<typeof v> => v !== null)
+        .filter((v) => {
+          const key = v.title.toLowerCase().trim();
+          if (seenTitles.has(key)) return false;
+          seenTitles.add(key);
+          return true;
+        })
+        .slice(0, 3);
+
+      res.json({ success: true, data: suggestions });
+    } catch (error) {
+      console.error("POST /api/resources/suggestions", error);
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
+);
 
 // GET /api/resources - List with optional filters (type, status, tag)
 router.get("/", async (req: AuthRequest, res: Response) => {

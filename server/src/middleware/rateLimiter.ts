@@ -19,7 +19,7 @@ export const authLimiter = rateLimit({
 // placées après `requireAuth`, donc `req.userId` est déjà disponible
 export const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 20,
+  max: 40,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) =>

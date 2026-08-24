@@ -4,6 +4,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import InProgressCard from "@/components/mindshelf/InProgressCard";
 import LibraryRow from "@/components/mindshelf/LibraryRow";
 import ConnectionsPanel from "@/components/mindshelf/ConnectionsPanel";
+import BookSuggestionsPanel from "@/components/mindshelf/BookSuggestionsPanel";
 import NotesRediscoveryPanel from "@/components/mindshelf/NotesRediscoveryPanel";
 import AISuggestionCard from "@/components/mindshelf/AISuggestionCard";
 import NewResourceModal from "@/components/mindshelf/NewResourceModal";
@@ -35,6 +36,12 @@ export default function MindShelf() {
   const [selectedResource, setSelectedResource] = useState<IResource | null>(
     null,
   );
+  const [libraryTab, setLibraryTab] = useState<"library" | "suggestions">(
+    "library",
+  );
+  // Monté une seule fois, à la première ouverture de l'onglet
+  // pour ne pas relancer un appel IA à chaque aller-retour d'onglet.
+  const [hasOpenedSuggestions, setHasOpenedSuggestions] = useState(false);
 
   const filtersActive =
     categories.length > 0 ||
@@ -171,54 +178,87 @@ export default function MindShelf() {
 
           <div className="rounded-2xl bg-white p-5 border border-black/5 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] tracking-wide font-semibold sm:gap-1.5 sm:text-sm">
-                <BookOpen className="h-3.5 w-3.5 text-mindshelf sm:h-4.5 sm:w-4.5" />
-                Ta bibliothèque
-              </h2>
-              <div className="flex items-center gap-0 sm:gap-1">
+              <div className="flex shrink-0 items-center gap-1 rounded-xl bg-cream-secondary p-1 mb-2">
                 <button
-                  onClick={() => setStatuses([])}
+                  onClick={() => setLibraryTab("library")}
                   className={cn(
-                    "whitespace-nowrap rounded-full px-1 py-0.5 text-[9px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
-                    statuses.length === 0
-                      ? "bg-[#2B2A28] text-white"
-                      : "text-muted-foreground hover:text-foreground",
+                    "flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-semibold tracking-wide transition-colors cursor-pointer sm:gap-1.5 sm:px-3 sm:text-sm",
+                    libraryTab === "library"
+                      ? "bg-white shadow-sm"
+                      : "text-black/60 hover:text-foreground",
                   )}
                 >
-                  Tous
+                  <BookOpen className="h-3.5 w-3.5 text-mindshelf sm:h-4.5 sm:w-4.5" />
+                  Ta bibliothèque
                 </button>
-                {LIBRARY_STATUSES.filter((s) => s !== "in-progress").map(
-                  (s) => (
-                    <button
-                      key={s}
-                      onClick={() => toggleStatus(s)}
-                      className={cn(
-                        "whitespace-nowrap rounded-full px-1 py-0.5 text-[9px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
-                        statuses.includes(s)
-                          ? "bg-[#2B2A28] text-white"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {STATUS_LABELS[s]}
-                    </button>
-                  ),
-                )}
+                <button
+                  onClick={() => {
+                    setLibraryTab("suggestions");
+                    setHasOpenedSuggestions(true);
+                  }}
+                  className={cn(
+                    "whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-semibold tracking-wide transition-colors cursor-pointer sm:px-3 sm:text-sm",
+                    libraryTab === "suggestions"
+                      ? "bg-white shadow-sm"
+                      : "text-black/60 hover:text-foreground",
+                  )}
+                >
+                  Suggestions
+                </button>
               </div>
+              {libraryTab === "library" && (
+                <div className="flex items-center gap-0 sm:gap-1">
+                  <button
+                    onClick={() => setStatuses([])}
+                    className={cn(
+                      "whitespace-nowrap rounded-full px-1 py-0.5 text-[9px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
+                      statuses.length === 0
+                        ? "bg-[#2B2A28] text-white"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Tous
+                  </button>
+                  {LIBRARY_STATUSES.filter((s) => s !== "in-progress").map(
+                    (s) => (
+                      <button
+                        key={s}
+                        onClick={() => toggleStatus(s)}
+                        className={cn(
+                          "whitespace-nowrap rounded-full px-1 py-0.5 text-[9px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
+                          statuses.includes(s)
+                            ? "bg-[#2B2A28] text-white"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {STATUS_LABELS[s]}
+                      </button>
+                    ),
+                  )}
+                </div>
+              )}
             </div>
 
-            {filteredLibrary.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Aucun livre pour l'instant.
-              </p>
-            ) : (
-              <div>
-                {filteredLibrary.map((r) => (
-                  <LibraryRow
-                    key={r._id}
-                    resource={r}
-                    onClick={() => setSelectedResource(r)}
-                  />
-                ))}
+            <div className={libraryTab === "library" ? "" : "hidden"}>
+              {filteredLibrary.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun livre pour l'instant.
+                </p>
+              ) : (
+                <div>
+                  {filteredLibrary.map((r) => (
+                    <LibraryRow
+                      key={r._id}
+                      resource={r}
+                      onClick={() => setSelectedResource(r)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            {hasOpenedSuggestions && (
+              <div className={libraryTab === "suggestions" ? "" : "hidden"}>
+                <BookSuggestionsPanel />
               </div>
             )}
           </div>
