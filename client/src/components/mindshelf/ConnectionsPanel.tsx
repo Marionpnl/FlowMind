@@ -4,7 +4,45 @@ import {
   useResourceStore,
   type ThematicConnection,
 } from "@/store/resourceStore";
+import { useAuthStore } from "@/store/authStore";
 import type { IResource } from "@shared/types";
+
+// Pas de stockage serveur pour les connexions (recalculées à la demande,
+// jamais persistées) — on garde juste un cache côté navigateur pour éviter
+// de relancer l'IA à chaque retour sur MindShelf. 12h ≈ 2 rechargements
+// max par jour pour un usage normal. Clé préfixée par userId pour ne pas
+// mélanger le cache entre deux comptes sur le même navigateur.
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+
+interface ConnectionsCache {
+  data: ThematicConnection[];
+  timestamp: number;
+}
+
+// Un résultat vide n'est jamais gardé (ni écrit, ni fait confiance en
+// lecture) — impossible de distinguer ici "vraiment aucune connexion" d'un
+// raté ponctuel de l'IA ou d'un quota momentanément atteint, et mettre en
+// cache un résultat vide masquerait les vraies connexions pendant 12h. Un
+// résultat vide entraîne juste une nouvelle tentative au prochain retour.
+function readCache(userId: string): ConnectionsCache | null {
+  const raw = localStorage.getItem(`flowmind_connections_cache_${userId}`);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as ConnectionsCache;
+    return parsed.data.length > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(userId: string, data: ThematicConnection[]): void {
+  if (data.length === 0) return;
+  const cache: ConnectionsCache = { data, timestamp: Date.now() };
+  localStorage.setItem(
+    `flowmind_connections_cache_${userId}`,
+    JSON.stringify(cache),
+  );
+}
 
 interface ConnectionsPanelProps {
   resources: IResource[];
@@ -16,11 +54,21 @@ export default function ConnectionsPanel({
   onSelectResource,
 }: ConnectionsPanelProps) {
   const fetchConnections = useResourceStore((s) => s.fetchConnections);
+  const userId = useAuthStore((s) => s.user?._id);
   const [connections, setConnections] = useState<ThematicConnection[]>([]);
 
   useEffect(() => {
-    fetchConnections().then((result) => setConnections(result));
-  }, [fetchConnections]);
+    if (!userId) return;
+    const cached = readCache(userId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      void Promise.resolve().then(() => setConnections(cached.data));
+      return;
+    }
+    fetchConnections().then((result) => {
+      setConnections(result);
+      writeCache(userId, result);
+    });
+  }, [fetchConnections, userId]);
 
   const resourceById = new Map(resources.map((r) => [r._id, r]));
 
