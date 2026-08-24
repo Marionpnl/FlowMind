@@ -15,6 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Check, X } from "lucide-react";
 import { moduleBadgeClass, moduleDotClass } from "@/lib/moduleStyles";
 import { cn } from "@/lib/utils";
+import { useLongPress } from "@/lib/useLongPress";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import type { DayPlanBlock } from "@shared/types";
 
@@ -112,6 +113,7 @@ function SortableBlock({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: block.id });
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -139,6 +141,8 @@ function SortableBlock({
         )}
       />
       <div
+        ref={setLongPressRef}
+        {...longPressTouchHandlers}
         onClick={() => onEditBlock(block)}
         className={cn(
           "group relative flex-1 cursor-grab rounded-2xl bg-white p-3 sm:p-4 shadow-sm active:cursor-grabbing",
@@ -190,7 +194,10 @@ function SortableBlock({
             e.stopPropagation();
             onDeleteBlock(block.id);
           }}
-          className="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+          className={cn(
+            "absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
+            longPressRevealed && "flex",
+          )}
           aria-label="Supprimer ce bloc"
         >
           <X className="h-3.5 w-3.5" />

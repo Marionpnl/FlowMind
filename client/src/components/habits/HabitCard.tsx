@@ -12,10 +12,12 @@ import {
 import { useHabitStore } from "@/store/habitStore";
 import type { IHabit } from "@shared/types";
 import { cn } from "@/lib/utils";
+import { useLongPress } from "@/lib/useLongPress";
 
 export default function HabitCard({ habit }: { habit: IHabit }) {
   const toggleCheck = useHabitStore((s) => s.toggleCheck);
   const deleteHabit = useHabitStore((s) => s.deleteHabit);
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
 
   const today = toLocalDateString();
   const isCheckedToday = habit.completedDates.includes(today);
@@ -23,10 +25,17 @@ export default function HabitCard({ habit }: { habit: IHabit }) {
   const last30Days = getLast30Days();
 
   return (
-    <div className="group relative rounded-2xl bg-white px-4 py-4 shadow-sm sm:px-8 sm:py-6">
+    <div
+      ref={setLongPressRef}
+      {...longPressTouchHandlers}
+      className="group relative rounded-2xl bg-white px-4 py-4 shadow-sm sm:px-8 sm:py-6"
+    >
       <button
         onClick={() => deleteHabit(habit._id)}
-        className="absolute -right-2 -top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+        className={cn(
+          "absolute -right-2 -top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
+          longPressRevealed && "flex",
+        )}
         aria-label="Supprimer l'habitude"
       >
         <X className="h-3.5 w-3.5" />

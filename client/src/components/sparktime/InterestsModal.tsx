@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { useInterestStore, type DetectedInterest } from "@/store/interestStore";
 import { CATEGORIES } from "@/lib/sparktime";
 import { cn } from "@/lib/utils";
+import { useLongPress } from "@/lib/useLongPress";
 import type { IInterest } from "@shared/types";
 
 const sliderColorClass = cn(
@@ -312,6 +313,7 @@ function InterestRow({
   const updateInterest = useInterestStore((s) => s.updateInterest);
   const deleteInterest = useInterestStore((s) => s.deleteInterest);
   const rowRef = useRef<HTMLDivElement>(null);
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
   const [draftName, setDraftName] = useState(interest.name);
   const draftNameRef = useRef(draftName);
   useEffect(() => {
@@ -354,7 +356,11 @@ function InterestRow({
 
   return (
     <div
-      ref={rowRef}
+      ref={(node) => {
+        rowRef.current = node;
+        setLongPressRef(node);
+      }}
+      {...longPressTouchHandlers}
       className="group relative flex items-center justify-between rounded-3xl border border-black/5 bg-cream-secondary py-2.5 px-5 hover:z-10"
     >
       <div className="min-w-0 flex-1">
@@ -454,7 +460,10 @@ function InterestRow({
           e.stopPropagation();
           deleteInterest(interest._id);
         }}
-        className="absolute -right-2 -top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+        className={cn(
+          "absolute -right-2 -top-2 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
+          longPressRevealed && "flex",
+        )}
         aria-label="Supprimer ce centre d'intérêt"
       >
         <X className="h-3.5 w-3.5" />

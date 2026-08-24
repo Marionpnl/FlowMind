@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import type { ISpark } from "@shared/types";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useLongPress } from "@/lib/useLongPress";
 
 interface SparkCardProps {
   spark: ISpark;
@@ -15,14 +17,23 @@ export default function SparkCard({
   onPlan,
   onDelete,
 }: SparkCardProps) {
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
+
   return (
-    <div className="group relative rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+    <div
+      ref={setLongPressRef}
+      {...longPressTouchHandlers}
+      className="group relative rounded-2xl border border-black/5 bg-white p-5 shadow-sm"
+    >
       <button
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
         }}
-        className="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+        className={cn(
+          "absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
+          longPressRevealed && "flex",
+        )}
         aria-label="Supprimer ce Spark"
       >
         <X className="h-3.5 w-3.5" />

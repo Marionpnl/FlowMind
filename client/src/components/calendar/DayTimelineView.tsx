@@ -13,6 +13,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { pointerFirstCollisionDetection } from "@/lib/dndCollision";
+import { useLongPress } from "@/lib/useLongPress";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import type { DayPlanBlock } from "@shared/types";
 
@@ -218,6 +219,7 @@ function DraggableBlock({
     id: block.id,
     data: { time: block.time } satisfies BlockDropData,
   });
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
 
   const previewTransform = swapPreview
     ? `translate3d(${swapPreview.dx}px, ${swapPreview.dy}px, 0)`
@@ -228,9 +230,11 @@ function DraggableBlock({
       ref={(node) => {
         setNodeRef(node);
         setDropRef(node);
+        setLongPressRef(node);
       }}
       {...listeners}
       {...attributes}
+      {...longPressTouchHandlers}
       style={{
         top,
         height,
@@ -252,7 +256,10 @@ function DraggableBlock({
           e.stopPropagation();
           onDeleteBlock(block.id);
         }}
-        className="absolute -right-2 -top-2 z-10 hidden h-5 w-5 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex"
+        className={cn(
+          "absolute -right-2 -top-2 z-10 hidden h-5 w-5 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
+          longPressRevealed && "flex",
+        )}
         aria-label="Supprimer ce bloc"
       >
         <X className="h-3 w-3" />
