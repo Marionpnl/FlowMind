@@ -92,6 +92,7 @@ export default function WeekGridView({
     (_, i) => START_HOUR + i,
   );
   const planByDate = new Map(plans.map((p) => [p.date, p]));
+  const today = toDateString(new Date());
   const [swapPreview, setSwapPreview] = useState<SwapPreview | null>(null);
 
   // Un mouvement de quelques pixels ne déclenche pas de drag — ça laisse le
@@ -179,19 +180,27 @@ export default function WeekGridView({
         {/* En-têtes des jours */}
         <div className="grid grid-cols-[36px_repeat(7,1fr)] border-b border-black/5 sm:grid-cols-[64px_repeat(7,1fr)]">
           <div />
-          {days.map((day, i) => (
-            <div
-              key={i}
-              className="border-l border-black/5 px-1 py-2 sm:px-3 sm:py-3"
-            >
-              <p className="text-[9px] text-black/60 font-medium uppercase tracking-widest text-muted-foreground sm:text-xs">
-                {DAY_LABELS[i]}
-              </p>
-              <p className="pt-1 font-mono text-xs text-black/70 tracking-widest font-medium sm:text-sm">
-                {day.getDate()}
-              </p>
-            </div>
-          ))}
+          {days.map((day, i) => {
+            const isToday = toDateString(day) === today;
+            return (
+              <div
+                key={i}
+                className="border-l border-black/5 px-1 py-2 sm:px-3 sm:py-3"
+              >
+                <p className="text-[9px] text-black/60 font-medium uppercase tracking-widest text-muted-foreground sm:text-xs">
+                  {DAY_LABELS[i]}
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 w-fit rounded-full px-1.5 py-0.5 font-mono text-xs tracking-widest font-medium text-black/70 sm:text-sm",
+                    isToday && "bg-flowday-bg text-black/70",
+                  )}
+                >
+                  {day.getDate()}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
         {/* Grille horaire */}
@@ -311,7 +320,8 @@ function DraggableBlock({
     id: block.id,
     data: { date: dateStr, time: block.time } satisfies BlockDropData,
   });
-  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
+    useLongPress<HTMLDivElement>();
 
   const previewTransform = swapPreview
     ? `translate3d(${swapPreview.dx}px, ${swapPreview.dy}px, 0)`

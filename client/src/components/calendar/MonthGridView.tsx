@@ -73,9 +73,7 @@ export default function MonthGridView({
       return;
     }
     // Une seule mesure par cible survolée — cf. WeekGridView pour le détail
-    // (recalculer à chaque tick réutiliserait la position déjà déplacée par
-    // notre propre transform d'aperçu, empêchant la cible de rejoindre
-    // complètement sa destination).
+
     setSwapPreview((prev) => {
       if (prev && prev.targetId === over.id) return prev;
       const activeRect = active.rect.current.initial;
@@ -95,17 +93,11 @@ export default function MonthGridView({
     if (!over) return;
     const data = active.data.current as { blockId: string; date: string };
 
-    // Lâché directement sur un autre bloc : les deux échangent leur jour.
-    // Séquencé (la seconde requête attend la première) : un échange entre
-    // deux jours modifie deux documents via un "lire puis sauvegarder" côté
-    // serveur qui n'est pas atomique — deux requêtes concurrentes sur la
-    // même paire de jours peuvent s'écraser l'une l'autre et perdre des blocs.
     const overData = over.data.current as BlockDropData | undefined;
     if (overData && over.id !== active.id) {
       if (overData.date === data.date) {
         // Même jour : rien à échanger côté date, on réordonne plutôt les
-        // deux blocs au sein du jour — utile puisque seuls les 3 premiers
-        // sont affichés (le reste passe dans "+N de plus").
+        // deux blocs au sein du jour
         const plan = planByDate.get(data.date);
         if (!plan) return;
         const idxActive = plan.blocks.findIndex((b) => b.id === data.blockId);
@@ -171,7 +163,7 @@ export default function MonthGridView({
                   className={cn(
                     "text-[10px] text-black/60 font-medium tracking-widest sm:text-xs",
                     isToday &&
-                      "flex h-4 w-4 items-center justify-center rounded-full bg-flowday text-white sm:h-5 sm:w-5",
+                      "flex h-4 w-4 items-center justify-center rounded-full bg-flowday-bg text-black/70 sm:h-5 sm:w-5",
                   )}
                 >
                   {day.getDate()}
@@ -245,7 +237,8 @@ function DraggableChip({
     id: block.id,
     data: { date: dateStr } satisfies BlockDropData,
   });
-  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
+    useLongPress<HTMLDivElement>();
 
   const previewTransform = swapPreview
     ? `translate3d(${swapPreview.dx}px, ${swapPreview.dy}px, 0)`
@@ -262,7 +255,9 @@ function DraggableChip({
       {...attributes}
       {...longPressTouchHandlers}
       style={{
-        transform: transform ? CSS.Translate.toString(transform) : previewTransform,
+        transform: transform
+          ? CSS.Translate.toString(transform)
+          : previewTransform,
         transition: previewTransform ? "transform 150ms ease" : undefined,
         touchAction: "none",
       }}
