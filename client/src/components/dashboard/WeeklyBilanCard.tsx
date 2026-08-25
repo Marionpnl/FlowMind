@@ -3,6 +3,7 @@ import { Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WeeklyBilanModal from "@/components/dashboard/WeeklyBilanModal";
 import { useSummaryStore, type WeeklyStats } from "@/store/summaryStore";
+import { useDayPlanStore } from "@/store/dayPlanStore";
 import {
   getMonday,
   getWeekDays,
@@ -24,6 +25,13 @@ function formatWeekRange(weekDays: Date[]): string {
 
 export default function WeeklyBilanCard() {
   const fetchWeeklyStats = useSummaryStore((s) => s.fetchWeeklyStats);
+  // Stats déterministes, pas chères à recalculer (pas d'appel IA) — on
+  // reprend `currentPlan` comme signal pour les rafraîchir automatiquement
+  // dès qu'un bloc d'aujourd'hui change (ajout/édition/suppression),
+  // plutôt qu'un calcul figé au premier chargement de la carte. Ne couvre
+  // que le jour courant : modifier un autre jour de la semaine depuis le
+  // calendrier ne redéclenche pas ce rafraîchissement.
+  const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const [stats, setStats] = useState<WeeklyStats | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [session, setSession] = useState(0);
@@ -33,7 +41,7 @@ export default function WeeklyBilanCard() {
 
   useEffect(() => {
     fetchWeeklyStats(weekStart).then((result) => setStats(result));
-  }, [weekStart, fetchWeeklyStats]);
+  }, [weekStart, fetchWeeklyStats, currentPlan]);
 
   function handleOpen() {
     setSession((s) => s + 1);

@@ -3,7 +3,6 @@ import PageHeader from "@/components/layout/PageHeader";
 import FlowDayPlanCard from "@/components/widgets/FlowDayPlanCard";
 import TodayPlanning from "@/components/widgets/TodayPlanning";
 import HabitsWidget from "@/components/widgets/HabitsWidget";
-import InsightCard from "@/components/dashboard/InsightCard";
 import MindShelfCard from "@/components/dashboard/MindShelfCard";
 import SparkTimeCard from "@/components/dashboard/SparkTimeCard";
 import WeeklyBilanCard from "@/components/dashboard/WeeklyBilanCard";
@@ -109,7 +108,6 @@ export default function Dashboard() {
           <HabitsWidget layout="responsive" />
         </div>
         <div className="space-y-5">
-          <InsightCard />
           <MindShelfCard />
           <SparkTimeCard />
           <WeeklyBilanCard />

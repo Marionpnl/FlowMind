@@ -1,7 +1,20 @@
-import { focusStats } from "@/lib/mockData";
 import { Clock } from "lucide-react";
+import { formatDuration } from "@/lib/dateUtils";
+import type { DayPlanBlock } from "@shared/types";
 
-export default function FocusCard() {
+interface FocusCardProps {
+  blocks: DayPlanBlock[];
+}
+
+export default function FocusCard({ blocks }: FocusCardProps) {
+  // Même logique que le bilan hebdomadaire (computeWeeklyStats côté serveur) :
+  // "FlowDay" = travail profond, "SparkTime" = pauses actives/mouvement —
+  // juste calculée côté client puisqu'on n'a besoin que du jour déjà chargé.
+  const deepWorkMinutes = blocks
+    .filter((b) => b.module === "FlowDay")
+    .reduce((sum, b) => sum + b.duration, 0);
+  const activeBreaks = blocks.filter((b) => b.module === "SparkTime").length;
+
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="flex items-center gap-2">
@@ -13,14 +26,12 @@ export default function FocusCard() {
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-cream-secondary p-3">
           <p className="text-xl font-mono font-semibold">
-            {focusStats.deepWorkDuration}
+            {formatDuration(deepWorkMinutes)}
           </p>
           <p className="pt-1 text-xs text-muted-foreground">Travail profond</p>
         </div>
         <div className="rounded-xl bg-cream-secondary p-3">
-          <p className="text-xl font-mono font-semibold">
-            {focusStats.activeBreaks}
-          </p>
+          <p className="text-xl font-mono font-semibold">{activeBreaks}</p>
           <p className="pt-1 text-xs text-muted-foreground">Pauses actives</p>
         </div>
       </div>

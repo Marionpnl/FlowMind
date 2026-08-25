@@ -181,7 +181,7 @@ export default function FlowDay() {
         </div>
         <div className="space-y-5">
           <HabitsWidget layout="column" />
-          <FocusCard />
+          <FocusCard blocks={blocks} />
         </div>
       </main>
 
