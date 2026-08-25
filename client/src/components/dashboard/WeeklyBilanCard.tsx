@@ -103,14 +103,16 @@ export default function WeeklyBilanCard() {
         Générer le bilan par IA
       </Button>
 
-      <WeeklyBilanModal
-        key={session}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        weekStart={weekStart}
-        rangeLabel={rangeLabel}
-        stats={stats}
-      />
+      {modalOpen && (
+        <WeeklyBilanModal
+          key={session}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          weekStart={weekStart}
+          rangeLabel={rangeLabel}
+          stats={stats}
+        />
+      )}
     </div>
   );
 }

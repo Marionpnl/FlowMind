@@ -198,17 +198,19 @@ export default function FlowDay() {
         editingBlockId={editingBlock?.id}
       />
 
-      <DaySummaryModal
-        key={summarySession}
-        open={summaryOpen}
-        onOpenChange={setSummaryOpen}
-        planId={currentPlan?._id}
-        date={currentPlan?.date}
-        blocks={blocks}
-        existingTitle={currentPlan?.endOfDaySummary}
-        existingInsight={currentPlan?.endOfDayInsight}
-        existingBlocksSignature={currentPlan?.endOfDayBlocksSignature}
-      />
+      {summaryOpen && (
+        <DaySummaryModal
+          key={summarySession}
+          open={summaryOpen}
+          onOpenChange={setSummaryOpen}
+          planId={currentPlan?._id}
+          date={currentPlan?.date}
+          blocks={blocks}
+          existingTitle={currentPlan?.endOfDaySummary}
+          existingInsight={currentPlan?.endOfDayInsight}
+          existingBlocksSignature={currentPlan?.endOfDayBlocksSignature}
+        />
+      )}
     </div>
   );
 }
