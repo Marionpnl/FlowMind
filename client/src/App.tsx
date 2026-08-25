@@ -17,12 +17,34 @@ import Settings from "./pages/Settings";
 
 export default function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  const animatedTransitions = useAuthStore(
+    (s) => s.user?.preferences?.animatedTransitions ?? true,
+  );
+  const compactDensity = useAuthStore(
+    (s) => s.user?.preferences?.compactDensity ?? false,
+  );
 
   // At first app render, we check if a token already exists
   // (e.g., the user had an existing session open)
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Applique les réglages "Apparence" (Paramètres) au niveau du <html> —
+  // voir index.css pour les règles CSS globales que ces classes déclenchent.
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "no-animations",
+      !animatedTransitions,
+    );
+  }, [animatedTransitions]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "density-compact",
+      compactDensity,
+    );
+  }, [compactDensity]);
 
   return (
     <BrowserRouter>

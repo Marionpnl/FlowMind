@@ -8,22 +8,12 @@ import {
   generateDayBilan,
 } from "../services/aiService";
 import { truncateWords } from "../utils/text";
+import { computeBlocksSignature } from "../utils/dayPlan";
 import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 
 router.use(requireAuth);
-
-// Fingerprint of a day's blocks (id + done status) — used to detect whether the
-// end-of-day bilan is stale relative to the current state of the plan.
-function computeBlocksSignature(
-  blocks: { id: string; done: boolean }[],
-): string {
-  return blocks
-    .map((b) => `${b.id}:${b.done ? 1 : 0}`)
-    .sort()
-    .join(",");
-}
 
 // GET /api/flowday/week/:weekStart - Week planning (weekStart = Monday, "YYYY-MM-DD" format)
 router.get("/week/:weekStart", async (req: AuthRequest, res: Response) => {

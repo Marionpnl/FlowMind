@@ -198,12 +198,9 @@ const BOOLEAN_PREFERENCES = [
   "dailyRediscovery",
   "animatedTransitions",
   "compactDensity",
-  "readingHistory",
-  "anonymousUsage",
-  "crossModuleDataSharing",
+  "dailyEmailSummary",
 ] as const;
 const STRING_PREFERENCES = ["aiTone", "aiLength"] as const;
-const NUMBER_PREFERENCES = ["dataRetentionMonths"] as const;
 
 // PUT /api/auth/me - Update profile fields and AI/display preferences
 router.put("/me", requireAuth, async (req: AuthRequest, res: Response) => {
@@ -226,11 +223,6 @@ router.put("/me", requireAuth, async (req: AuthRequest, res: Response) => {
       for (const key of STRING_PREFERENCES) {
         if (typeof preferences[key] === "string" && preferences[key].trim()) {
           updates[`preferences.${key}`] = preferences[key].trim();
-        }
-      }
-      for (const key of NUMBER_PREFERENCES) {
-        if (typeof preferences[key] === "number" && preferences[key] > 0) {
-          updates[`preferences.${key}`] = preferences[key];
         }
       }
     }

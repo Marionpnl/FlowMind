@@ -12,23 +12,27 @@ const TOGGLES: {
   key: BooleanPreferenceKey;
   label: string;
   description: string;
+  defaultValue: boolean;
 }[] = [
   {
     key: "crossModuleSuggestions",
     label: "Suggestions transversales",
     description:
       "L'IA propose des liens entre tes lectures, ton planning et tes activités",
+    defaultValue: true,
   },
   {
     key: "autoGeneratePlan",
     label: "Génération automatique du planning",
     description:
       "Structure ta journée à partir d'une description en langage naturel",
+    defaultValue: true,
   },
   {
     key: "dailyRediscovery",
     label: "Redécouverte du jour",
     description: "Une citation de tes lectures passées, chaque matin",
+    defaultValue: true,
   },
 ];
 
@@ -80,21 +84,12 @@ export default function AIPreferencesSection() {
                 </p>
               </div>
               <Switch
-                checked={preferences?.[t.key] ?? true}
+                checked={preferences?.[t.key] ?? t.defaultValue}
                 onCheckedChange={(value) => handleToggle(t.key, value)}
                 className="shrink-0 data-checked:bg-flowday"
               />
             </div>
           ))}
-          <div className="flex items-center justify-between gap-4 opacity-50">
-            <div>
-              <p className="text-sm font-medium">Résumé quotidien par e-mail</p>
-              <p className="text-xs text-muted-foreground">
-                Reçois le bilan de ta journée à 21h — bientôt disponible
-              </p>
-            </div>
-            <Switch checked={false} disabled className="shrink-0" />
-          </div>
         </div>
       </div>
 

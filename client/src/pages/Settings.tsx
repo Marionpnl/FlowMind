@@ -4,6 +4,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import SettingsNav from "@/components/settings/SettingsNav";
 import ProfileSection from "@/components/settings/ProfileSection";
 import AIPreferencesSection from "@/components/settings/AIPreferencesSection";
+import NotificationsSection from "@/components/settings/NotificationsSection";
 import ModulesSection from "@/components/settings/ModulesSection";
 import ApparenceSection from "@/components/settings/ApparenceSection";
 import ConfidentialiteSection from "@/components/settings/ConfidentialiteSection";
@@ -73,14 +74,7 @@ export default function Settings() {
             </>
           )}
 
-          {active === "notifications" && (
-            <ComingSoonSection
-              id="notifications"
-              label="Notifications"
-              description="Alertes push et par e-mail pour tes habitudes et ton planning"
-              Icon={Bell}
-            />
-          )}
+          {active === "notifications" && <NotificationsSection />}
 
           {active === "ai" && <AIPreferencesSection />}
 

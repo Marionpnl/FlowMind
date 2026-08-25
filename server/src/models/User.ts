@@ -9,10 +9,7 @@ interface IUserPreferences {
   aiLength: string;
   animatedTransitions: boolean;
   compactDensity: boolean;
-  readingHistory: boolean;
-  anonymousUsage: boolean;
-  crossModuleDataSharing: boolean;
-  dataRetentionMonths: number;
+  dailyEmailSummary: boolean;
 }
 
 // 1. Define the IUser interface TypeScript to represent the user document structure
@@ -25,6 +22,9 @@ export interface IUser extends Document {
   language?: string;
   theme: "papier" | "encre" | "systeme";
   lastExportAt?: Date;
+  // Date ("YYYY-MM-DD" dans le fuseau de l'utilisateur) du dernier envoi du
+  // résumé quotidien par e-mail — évite un double envoi le même jour.
+  lastDailyEmailDate?: string;
   resetPasswordTokenHash?: string;
   resetPasswordExpires?: Date;
   preferences: IUserPreferences;
@@ -72,6 +72,9 @@ const userSchema = new Schema<IUser>(
     lastExportAt: {
       type: Date,
     },
+    lastDailyEmailDate: {
+      type: String,
+    },
     // select: false — jamais renvoyés par défaut (ex: GET /me, GET /export),
     // même s'ils sont hashés, par précaution.
     resetPasswordTokenHash: {
@@ -90,10 +93,7 @@ const userSchema = new Schema<IUser>(
       aiLength: { type: String, default: "Concise", trim: true },
       animatedTransitions: { type: Boolean, default: true },
       compactDensity: { type: Boolean, default: false },
-      readingHistory: { type: Boolean, default: true },
-      anonymousUsage: { type: Boolean, default: false },
-      crossModuleDataSharing: { type: Boolean, default: true },
-      dataRetentionMonths: { type: Number, default: 12 },
+      dailyEmailSummary: { type: Boolean, default: false },
     },
   },
   {

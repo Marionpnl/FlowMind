@@ -9,10 +9,7 @@ export interface IUserPreferences {
   aiLength: string;
   animatedTransitions: boolean;
   compactDensity: boolean;
-  readingHistory: boolean;
-  anonymousUsage: boolean;
-  crossModuleDataSharing: boolean;
-  dataRetentionMonths: number;
+  dailyEmailSummary: boolean;
 }
 
 export interface IUser {

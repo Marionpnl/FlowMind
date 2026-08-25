@@ -4,10 +4,20 @@ import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import type { ThemeChoice } from "@shared/types";
 
-const THEMES: { key: ThemeChoice; label: string; sub: string }[] = [
+const THEMES: {
+  key: ThemeChoice;
+  label: string;
+  sub: string;
+  comingSoon?: boolean;
+}[] = [
   { key: "papier", label: "Papier", sub: "Clair et chaud" },
-  { key: "encre", label: "Encre", sub: "Sombre et feutré" },
-  { key: "systeme", label: "Système", sub: "Suit ton appareil" },
+  { key: "encre", label: "Encre", sub: "Sombre et feutré", comingSoon: true },
+  {
+    key: "systeme",
+    label: "Système",
+    sub: "Suit ton appareil",
+    comingSoon: true,
+  },
 ];
 
 export default function ApparenceSection() {
@@ -17,6 +27,7 @@ export default function ApparenceSection() {
   const preferences = user?.preferences;
 
   function handleThemeSelect(key: ThemeChoice) {
+    if (key !== "papier") return;
     updateProfile({ theme: key });
   }
 
@@ -42,20 +53,28 @@ export default function ApparenceSection() {
           <button
             key={t.key}
             onClick={() => handleThemeSelect(t.key)}
+            disabled={t.comingSoon}
+            aria-disabled={t.comingSoon}
             className={cn(
-              "relative rounded-xl border p-4 text-left transition-colors cursor-pointer",
-              theme === t.key
-                ? "border-flowday/30 bg-flowday-bg"
-                : "border-black/10 bg-cream-secondary hover:border-black/20",
+              "relative rounded-xl border p-4 text-left transition-colors",
+              t.comingSoon
+                ? "cursor-not-allowed border-black/10 bg-cream-secondary opacity-50"
+                : "cursor-pointer",
+              !t.comingSoon &&
+                (theme === t.key
+                  ? "border-flowday/30 bg-flowday-bg"
+                  : "border-black/10 bg-cream-secondary hover:border-black/20"),
             )}
           >
             <div className="mb-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
               Thème
-              {theme === t.key && <Check className="h-3.5 w-3.5 text-flowday" />}
+              {!t.comingSoon && theme === t.key && (
+                <Check className="h-3.5 w-3.5 text-flowday" />
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-1">
               <p className="text-sm font-medium">{t.label}</p>
-              {t.key === "encre" && (
+              {t.comingSoon && (
                 <span className="rounded-full bg-black/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
                   Bientôt
                 </span>

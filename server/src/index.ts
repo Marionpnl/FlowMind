@@ -11,6 +11,7 @@ import interestsRouter from "./routes/interests";
 import sparksRouter from "./routes/sparks";
 import summaryRouter from "./routes/summary";
 import { connectDatabase } from "./config/database";
+import { startDailyEmailScheduler } from "./services/dailyEmailScheduler";
 
 const app = express();
 
@@ -37,6 +38,7 @@ const PORT = process.env.PORT || 5000;
 connectDatabase()
   .then(() => {
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    startDailyEmailScheduler();
   })
   .catch((error) => {
     console.error("Failed to connect to MongoDB", error);

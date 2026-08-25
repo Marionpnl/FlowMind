@@ -36,3 +36,19 @@ body {
     border-color: var(--color-border);
   }
 }
+
+/* Réglage "Densité compacte" (Paramètres > Apparence) : la palette de
+   Tailwind v4 se base entièrement sur --spacing (padding/margin/gap/taille),
+   donc la réduire ici resserre l'ensemble de l'app sans toucher aux
+   composants un par un. */
+html.density-compact {
+  --spacing: 0.2rem;
+}
+
+/* Réglage "Animations douces" (Paramètres > Apparence) : coupe transitions
+   et animations CSS globalement quand désactivé. */
+html.no-animations,
+html.no-animations * {
+  transition: none !important;
+  animation: none !important;
+}

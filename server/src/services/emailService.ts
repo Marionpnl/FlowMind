@@ -22,3 +22,40 @@ export async function sendPasswordResetEmail(
     `,
   });
 }
+
+function formatMinutes(minutes: number): string {
+  if (minutes <= 0) return "0 min";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, "0")}`;
+}
+
+export interface DailySummaryEmailData {
+  title: string;
+  insight: string;
+  focusMinutes: number;
+  readingMinutes: number;
+  movementMinutes: number;
+}
+
+export async function sendDailySummaryEmail(
+  to: string,
+  data: DailySummaryEmailData,
+): Promise<void> {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  await resend.emails.send({
+    from: "FlowMind <onboarding@resend.dev>",
+    to,
+    subject: `FlowMind — ${data.title}`,
+    html: `
+      <h2>${data.title}</h2>
+      <p>${data.insight}</p>
+      <p>
+        Focus : ${formatMinutes(data.focusMinutes)}<br>
+        Lecture : ${formatMinutes(data.readingMinutes)}<br>
+        Sport : ${formatMinutes(data.movementMinutes)}
+      </p>
+    `,
+  });
+}
