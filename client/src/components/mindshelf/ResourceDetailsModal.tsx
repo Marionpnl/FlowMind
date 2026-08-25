@@ -292,6 +292,7 @@ export default function ResourceDetailsModal({
         key={scheduleSession}
         open={scheduleOpen}
         onOpenChange={setScheduleOpen}
+        onSuccess={() => onOpenChange(false)}
         defaultModule="MindShelf"
         defaultTitle={currentResource.title}
         defaultNotes={

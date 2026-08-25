@@ -58,6 +58,11 @@ export type ActivityModalTarget =
 interface NewActivityModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // Appelé en plus de `onOpenChange(false)` quand une action aboutit
+  // (créer/éditer/supprimer) — utile quand cette modale est elle-même
+  // ouverte depuis une autre modale (ex: ResourceDetailsModal) et qu'on
+  // veut refermer toute la chaîne plutôt que de révéler la modale parente.
+  onSuccess?: () => void;
   defaultModule?: HabitModule;
   defaultTitle?: string;
   defaultNotes?: string;
@@ -71,6 +76,7 @@ interface NewActivityModalProps {
 export default function NewActivityModal({
   open,
   onOpenChange,
+  onSuccess,
   defaultModule = "FlowDay",
   defaultTitle = "",
   defaultNotes = "",
@@ -114,6 +120,7 @@ export default function NewActivityModal({
           module,
         });
         onOpenChange(false);
+        onSuccess?.();
       } else {
         const result = await scheduleActivity({
           title: title.trim(),
@@ -124,7 +131,10 @@ export default function NewActivityModal({
           module,
           sparkId,
         });
-        if (result) onOpenChange(false);
+        if (result) {
+          onOpenChange(false);
+          onSuccess?.();
+        }
       }
     } finally {
       setSubmitting(false);
@@ -137,6 +147,7 @@ export default function NewActivityModal({
     try {
       await deleteBlock(editingBlockId);
       onOpenChange(false);
+      onSuccess?.();
     } finally {
       setDeleting(false);
     }
