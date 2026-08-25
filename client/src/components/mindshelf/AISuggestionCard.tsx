@@ -90,7 +90,7 @@ export default function AISuggestionCard() {
       <p className="max-w-68 mb-5 font-display text-lg italic leading-snug">
         {suggestion.description}
       </p>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button
           size="sm"
           onClick={handlePlan}

@@ -177,7 +177,7 @@ export default function MindShelf() {
           )}
 
           <div className="rounded-2xl bg-white p-5 border border-black/5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div className="flex shrink-0 items-center gap-1 rounded-xl bg-cream-secondary p-1 mb-2">
                 <button
                   onClick={() => setLibraryTab("library")}
