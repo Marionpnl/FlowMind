@@ -4,6 +4,7 @@ import Spark from "../models/Spark";
 import Interest from "../models/Interest";
 import User from "../models/User";
 import { generateSparks } from "../services/aiService";
+import { fetchCurrentWeather } from "../services/weatherService";
 import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
@@ -55,6 +56,11 @@ router.post("/generate", aiLimiter, async (req: AuthRequest, res: Response) => {
     const avoidTitles = [...visibleSparks, ...recentlyDismissed].map(
       (s) => s.title,
     );
+    // Best-effort : pas de lieu renseigné, pas de clé configurée, ou l'appel
+    // échoue => on génère quand même, juste sans tenir compte de la météo.
+    const weather = user?.location
+      ? await fetchCurrentWeather(user.location)
+      : null;
 
     const generated = await generateSparks(
       rankedInterests,
@@ -63,6 +69,7 @@ router.post("/generate", aiLimiter, async (req: AuthRequest, res: Response) => {
       typeof energyLevel === "string" ? energyLevel : undefined,
       validMaxDistance,
       avoidTitles,
+      weather ?? undefined,
     );
 
     const sparksData = generated.map((s) => {

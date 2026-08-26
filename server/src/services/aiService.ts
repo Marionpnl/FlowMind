@@ -112,6 +112,11 @@ export interface GeneratedSpark {
 // `interests` : passés déjà triés par importance décroissante (cf. routes/sparks.ts)
 // et annotés dans le prompt pour que l'IA priorise les centres d'intérêt
 // que l'utilisatrice a marqués comme les plus importants.
+export interface CurrentWeatherInput {
+  temperature: number;
+  condition: string;
+}
+
 export async function generateSparks(
   interests: { name: string; importance: number }[],
   location: string | undefined,
@@ -119,6 +124,7 @@ export async function generateSparks(
   energyLevel?: string,
   maxDistance?: number,
   avoidTitles: string[] = [],
+  weather?: CurrentWeatherInput,
 ): Promise<GeneratedSpark[]> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -133,6 +139,11 @@ Tu es un assistant qui suggère des activités concrètes pour l'application Flo
 Ses centres d'intérêt, avec le niveau d'importance qu'elle leur a attribué (1 = peu important, 5 = très important) : ${interestsList}
 Priorise la génération de suggestions autour des centres d'intérêt à l'importance la plus haute, sans négliger complètement les autres si pertinent.
 Sa localisation (indicative, à utiliser si pertinent) : ${location || "non renseignée"}
+${
+  weather
+    ? `Météo actuelle : ${weather.temperature}°C, ${weather.condition}. Adapte tes suggestions en conséquence : privilégie des activités en intérieur si la météo est défavorable (pluvieux, orageux, neigeux), en extérieur si elle est favorable (ensoleillé, nuageux léger).`
+    : ""
+}
 ${maxDuration ? `Durée maximale par activité : ${maxDuration} minutes` : ""}
 ${energyLevel ? `Niveau d'énergie recherché : ${energyLevel}` : ""}
 ${maxDistance ? `Distance maximale autour de sa localisation : ${maxDistance} km (indicative, pour les activités qui impliquent un déplacement)` : ""}
