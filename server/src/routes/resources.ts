@@ -19,6 +19,16 @@ const router = Router();
 
 router.use(requireAuth);
 
+// TEMP DEBUG - à retirer après diagnostic
+router.get("/_debug/google-books", async (req: AuthRequest, res: Response) => {
+  const hasKey = !!process.env.GOOGLE_BOOKS_API_KEY;
+  const keyLength = process.env.GOOGLE_BOOKS_API_KEY?.length || 0;
+  const url = `https://www.googleapis.com/books/v1/volumes?q=intitle:Atomic%20Habits&maxResults=1&key=${process.env.GOOGLE_BOOKS_API_KEY}`;
+  const response = await fetch(url);
+  const body = await response.text();
+  res.json({ hasKey, keyLength, status: response.status, body });
+});
+
 // GET /api/resources/lookup/:isbn - Search books by ISBN via OpenLibrary
 router.get("/lookup/:isbn", async (req: AuthRequest, res: Response) => {
   try {
