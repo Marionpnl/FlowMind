@@ -19,17 +19,6 @@ const router = Router();
 
 router.use(requireAuth);
 
-// TEMP DEBUG - à retirer après diagnostic
-router.get("/_debug/google-books", async (req: AuthRequest, res: Response) => {
-  const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-  const titleTerm = `intitle:${encodeURIComponent("Atomic Habits")}`;
-  const authorTerm = `+inauthor:${encodeURIComponent("James Clear")}`;
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${titleTerm}${authorTerm}&maxResults=1&key=${apiKey}`;
-  const response = await fetch(url);
-  const body = await response.text();
-  res.json({ url, status: response.status, body });
-});
-
 // GET /api/resources/lookup/:isbn - Search books by ISBN via OpenLibrary
 router.get("/lookup/:isbn", async (req: AuthRequest, res: Response) => {
   try {
