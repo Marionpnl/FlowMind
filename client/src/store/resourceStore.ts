@@ -73,6 +73,7 @@ export interface SuggestedBook {
   coverUrl?: string;
   isbn?: string;
   reason: string;
+  link: string | null;
 }
 
 interface BookSuggestionsResponse {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import {
   Trash2,
   Plus,
   Quote,
-  Sparkles,
   CalendarPlus,
+  ExternalLink,
   X,
 } from "lucide-react";
 import { RESOURCE_TYPE_CONFIG, STATUS_LABELS } from "@/lib/resourceTypes";
@@ -22,6 +22,7 @@ import { useResourceStore } from "@/store/resourceStore";
 import type { IResource, ResourceStatus } from "@shared/types";
 import { cn } from "@/lib/utils";
 import NewActivityModal from "@/components/widgets/NewActivityModal";
+import apiCall from "@/lib/api";
 
 const STATUSES: { key: ResourceStatus; label: string }[] = [
   { key: "to-read", label: "À lire" },
@@ -49,6 +50,30 @@ export default function ResourceDetailsModal({
   const [addingNote, setAddingNote] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleSession, setScheduleSession] = useState(0);
+  const [purchaseLink, setPurchaseLink] = useState<string | null>(null);
+
+  // Différé en microtâche pour ne pas déclencher de setState synchrone en
+  // tout début de useEffect. Ne coûte rien tant qu'aucun livre n'est
+  // sélectionné : `resource` est `null` au repos, la garde ci-dessous
+  // empêche tout appel avant l'ouverture réelle d'une fiche.
+  useEffect(() => {
+    const resourceId = resource?._id;
+    void Promise.resolve().then(async () => {
+      if (!resourceId) {
+        setPurchaseLink(null);
+        return;
+      }
+      try {
+        const res = await apiCall<{ data: { link: string | null } }>(
+          `/api/resources/${resourceId}/link`,
+          { auth: true },
+        );
+        setPurchaseLink(res.data.link);
+      } catch {
+        setPurchaseLink(null);
+      }
+    });
+  }, [resource?._id]);
 
   if (!resource) return null;
 
@@ -97,6 +122,17 @@ export default function ResourceDetailsModal({
                 <p className="text-sm text-black/70 text-muted-foreground">
                   {resource.author}
                 </p>
+              )}
+              {purchaseLink && (
+                <a
+                  href={purchaseLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-fit items-center gap-1 text-xs text-black/60 hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Voir sur Google Books
+                </a>
               )}
             </DialogHeader>
 
@@ -247,18 +283,6 @@ export default function ResourceDetailsModal({
                   Ajouter
                 </Button>
               </div>
-            </div>
-
-            {/* Suggestion IA */}
-            <div className="rounded-xl bg-[#2B2A28] p-4 text-white">
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-white/60">
-                <Sparkles className="h-3.5 w-3.5" />
-                Suggestion IA
-              </p>
-              <p className="font-display text-base italic leading-snug">
-                À ton rythme, tu peux terminer ce livre d'ici le 24 juin —
-                veux-tu bloquer 25 min chaque soir ?
-              </p>
             </div>
 
             {/* Actions */}

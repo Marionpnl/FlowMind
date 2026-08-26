@@ -4,6 +4,7 @@ import {
   fetchBookByISBN,
   searchBooksByTitle,
 } from "../services/openLibraryService";
+import { fetchBookPurchaseLink } from "../services/googleBooksService";
 import {
   generateConnections,
   generateReadingPatternSuggestion,
@@ -297,7 +298,7 @@ router.post(
       );
 
       const seenTitles = new Set<string>();
-      const suggestions = verifiedResults
+      const shortlisted = verifiedResults
         .filter((v): v is NonNullable<typeof v> => v !== null)
         .filter((v) => {
           const key = v.title.toLowerCase().trim();
@@ -306,6 +307,16 @@ router.post(
           return true;
         })
         .slice(0, 3);
+
+      // Lien récupéré seulement pour les 3 suggestions retenues, pas pour
+      // tous les candidats évalués plus haut — inutile d'appeler Google
+      // Books pour des livres qu'on écarte de toute façon.
+      const suggestions = await Promise.all(
+        shortlisted.map(async (s) => ({
+          ...s,
+          link: await fetchBookPurchaseLink(s.title, s.author),
+        })),
+      );
 
       res.json({ success: true, data: suggestions });
     } catch (error) {
@@ -439,6 +450,29 @@ router.delete("/:id", async (req: AuthRequest, res: Response) => {
     res.json({ success: true, message: "Resource deleted" });
   } catch (error) {
     console.error("DELETE /api/resources/:id", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// GET /api/resources/:id/link - Google Books link to view/buy this resource
+router.get("/:id/link", async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const resource = await Resource.findOne({
+      _id: id,
+      userId: req.userId,
+    }).select("title author");
+
+    if (!resource) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Resource not found" });
+    }
+
+    const link = await fetchBookPurchaseLink(resource.title, resource.author);
+    res.json({ success: true, data: { link } });
+  } catch (error) {
+    console.error("GET /api/resources/:id/link", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookPlus, Check, Plus, RefreshCw } from "lucide-react";
+import { BookPlus, Check, ExternalLink, Plus, RefreshCw } from "lucide-react";
 import { useResourceStore, type SuggestedBook } from "@/store/resourceStore";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +79,17 @@ export default function BookSuggestionsPanel() {
                   <p className="mt-1 text-xs text-black/60 text-muted-foreground">
                     {s.reason}
                   </p>
+                  {s.link && (
+                    <a
+                      href={s.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1.5 inline-flex items-center gap-1 text-xs text-black/60 hover:underline"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Voir sur Google Books
+                    </a>
+                  )}
                 </div>
                 <button
                   onClick={() => handleAdd(s)}
@@ -109,9 +120,7 @@ export default function BookSuggestionsPanel() {
           disabled={loading}
           className="flex items-center gap-1.5 text-xs text-mindshelf hover:underline disabled:opacity-50 cursor-pointer"
         >
-          <RefreshCw
-            className={cn("h-3.5 w-3.5", loading && "animate-spin")}
-          />
+          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
           Régénérer
         </button>
       </div>
