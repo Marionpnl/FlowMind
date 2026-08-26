@@ -5,8 +5,7 @@ import {
   useDroppable,
   useSensor,
   useSensors,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   type DragEndEvent,
   type DragMoveEvent,
 } from "@dnd-kit/core";
@@ -82,18 +81,10 @@ export default function DayTimelineView({
   );
   const [swapPreview, setSwapPreview] = useState<SwapPreview | null>(null);
 
-  // Souris : un mouvement de quelques pixels ne déclenche pas de drag — ça
-  // laisse le clic simple (ouvrir la modale d'édition) fonctionner normalement.
-  // Tactile : un délai avant activation plutôt qu'une distance — sur mobile,
-  // un scroll commence aussi par un mouvement du doigt, donc seule une
-  // pression maintenue immobile distingue une intention de glisser d'un
-  // scroll (si le doigt bouge de plus de `tolerance` avant la fin du délai,
-  // dnd-kit annule le drag et laisse le scroll natif se faire).
+  // Un mouvement de quelques pixels ne déclenche pas de drag — ça laisse le
+  // clic simple (ouvrir la modale d'édition) fonctionner normalement.
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
   function handleDragMove(event: DragMoveEvent) {

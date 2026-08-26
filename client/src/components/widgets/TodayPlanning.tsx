@@ -2,8 +2,7 @@ import {
   DndContext,
   useSensor,
   useSensors,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -42,18 +41,10 @@ export default function TodayPlanning({
   // visuel — c'est ce qui causait le "retour à la position d'origine".
   const sortedBlocks = [...blocks].sort((a, b) => a.time.localeCompare(b.time));
 
-  // Souris : un mouvement de quelques pixels ne déclenche pas de drag — ça
-  // laisse le clic simple (ouvrir la modale d'édition) fonctionner normalement.
-  // Tactile : un délai avant activation plutôt qu'une distance — sur mobile,
-  // un scroll commence aussi par un mouvement du doigt, donc seule une
-  // pression maintenue immobile distingue une intention de glisser d'un
-  // scroll (si le doigt bouge de plus de `tolerance` avant la fin du délai,
-  // dnd-kit annule le drag et laisse le scroll natif se faire).
+  // Un mouvement de quelques pixels ne déclenche pas de drag — ça laisse le
+  // clic simple (ouvrir la modale d'édition) fonctionner normalement.
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 8 },
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
   // Réordonner visuellement doit réassigner les horaires pour que la liste
