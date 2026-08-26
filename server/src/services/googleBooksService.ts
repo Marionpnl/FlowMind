@@ -1,6 +1,3 @@
-// Contrairement à OpenLibrary, le quota anonyme (sans clé) de l'API Google
-// Books est à 0 en pratique — `GOOGLE_BOOKS_API_KEY` est donc requise, pas
-// juste optionnelle pour "lever le quota".
 export async function fetchBookPurchaseLink(
   title: string,
   author?: string,
