@@ -10,6 +10,7 @@ import resourcesRouter from "./routes/resources";
 import interestsRouter from "./routes/interests";
 import sparksRouter from "./routes/sparks";
 import summaryRouter from "./routes/summary";
+import weatherRouter from "./routes/weather";
 import { connectDatabase } from "./config/database";
 import { startDailyEmailScheduler } from "./services/dailyEmailScheduler";
 
@@ -31,6 +32,7 @@ app.use("/api/resources", resourcesRouter);
 app.use("/api/interests", interestsRouter);
 app.use("/api/sparks", sparksRouter);
 app.use("/api/summary", summaryRouter);
+app.use("/api/weather", weatherRouter);
 
 const PORT = process.env.PORT || 5000;
 

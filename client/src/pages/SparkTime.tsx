@@ -12,9 +12,34 @@ import NewActivityModal from "@/components/widgets/NewActivityModal";
 import { Button } from "@/components/ui/button";
 import { useSparkStore } from "@/store/sparkStore";
 import { useInterestStore } from "@/store/interestStore";
+import { useDayPlanStore } from "@/store/dayPlanStore";
+import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { ENERGY_LEVELS } from "@/lib/sparktime";
+import { toDateString } from "@/lib/dateUtils";
+import apiCall from "@/lib/api";
 import type { ISpark } from "@shared/types";
+
+interface CurrentWeather {
+  temperature: number;
+  condition: string;
+}
+
+function minutesUntilNextActivity(
+  blocks: { time: string; duration: number; done: boolean }[],
+): number | null {
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const upcoming = blocks
+    .filter((b) => !b.done)
+    .map((b) => {
+      const [h, m] = b.time.split(":").map(Number);
+      return h * 60 + m;
+    })
+    .filter((startMinutes) => startMinutes >= nowMinutes)
+    .sort((a, b) => a - b);
+  return upcoming.length > 0 ? upcoming[0] - nowMinutes : null;
+}
 
 export default function SparkTime() {
   const sparks = useSparkStore((s) => s.sparks);
@@ -25,6 +50,11 @@ export default function SparkTime() {
 
   const interests = useInterestStore((s) => s.interests);
   const fetchInterests = useInterestStore((s) => s.fetchInterests);
+
+  const user = useAuthStore((s) => s.user);
+  const currentPlan = useDayPlanStore((s) => s.currentPlan);
+  const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
+  const [weather, setWeather] = useState<CurrentWeather | null>(null);
 
   const [maxDuration, setMaxDuration] = useState(60);
   const [maxDistance, setMaxDistance] = useState(5);
@@ -55,7 +85,29 @@ export default function SparkTime() {
   useEffect(() => {
     fetchSparks();
     fetchInterests();
-  }, [fetchSparks, fetchInterests]);
+    fetchPlan(toDateString(new Date()));
+  }, [fetchSparks, fetchInterests, fetchPlan]);
+
+  // Pas de fausse météo : on n'affiche une valeur que si l'appel réussit
+  // vraiment (pas de lieu renseigné ou clé OpenWeather absente => rien).
+  // Différé en microtâche pour ne pas déclencher de setState synchrone en
+  // tout début de useEffect.
+  useEffect(() => {
+    void Promise.resolve().then(async () => {
+      if (!user?.location) {
+        setWeather(null);
+        return;
+      }
+      try {
+        const res = await apiCall<{ data: CurrentWeather }>("/api/weather", {
+          auth: true,
+        });
+        setWeather(res.data);
+      } catch {
+        setWeather(null);
+      }
+    });
+  }, [user?.location]);
 
   function handleGenerate() {
     generateSparks({
@@ -102,7 +154,14 @@ export default function SparkTime() {
 
       <main className="grid grid-cols-1 gap-5 px-4 py-6 sm:px-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <ContextBanner />
+          <ContextBanner
+            location={user?.location}
+            energyLabel={ENERGY_LEVELS[energyIndex]}
+            nextActivityMinutes={minutesUntilNextActivity(
+              currentPlan?.blocks ?? [],
+            )}
+            weather={weather}
+          />
 
           <div ref={suggestionsRef}>
             <h2 className="font-display text-xl italic sm:text-2xl">
