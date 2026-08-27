@@ -60,14 +60,15 @@ export default function Sidebar() {
   }, [location.pathname, closeMobileMenu]);
 
   const collapsed = isMobile ? !mobileMenuOpen : sidebarCollapsed;
-  // Mobile's collapsed rail is icon-only real estate — narrower and with
-  // smaller icons than desktop's collapsed state, which stays roomier.
-  const mobileCollapsedRail = isMobile && collapsed;
-  const widthClass = collapsed
-    ? isMobile
-      ? "w-11 px-1.5"
-      : "w-20 px-5"
-    : "w-64 px-5";
+
+  // Sur mobile, pas de rail d'icônes permanent : la sidebar n'existe qu'en
+  // overlay plein via le bouton du PageHeader (mobileMenuOpen). Un rail
+  // replié en continu volerait de la largeur précieuse à l'écran.
+  if (isMobile && !mobileMenuOpen) return null;
+
+  // Plus de rail replié sur mobile (early return ci-dessus) : `collapsed`
+  // ne peut désormais être vrai qu'en desktop, où la sidebar reste roomier.
+  const widthClass = collapsed ? "w-20 px-5" : "w-64 px-5";
 
   return (
     <>
@@ -94,12 +95,7 @@ export default function Sidebar() {
               collapsed ? "justify-center" : "gap-2",
             )}
           >
-            <div
-              className={cn(
-                "flex shrink-0 items-center justify-center rounded-xl bg-black font-display italic text-white",
-                mobileCollapsedRail ? "h-7 w-7 text-sm" : "h-10 w-10",
-              )}
-            >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black font-display italic text-white">
               F
             </div>
             <div
@@ -140,11 +136,7 @@ export default function Sidebar() {
                 className={({ isActive }) =>
                   cn(
                     "relative flex items-center rounded-xl px-3 py-2 text-sm transition-colors",
-                    collapsed
-                      ? (mobileCollapsedRail
-                          ? "justify-center px-1"
-                          : "justify-center px-2")
-                      : "gap-3",
+                    collapsed ? "justify-center px-2" : "gap-3",
                     isActive
                       ? "bg-white shadow-sm"
                       : "text-muted-foreground hover:bg-white/60",
@@ -166,7 +158,6 @@ export default function Sidebar() {
                       className={cn(
                         "h-4 w-4 shrink-0 text-black/70",
                         isActive ? link.textClass : "",
-                        mobileCollapsedRail && "h-3 w-3",
                       )}
                     />
                     <span
@@ -211,23 +202,14 @@ export default function Sidebar() {
                 className={({ isActive }) =>
                   cn(
                     "flex items-center rounded-lg px-3 py-2 text-sm transition-colors",
-                    collapsed
-                      ? (mobileCollapsedRail
-                          ? "justify-center px-1"
-                          : "justify-center px-2")
-                      : "gap-2",
+                    collapsed ? "justify-center px-2" : "gap-2",
                     isActive
                       ? "bg-white font-medium shadow-sm"
                       : "text-muted-foreground hover:bg-white/60",
                   )
                 }
               >
-                <Icon
-                  className={cn(
-                    "h-4 w-4 shrink-0",
-                    mobileCollapsedRail && "h-3 w-3",
-                  )}
-                />
+                <Icon className="h-4 w-4 shrink-0" />
                 <span
                   className={cn(
                     "grid transition-all duration-400",
@@ -275,17 +257,9 @@ export default function Sidebar() {
               </div>
             </div>
           ) : (
-            <div
-              className={cn(
-                "flex flex-col items-center rounded-2xl bg-white shadow-sm",
-                mobileCollapsedRail ? "gap-2 p-2" : "gap-3 p-3",
-              )}
-            >
+            <div className="flex flex-col items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
               <div
-                className={cn(
-                  "flex items-center justify-center rounded-full bg-sparktime-bg font-medium text-sparktime",
-                  mobileCollapsedRail ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm",
-                )}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-sparktime-bg text-sm font-medium text-sparktime"
                 title={user?.name}
               >
                 {user?.name?.[0] ?? "?"}
@@ -295,9 +269,7 @@ export default function Sidebar() {
                 className="text-muted-foreground hover:text-accent-danger"
                 aria-label="Se déconnecter"
               >
-                <LogOut
-                  className={cn("h-4 w-4", mobileCollapsedRail && "h-3 w-3")}
-                />
+                <LogOut className="h-4 w-4" />
               </button>
             </div>
           )}
