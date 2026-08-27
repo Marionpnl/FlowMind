@@ -106,9 +106,24 @@ function SortableBlock({
     useSortable({ id: block.id });
   const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
 
+  // `isDragging` passe à `true` dès que le délai tactile s'écoule, même sans
+  // mouvement — un appui immobile pour révéler le bouton supprimer (délai
+  // plus long, 500ms) ferait sinon passer ce bloc en z-20/shadow-lg presque
+  // immédiatement, rendant la différence entre les deux gestes imperceptible.
+  // On ne bascule dans le rendu "glisser" qu'une fois un vrai mouvement constaté.
+  const hasReallyMoved =
+    Math.abs(transform?.x ?? 0) > 3 || Math.abs(transform?.y ?? 0) > 3;
+  const showDraggingVisual = isDragging && hasReallyMoved;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    // Sans ça, un appui maintenu et immobile se fait intercepter par la
+    // sélection de texte du navigateur (ou le "callout" iOS) avant que le
+    // glisser ait pu démarrer.
+    WebkitUserSelect: "none" as const,
+    userSelect: "none" as const,
+    WebkitTouchCallout: "none" as const,
   };
 
   return (
@@ -121,7 +136,7 @@ function SortableBlock({
         // "manipulation" (pas "none") : laisse le défilement tactile normal
         // se produire pendant le délai d'activation de TouchSensor.
         "relative flex touch-manipulation items-start gap-3",
-        isDragging && "z-20",
+        showDraggingVisual && "z-20",
       )}
     >
       <span className="w-12 shrink-0 pt-4 font-mono text-black/70 text-xs text-muted-foreground">
@@ -139,7 +154,7 @@ function SortableBlock({
         onClick={() => onEditBlock(block)}
         className={cn(
           "group relative flex-1 cursor-grab rounded-2xl bg-white p-3 sm:p-4 shadow-sm active:cursor-grabbing",
-          isDragging && "shadow-lg",
+          showDraggingVisual && "shadow-lg",
         )}
       >
         <div className="flex items-start justify-between gap-2">

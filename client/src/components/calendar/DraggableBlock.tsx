@@ -129,21 +129,33 @@ export default function DraggableBlock({
   previewOffsetY,
   dense = false,
 }: DraggableBlockProps) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: block.id,
-    data: {
-      blockId: block.id,
-      originalTop: top,
-      time: block.time,
-      date: dateStr,
-    },
-  });
+  const { attributes, listeners, setNodeRef, isDragging, transform } =
+    useDraggable({
+      id: block.id,
+      data: {
+        blockId: block.id,
+        originalTop: top,
+        time: block.time,
+        date: dateStr,
+      },
+    });
   const { setNodeRef: setDropRef } = useDroppable({
     id: block.id,
     data: { time: block.time, date: dateStr },
   });
   const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
     useLongPress<HTMLDivElement>();
+
+  // `isDragging` passe à `true` dès que le délai tactile s'écoule, même sans
+  // le moindre mouvement — un appui immobile pour révéler le bouton
+  // supprimer ferait donc disparaître le bloc avant même d'atteindre son
+  // propre délai, plus long. On ne bascule dans le rendu "glisser" (masqué,
+  // remplacé par le clone du DragOverlay) qu'une fois un vrai mouvement
+  // constaté, pas juste le délai écoulé.
+  const hasReallyMoved = transform
+    ? Math.abs(transform.x) > 3 || Math.abs(transform.y) > 3
+    : false;
+  const showDraggingVisual = isDragging && hasReallyMoved;
 
   const previewTransform =
     previewOffsetY !== null
@@ -170,11 +182,18 @@ export default function DraggableBlock({
         // bloquerait le scroll dès le premier contact, avant même que le
         // capteur ait pu décider si c'est un glisser ou un simple défilement.
         touchAction: "manipulation",
+        // Sans ça, un appui maintenu et immobile (exactement le geste qui
+        // active le glisser tactile) se fait intercepter par la sélection de
+        // texte du navigateur — ou, sur iOS, par le "callout" (menu
+        // Copier/Rechercher) — avant même que le glisser ait pu démarrer.
+        WebkitUserSelect: "none",
+        userSelect: "none",
+        WebkitTouchCallout: "none",
       }}
       onClick={() => onEditBlock(block, dateStr)}
       className={cn(
         "absolute left-1 right-1 cursor-grab active:cursor-grabbing",
-        isDragging && "opacity-0",
+        showDraggingVisual && "opacity-0",
         previewOffsetY !== null && "z-10",
       )}
     >

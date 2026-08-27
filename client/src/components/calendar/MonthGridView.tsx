@@ -299,6 +299,14 @@ function SortableChip({
   const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
     useLongPress<HTMLDivElement>();
 
+  // Même raison que DraggableBlock.tsx : `isDragging` passe à `true` dès le
+  // délai tactile écoulé, même sans mouvement — un appui immobile pour
+  // révéler le bouton supprimer ferait sinon disparaître la chip trop tôt.
+  const hasReallyMoved = transform
+    ? Math.abs(transform.x) > 3 || Math.abs(transform.y) > 3
+    : false;
+  const showDraggingVisual = isDragging && hasReallyMoved;
+
   return (
     <div
       ref={(node) => {
@@ -314,9 +322,15 @@ function SortableChip({
         // "manipulation" (pas "none") : laisse le défilement tactile normal
         // se produire pendant le délai d'activation de TouchSensor.
         touchAction: "manipulation",
+        // Sans ça, un appui maintenu et immobile se fait intercepter par la
+        // sélection de texte du navigateur (ou le "callout" iOS) avant que
+        // le glisser ait pu démarrer.
+        WebkitUserSelect: "none",
+        userSelect: "none",
+        WebkitTouchCallout: "none",
       }}
       onClick={() => onEditBlock(block, dateStr)}
-      className={cn(isDragging && "opacity-0")}
+      className={cn(showDraggingVisual && "opacity-0")}
     >
       <ChipVisual
         block={block}
