@@ -29,3 +29,11 @@ export const moduleButtonClass: Record<ModuleName, string> = {
   MindShelf: "bg-mindshelf hover:bg-mindshelf/90",
   SparkTime: "bg-sparktime hover:bg-sparktime/90",
 };
+
+// Fond plein (texte blanc) — utilisé pour les gros blocs du Calendrier,
+//  par opposition à moduleBadgeClass (fond léger) utilisé pour les petits blocs/badges.
+export const moduleSolidClass: Record<ModuleName, string> = {
+  FlowDay: "bg-flowday text-white",
+  MindShelf: "bg-mindshelf text-white",
+  SparkTime: "bg-sparktime text-white",
+};

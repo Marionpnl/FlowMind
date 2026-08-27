@@ -1,75 +1,47 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   DndContext,
-  useDraggable,
+  DragOverlay,
   useDroppable,
-  useSensor,
-  useSensors,
-  PointerSensor,
+  type DragStartEvent,
   type DragEndEvent,
   type DragMoveEvent,
 } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DAY_LABELS, getWeekDays, toDateString } from "@/lib/dateUtils";
+import {
+  DAY_LABELS,
+  getWeekDays,
+  toDateString,
+  timeToMinutes,
+  minutesToTime,
+} from "@/lib/dateUtils";
 import { pointerFirstCollisionDetection } from "@/lib/dndCollision";
-import { useLongPress } from "@/lib/useLongPress";
+import { useDragSensors } from "@/lib/useDragSensors";
+import { useCascadePreview } from "@/lib/useCascadePreview";
 import { useDayPlanStore } from "@/store/dayPlanStore";
+import DraggableBlock, { BlockVisual } from "./DraggableBlock";
 import type { DayPlanBlock, IDayPlan } from "@shared/types";
 
 const START_HOUR = 7;
 const END_HOUR = 23;
 const HOUR_HEIGHT = 60;
 
-const moduleBgSoft = {
-  FlowDay: "bg-flowday-bg text-flowday",
-  MindShelf: "bg-mindshelf-bg text-mindshelf",
-  SparkTime: "bg-sparktime-bg text-sparktime",
-};
-
-const moduleBgSolid = {
-  FlowDay: "bg-flowday text-white",
-  MindShelf: "bg-mindshelf text-white",
-  SparkTime: "bg-sparktime text-white",
-};
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
+function getBlockPosition(block: DayPlanBlock) {
+  const startMinutes = timeToMinutes(block.time) - START_HOUR * 60;
+  const top = (startMinutes / 60) * HOUR_HEIGHT;
+  const height = (block.duration / 60) * HOUR_HEIGHT;
+  return { top, height };
 }
 
-function minutesToTime(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-function addMinutes(time: string, minutes: number): string {
-  return minutesToTime(timeToMinutes(time) + minutes);
-}
-
-interface BlockDropData {
-  date: string;
-  time: string;
-}
-
-// Aperçu en direct de l'échange : pendant le survol d'un autre bloc, on lui
-// applique une translation calculée à partir des rects réels mesurés par
-// dnd-kit (celui du bloc glissé à son point de départ, et celui de la
-// cible) — pas besoin de connaître la largeur des colonnes à la main, ça
-// marche aussi bien pour un échange dans le même jour qu'entre deux jours.
-// Seule la position change dans l'aperçu, jamais la taille : la cible garde
-// sa propre hauteur pendant le survol. On avait essayé de lui faire prendre
-// la hauteur du bloc glissé pour prévisualiser l'échange complet, mais ça
-// modifie sa vraie taille affichée — et dnd-kit re-mesure les zones de dépôt
-// sur cette taille réelle, donc un grand bloc rétréci en aperçu perdait le
-// pointeur et l'échange ne se déclenchait plus (repéré en glissant un petit
-// bloc sur un grand : la cible rétrécissait et le dépôt était raté).
-interface SwapPreview {
-  targetId: string;
-  dx: number;
-  dy: number;
+function computeSnappedTime(originalTop: number, deltaY: number): string {
+  const newTop = originalTop + deltaY;
+  const rawMinutes = START_HOUR * 60 + (newTop / HOUR_HEIGHT) * 60;
+  const snapped = Math.round(rawMinutes / 15) * 15;
+  const clamped = Math.max(
+    START_HOUR * 60,
+    Math.min(END_HOUR * 60 + 45, snapped),
+  );
+  return minutesToTime(clamped);
 }
 
 interface WeekGridViewProps {
@@ -85,7 +57,7 @@ export default function WeekGridView({
   onDeleteBlock,
   onEditBlock,
 }: WeekGridViewProps) {
-  const updateBlock = useDayPlanStore((s) => s.updateBlock);
+  const reflowBlock = useDayPlanStore((s) => s.reflowBlock);
   const days = getWeekDays(weekStart);
   const hours = Array.from(
     { length: END_HOUR - START_HOUR + 1 },
@@ -93,88 +65,98 @@ export default function WeekGridView({
   );
   const planByDate = new Map(plans.map((p) => [p.date, p]));
   const today = toDateString(new Date());
-  const [swapPreview, setSwapPreview] = useState<SwapPreview | null>(null);
+  const sensors = useDragSensors();
+  const { preview, update, reset } = useCascadePreview(HOUR_HEIGHT);
+  const [activeDrag, setActiveDrag] = useState<{
+    block: DayPlanBlock;
+    width: number;
+  } | null>(null);
+  // Une colonne par jour, toutes de largeur identique (grille CSS) — on
+  // retrouve celle du jour d'origine pour mesurer sa largeur une seule fois
+  // au démarrage du drag, plutôt que de mesurer le nœud glissé en direct
+  // via dnd-kit (`activeNodeRect`), qui s'était avéré instable (le clone
+  // se retrouvait rétréci par moments pendant le survol).
+  const columnRefs = useRef(new Map<string, HTMLDivElement>());
 
-  // Un mouvement de quelques pixels ne déclenche pas de drag — ça laisse le
-  // clic simple (ouvrir la modale d'édition) fonctionner normalement.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
-
-  function handleDragMove(event: DragMoveEvent) {
-    const { active, over } = event;
-    const overData = over?.data.current as BlockDropData | undefined;
-    if (!over || !overData || over.id === active.id) {
-      setSwapPreview(null);
-      return;
-    }
-    // On ne recalcule dx/dy qu'une fois par cible survolée : `over.rect`
-    // reflète la position RÉELLEMENT AFFICHÉE (donc déjà décalée par notre
-    // propre transform d'aperçu une fois appliquée)
-    setSwapPreview((prev) => {
-      if (prev && prev.targetId === over.id) return prev;
-      const activeRect = active.rect.current.initial;
-      const overRect = over.rect;
-      if (!activeRect) return null;
-      return {
-        targetId: over.id as string,
-        dx: activeRect.left - overRect.left,
-        dy: activeRect.top - overRect.top,
-      };
-    });
+  function handleDragStart(event: DragStartEvent) {
+    const data = event.active.data.current as { blockId: string; date: string };
+    const sourcePlan = planByDate.get(data.date);
+    const block = sourcePlan?.blocks.find((b) => b.id === data.blockId);
+    if (!block) return;
+    const width =
+      columnRefs.current.get(data.date)?.getBoundingClientRect().width ?? 0;
+    setActiveDrag({ block, width });
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
-    setSwapPreview(null);
+  // Le jour cible vient du bloc survolé s'il y en a un (il porte sa propre
+  // date), sinon de l'id de la zone de dépôt elle-même (une colonne vide).
+  // L'heure cible vient toujours de la position verticale du pointeur — un
+  // chevauchement éventuel avec le bloc survolé est résolu par la cascade,
+  // plus par un échange direct.
+  function resolveTarget(
+    event: DragMoveEvent | DragEndEvent,
+  ): { targetDate: string; newTime: string } | null {
     const { active, over, delta } = event;
-    if (!over) return;
-    const data = active.data.current as {
+    if (!over) return null;
+    const data = active.data.current as { originalTop: number };
+    const overData = over.data.current as { date: string } | undefined;
+    const targetDate = overData ? overData.date : (over.id as string);
+    return { targetDate, newTime: computeSnappedTime(data.originalTop, delta.y) };
+  }
+
+  function handleDragMove(event: DragMoveEvent) {
+    const target = resolveTarget(event);
+    const data = event.active.data.current as { blockId: string; date: string };
+    if (!target) {
+      reset();
+      return;
+    }
+    const sourcePlan = planByDate.get(data.date);
+    const dragged = sourcePlan?.blocks.find((b) => b.id === data.blockId);
+    if (!dragged) return;
+
+    const targetPlan = planByDate.get(target.targetDate);
+    const others = (targetPlan?.blocks ?? [])
+      .filter((b) => b.id !== data.blockId)
+      .map((b) => ({ id: b.id, time: b.time, duration: b.duration }));
+    update(others, dragged.duration, target.newTime);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    reset();
+    setActiveDrag(null);
+    const target = resolveTarget(event);
+    if (!target) return;
+    const data = event.active.data.current as {
       blockId: string;
-      originalTop: number;
       date: string;
       time: string;
     };
+    if (target.targetDate === data.date && target.newTime === data.time) return;
 
-    // Lâché directement sur un autre bloc : les deux échangent leur créneau
-    // (jour + heure) mais gardent chacun leur propre durée — seule la place
-    // dans le planning change, pas la nature du bloc. Les deux mises à jour
-    // sont séquencées (la seconde attend la fin de la première) plutôt que
-    // lancées en parallèle : un échange entre deux jours différents modifie
-    // deux documents via un "lire puis sauvegarder" côté serveur qui n'est
-    // pas atomique — deux requêtes concurrentes sur la même paire de jours
-    // peuvent s'écraser l'une l'autre et perdre/mélanger des blocs.
-    const overData = over.data.current as BlockDropData | undefined;
-    if (overData && over.id !== active.id) {
-      await updateBlock(data.blockId, {
-        date: overData.date,
-        time: overData.time,
-      });
-      await updateBlock(over.id as string, {
-        date: data.date,
-        time: data.time,
-      });
-      return;
-    }
+    const sourcePlan = planByDate.get(data.date);
+    const block = sourcePlan?.blocks.find((b) => b.id === data.blockId);
+    if (!block) return;
 
-    // Lâché sur une case vide de la colonne du jour : déplacement libre.
-    const newDate = over.id as string;
-    const newTop = data.originalTop + delta.y;
-    const rawMinutes = START_HOUR * 60 + (newTop / HOUR_HEIGHT) * 60;
-    const snapped = Math.round(rawMinutes / 15) * 15;
-    const clamped = Math.max(
-      START_HOUR * 60,
-      Math.min(END_HOUR * 60 + 45, snapped),
-    );
-    updateBlock(data.blockId, { date: newDate, time: minutesToTime(clamped) });
+    reflowBlock({
+      block,
+      targetDate: target.targetDate,
+      newTime: target.newTime,
+      sourceDate: target.targetDate !== data.date ? data.date : undefined,
+    });
   }
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={pointerFirstCollisionDetection}
+      onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => setSwapPreview(null)}
+      onDragCancel={() => {
+        reset();
+        setActiveDrag(null);
+      }}
     >
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
         {/* En-têtes des jours */}
@@ -235,7 +217,14 @@ export default function WeekGridView({
             const blocks = plan?.blocks ?? [];
 
             return (
-              <DayColumn key={dayIdx} dateStr={dateStr}>
+              <DayColumn
+                key={dayIdx}
+                dateStr={dateStr}
+                registerRef={(node) => {
+                  if (node) columnRefs.current.set(dateStr, node);
+                  else columnRefs.current.delete(dateStr);
+                }}
+              >
                 {hours.map((h, idx) => (
                   <div
                     key={h}
@@ -244,152 +233,73 @@ export default function WeekGridView({
                   />
                 ))}
 
-                {blocks.map((block) => (
-                  <DraggableBlock
-                    key={block.id}
-                    block={block}
-                    dateStr={dateStr}
-                    onEditBlock={onEditBlock}
-                    onDeleteBlock={onDeleteBlock}
-                    swapPreview={
-                      swapPreview?.targetId === block.id ? swapPreview : null
-                    }
-                  />
-                ))}
+                {blocks.map((block) => {
+                  const { top, height } = getBlockPosition(block);
+                  return (
+                    <DraggableBlock
+                      key={block.id}
+                      block={block}
+                      top={top}
+                      height={height}
+                      dateStr={dateStr}
+                      dense
+                      onEditBlock={(b, d) => onEditBlock(b, d as string)}
+                      onDeleteBlock={onDeleteBlock}
+                      previewOffsetY={preview.get(block.id) ?? null}
+                    />
+                  );
+                })}
               </DayColumn>
             );
           })}
         </div>
       </div>
+      <DragOverlay>
+        {activeDrag && <WeekOverlayBlock block={activeDrag.block} width={activeDrag.width} />}
+      </DragOverlay>
     </DndContext>
+  );
+}
+
+// Clone flottant du bloc glissé. La hauteur se calcule directement depuis
+// sa durée (la même formule que pour le vrai bloc, `getBlockPosition`) —
+// aucune mesure nécessaire. La largeur est capturée une seule fois sur la
+// colonne du jour d'origine au démarrage du drag (voir `columnRefs`
+// ci-dessus) plutôt que sur le nœud glissé mesuré en direct par dnd-kit
+// (`activeNodeRect`), qui s'était avéré instable — le clone se retrouvait
+// rétréci par moments pendant le survol, avant de reprendre sa taille au
+// lâcher.
+function WeekOverlayBlock({ block, width }: { block: DayPlanBlock; width: number }) {
+  const { height } = getBlockPosition(block);
+  return (
+    <div style={{ width, height }} className="shadow-xl">
+      <BlockVisual block={block} height={height} dense />
+    </div>
   );
 }
 
 function DayColumn({
   dateStr,
+  registerRef,
   children,
 }: {
   dateStr: string;
+  registerRef: (node: HTMLDivElement | null) => void;
   children: ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: dateStr });
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        registerRef(node);
+      }}
       className={cn(
         "relative border-l border-black/5 transition-colors",
         isOver && "bg-flowday/5",
       )}
     >
       {children}
-    </div>
-  );
-}
-
-function DraggableBlock({
-  block,
-  dateStr,
-  onEditBlock,
-  onDeleteBlock,
-  swapPreview,
-}: {
-  block: DayPlanBlock;
-  dateStr: string;
-  onEditBlock: (block: DayPlanBlock, date: string) => void;
-  onDeleteBlock: (blockId: string) => void;
-  swapPreview: SwapPreview | null;
-}) {
-  const startMinutes = timeToMinutes(block.time) - START_HOUR * 60;
-  const top = (startMinutes / 60) * HOUR_HEIGHT;
-  const height = (block.duration / 60) * HOUR_HEIGHT;
-  const isSolid = block.duration > 60;
-  const isCompact = height < 44;
-  const timeColorClass = isSolid ? "text-white/80" : "text-black/60";
-
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: block.id,
-      data: {
-        blockId: block.id,
-        originalTop: top,
-        date: dateStr,
-        time: block.time,
-      },
-    });
-  const { setNodeRef: setDropRef } = useDroppable({
-    id: block.id,
-    data: { date: dateStr, time: block.time } satisfies BlockDropData,
-  });
-  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
-    useLongPress<HTMLDivElement>();
-
-  const previewTransform = swapPreview
-    ? `translate3d(${swapPreview.dx}px, ${swapPreview.dy}px, 0)`
-    : undefined;
-
-  return (
-    <div
-      ref={(node) => {
-        setNodeRef(node);
-        setDropRef(node);
-        setLongPressRef(node);
-      }}
-      {...listeners}
-      {...attributes}
-      {...longPressTouchHandlers}
-      style={{
-        top,
-        height,
-        transform: transform
-          ? CSS.Translate.toString(transform)
-          : previewTransform,
-        transition: previewTransform ? "transform 150ms ease" : undefined,
-        touchAction: "none",
-      }}
-      onClick={() => onEditBlock(block, dateStr)}
-      className={cn(
-        "group absolute left-1 right-1 cursor-grab overflow-visible rounded-lg px-2 active:cursor-grabbing",
-        isDragging ? "z-20 shadow-lg" : "hover:z-10",
-        swapPreview && "z-10 ring-2 ring-white",
-        isCompact ? "flex items-center py-0" : "py-1",
-        isSolid ? moduleBgSolid[block.module] : moduleBgSoft[block.module],
-      )}
-    >
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDeleteBlock(block.id);
-        }}
-        className={cn(
-          "absolute -right-2 -top-2 z-10 hidden h-5 w-5 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
-          longPressRevealed && "flex",
-        )}
-        aria-label="Supprimer ce bloc"
-      >
-        <X className="h-3 w-3" />
-      </button>
-      {isCompact ? (
-        <p className="truncate text-[8px] font-medium sm:text-[11px]">
-          {block.title}{" "}
-          <span className={cn("font-mono font-normal", timeColorClass)}>
-            · {block.time}
-          </span>
-        </p>
-      ) : (
-        <>
-          <p className="truncate text-[8px] font-medium leading-tight sm:text-xs">
-            {block.title}
-          </p>
-          <p
-            className={cn(
-              "truncate font-mono text-[7px] leading-tight sm:text-[10px]",
-              timeColorClass,
-            )}
-          >
-            {block.time} - {addMinutes(block.time, block.duration)}
-          </p>
-        </>
-      )}
     </div>
   );
 }

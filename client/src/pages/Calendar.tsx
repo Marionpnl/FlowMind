@@ -156,6 +156,7 @@ export default function Calendar() {
 
         {view === "day" && (
           <DayTimelineView
+            date={dateStr}
             blocks={blocks}
             onDeleteBlock={deleteBlock}
             onEditBlock={(block) => openEditBlock(block, dateStr)}

@@ -1,10 +1,4 @@
-import {
-  DndContext,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  type DragEndEvent,
-} from "@dnd-kit/core";
+import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
   SortableContext,
   useSortable,
@@ -16,6 +10,7 @@ import { Check, X } from "lucide-react";
 import { moduleBadgeClass, moduleDotClass } from "@/lib/moduleStyles";
 import { cn } from "@/lib/utils";
 import { useLongPress } from "@/lib/useLongPress";
+import { useDragSensors } from "@/lib/useDragSensors";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import type { DayPlanBlock } from "@shared/types";
 
@@ -41,11 +36,7 @@ export default function TodayPlanning({
   // visuel — c'est ce qui causait le "retour à la position d'origine".
   const sortedBlocks = [...blocks].sort((a, b) => a.time.localeCompare(b.time));
 
-  // Un mouvement de quelques pixels ne déclenche pas de drag — ça laisse le
-  // clic simple (ouvrir la modale d'édition) fonctionner normalement.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
+  const sensors = useDragSensors();
 
   // Réordonner visuellement doit réassigner les horaires pour que la liste
   // reste triée par heure. On répartit les horaires du nouvel ordre sur les

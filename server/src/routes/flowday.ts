@@ -9,6 +9,7 @@ import {
 } from "../services/aiService";
 import { truncateWords } from "../utils/text";
 import { computeBlocksSignature } from "../utils/dayPlan";
+import { resolveCascade } from "../utils/scheduleCascade";
 import { aiLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
@@ -81,32 +82,129 @@ router.get("/:date", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// PUT /api/flowday/:id - Update an existing day plan (e.g., check a block)
-router.put("/:id", async (req: AuthRequest, res: Response) => {
+// PATCH /api/flowday/reflow - Move a block to a new date/time, pushing any
+// block(s) it now overlaps out of the way (cascade) instead of swapping with
+// them. The client sends only the intent (which block, which day/time) —
+// the cascade itself is recomputed here from a fresh read of the target
+// day's blocks, never trusted from a client-cached array.
+router.patch("/reflow", async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const { blocks, endOfDaySummary } = req.body;
+    const { draggedBlockId, targetDate, newTime, sourceDate } = req.body;
 
-    const updates: Record<string, unknown> = {};
-    if (blocks) updates.blocks = blocks;
-    if (endOfDaySummary !== undefined)
-      updates.endOfDaySummary = endOfDaySummary;
+    if (!draggedBlockId || !targetDate || !newTime) {
+      return res.status(400).json({
+        success: false,
+        message: "draggedBlockId, targetDate and newTime are required",
+      });
+    }
 
-    const plan = await DayPlan.findOneAndUpdate(
-      { _id: id, userId: req.userId },
-      updates,
-      { new: true },
+    const isCrossDay =
+      typeof sourceDate === "string" && sourceDate !== targetDate;
+    const sourcePlanDate = isCrossDay ? sourceDate : targetDate;
+
+    const sourcePlan = await DayPlan.findOne({
+      userId: req.userId,
+      date: sourcePlanDate,
+      "blocks.id": draggedBlockId,
+    });
+    if (!sourcePlan) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Block not found" });
+    }
+    const draggedBlock = sourcePlan.blocks.find(
+      (b) => b.id === draggedBlockId,
+    )!;
+
+    const targetPlan = isCrossDay
+      ? await DayPlan.findOne({ userId: req.userId, date: targetDate })
+      : sourcePlan;
+    const others = (targetPlan?.blocks ?? []).filter(
+      (b) => b.id !== draggedBlockId,
     );
 
-    if (!plan) {
+    const cascadeUpdates = resolveCascade(
+      others.map((b) => ({ id: b.id, time: b.time, duration: b.duration })),
+      draggedBlock.duration,
+      newTime,
+    );
+
+    // Un seul $set avec un arrayFilter par bloc à retimer : met à jour
+    // plusieurs éléments distincts du tableau en une seule requête atomique,
+    // sans jamais relire-modifier-réécrire le tableau entier.
+    function buildArrayFilterSet(entries: [string, string][]) {
+      const setFields: Record<string, string> = {};
+      const arrayFilters: Record<string, string>[] = [];
+      entries.forEach(([blockId, time], i) => {
+        setFields[`blocks.$[c${i}].time`] = time;
+        arrayFilters.push({ [`c${i}.id`]: blockId });
+      });
+      return { setFields, arrayFilters };
+    }
+
+    let finalPlan;
+
+    if (!isCrossDay) {
+      const { setFields, arrayFilters } = buildArrayFilterSet([
+        [draggedBlockId, newTime],
+        ...Object.entries(cascadeUpdates),
+      ]);
+      finalPlan = await DayPlan.findOneAndUpdate(
+        { userId: req.userId, date: targetDate },
+        { $set: setFields },
+        { new: true, arrayFilters, runValidators: true },
+      );
+    } else {
+      const movedBlock = {
+        id: draggedBlock.id,
+        time: newTime,
+        title: draggedBlock.title,
+        subtitle: draggedBlock.subtitle,
+        duration: draggedBlock.duration,
+        module: draggedBlock.module,
+        done: draggedBlock.done,
+        sparkId: draggedBlock.sparkId,
+      };
+
+      // Le push vers le plan cible doit réussir avant qu'on retire le bloc
+      // du plan source, sinon un échec de validation ferait perdre le bloc.
+      let pushedPlan = await DayPlan.findOneAndUpdate(
+        { userId: req.userId, date: targetDate },
+        {
+          $push: { blocks: movedBlock },
+          $setOnInsert: { userId: req.userId, date: targetDate },
+        },
+        { new: true, upsert: true, runValidators: true },
+      );
+
+      const cascadeEntries = Object.entries(cascadeUpdates);
+      if (cascadeEntries.length > 0) {
+        const { setFields, arrayFilters } = buildArrayFilterSet(cascadeEntries);
+        pushedPlan =
+          (await DayPlan.findOneAndUpdate(
+            { userId: req.userId, date: targetDate },
+            { $set: setFields },
+            { new: true, arrayFilters, runValidators: true },
+          )) ?? pushedPlan;
+      }
+
+      await DayPlan.updateOne(
+        { userId: req.userId, date: sourcePlanDate },
+        { $pull: { blocks: { id: draggedBlockId } } },
+      );
+
+      finalPlan = pushedPlan;
+    }
+
+    if (!finalPlan) {
       return res
         .status(404)
         .json({ success: false, message: "Day plan not found" });
     }
 
-    res.json({ success: true, data: plan });
+    res.json({ success: true, data: finalPlan });
   } catch (error) {
-    console.error("PUT /api/flowday/:id", error);
+    console.error("PATCH /api/flowday/reflow error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
@@ -390,7 +488,7 @@ router.post("/blocks", aiLimiter, async (req: AuthRequest, res: Response) => {
 router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
   try {
     const { blockId } = req.params;
-    const { title, time, duration, subtitle, module, date } = req.body;
+    const { title, time, duration, subtitle, module, date, done } = req.body;
 
     const plan = await DayPlan.findOne({
       userId: req.userId,
@@ -430,10 +528,13 @@ router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
         { new: true, upsert: true, runValidators: true },
       );
 
-      plan.blocks = plan.blocks.filter(
-        (b) => b.id !== blockId,
-      ) as typeof plan.blocks;
-      await plan.save();
+      // $pull ciblé par id plutôt qu'un save() du document entier chargé plus
+      // haut : un save() réécrirait tout le tableau de blocs du jour source à
+      // partir d'une copie potentiellement périmée
+      await DayPlan.updateOne(
+        { userId: req.userId, date: plan.date },
+        { $pull: { blocks: { id: blockId } } },
+      );
 
       return res.json({ success: true, data: targetPlan });
     }
@@ -445,6 +546,7 @@ router.patch("/blocks/:blockId", async (req: AuthRequest, res: Response) => {
       setFields["blocks.$.duration"] = validDuration;
     if (subtitle !== undefined) setFields["blocks.$.subtitle"] = subtitle;
     if (module !== undefined) setFields["blocks.$.module"] = module;
+    if (typeof done === "boolean") setFields["blocks.$.done"] = done;
 
     const updatedPlan = await DayPlan.findOneAndUpdate(
       { userId: req.userId, "blocks.id": blockId },

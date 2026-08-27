@@ -92,6 +92,23 @@ export function formatPeriodLabel(
   return `${MONTH_LABELS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+// Conversion "HH:MM" <-> minutes depuis minuit — utilisé par les vues Calendrier pour
+// positionner les blocs sur un axe horaire et calculer les créneaux glissés.
+export function timeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+export function minutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+export function addMinutesToTime(time: string, minutes: number): string {
+  return minutesToTime(timeToMinutes(time) + minutes);
+}
+
 export function summarizeBlocks(blocks: DayPlanBlock[]): string {
   const focusMinutes = blocks
     .filter((b) => b.module === "FlowDay")

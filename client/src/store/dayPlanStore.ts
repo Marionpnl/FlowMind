@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import apiCall from "@/lib/api";
+import { resolveCascade } from "@/lib/scheduleCascade";
 import type { IDayPlan, DayPlanBlock, HabitModule } from "@shared/types";
 
 interface DayPlanResponse {
@@ -34,6 +35,13 @@ export interface UpdateBlockInput {
   subtitle?: string;
   module?: HabitModule;
   date?: string;
+}
+
+export interface ReflowBlockInput {
+  block: DayPlanBlock; // le bloc glissé, tel qu'il existe avant le déplacement
+  targetDate: string;
+  newTime: string;
+  sourceDate?: string; // seulement si différent de targetDate
 }
 
 function mergeIntoList(list: IDayPlan[], updated: IDayPlan): IDayPlan[] {
@@ -73,7 +81,7 @@ interface DayPlanState {
   toggleBlock: (blockId: string) => Promise<void>;
   scheduleActivity: (input: ScheduleActivityInput) => Promise<IDayPlan | null>;
   updateBlock: (blockId: string, updates: UpdateBlockInput) => Promise<void>;
-  reorderDayBlocks: (planId: string, blocks: DayPlanBlock[]) => Promise<void>;
+  reflowBlock: (input: ReflowBlockInput) => Promise<void>;
   deleteBlock: (blockId: string) => Promise<void>;
   submitDaySummary: (planId: string) => Promise<IDayPlan | null>;
 }
@@ -156,21 +164,30 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
   toggleBlock: async (blockId) => {
     const plan = get().currentPlan;
     if (!plan) return;
+    const block = plan.blocks.find((b) => b.id === blockId);
+    if (!block) return;
+    const newDone = !block.done;
 
     const previousPlan = plan;
     const updatedBlocks = plan.blocks.map((b) =>
-      b.id === blockId ? { ...b, done: !b.done } : b,
+      b.id === blockId ? { ...b, done: newDone } : b,
     );
 
     // Update optimiste
     set({ currentPlan: { ...plan, blocks: updatedBlocks } });
 
     try {
-      const res = await apiCall<DayPlanResponse>(`/api/flowday/${plan._id}`, {
-        method: "PUT",
-        auth: true,
-        body: JSON.stringify({ blocks: updatedBlocks }),
-      });
+      // Modifie uniquement ce bloc côté serveur ($set ciblé) plutôt que de
+      // renvoyer tout le tableau : évite d'écraser des blocs ajoutés/modifiés
+      // ailleurs depuis le dernier chargement de ce planning.
+      const res = await apiCall<DayPlanResponse>(
+        `/api/flowday/blocks/${blockId}`,
+        {
+          method: "PATCH",
+          auth: true,
+          body: JSON.stringify({ done: newDone }),
+        },
+      );
       set({ currentPlan: res.data });
     } catch (err) {
       const message =
@@ -282,45 +299,102 @@ export const useDayPlanStore = create<DayPlanState>((set, get) => ({
     }
   },
 
-  // Réordonne les blocs au sein d'un même plan (ex. échanger deux blocs du
-  // même jour en vue Mois) — `updateBlock` ne peut pas faire ça, il ne
-  // modifie que les champs d'un bloc, jamais l'ordre du tableau. On envoie
-  // le tableau complet réordonné via la route PUT existante (déjà utilisée
-  // par `toggleBlock`).
-  reorderDayBlocks: async (planId, blocks) => {
+  // Déplace un bloc vers un nouveau jour/heure en repoussant en cascade les
+  // blocs qu'il chevauche désormais, plutôt que de les échanger (voir
+  // resolveCascade). Le client envoie seulement l'intention (quel bloc, quel
+  // jour/heure) : le serveur recalcule lui-même la cascade à partir d'une
+  // lecture fraîche du jour cible plutôt que de faire confiance à un tableau
+  // potentiellement périmé.
+  reflowBlock: async ({ block, targetDate, newTime, sourceDate }) => {
+    const draggedBlockId = block.id;
+    const isCrossDay = !!sourceDate && sourceDate !== targetDate;
+
     const previousPlan = get().currentPlan;
     const previousWeekPlans = get().weekPlans;
     const previousMonthPlans = get().monthPlans;
 
-    const applyReorder = (plans: IDayPlan[]) =>
-      plans.map((p) => (p._id === planId ? { ...p, blocks } : p));
+    const findTargetBlocks = (): DayPlanBlock[] => {
+      if (previousPlan?.date === targetDate) return previousPlan.blocks;
+      const fromWeek = previousWeekPlans.find((p) => p.date === targetDate);
+      if (fromWeek) return fromWeek.blocks;
+      const fromMonth = previousMonthPlans.find((p) => p.date === targetDate);
+      return fromMonth?.blocks ?? [];
+    };
+    const others = findTargetBlocks().filter((b) => b.id !== draggedBlockId);
+
+    const cascadeUpdates = resolveCascade(
+      others.map((b) => ({ id: b.id, time: b.time, duration: b.duration })),
+      block.duration,
+      newTime,
+    );
+
+    const retime = (blocks: DayPlanBlock[]) =>
+      blocks.map((b) =>
+        cascadeUpdates[b.id] ? { ...b, time: cascadeUpdates[b.id] } : b,
+      );
+
+    // Aperçu optimiste : pose le bloc glissé sur le jour cible à sa nouvelle
+    // heure, retime les blocs poussés, et le retire de son jour d'origine
+    // s'il en change.
+    const applyToPlan = (plan: IDayPlan): IDayPlan => {
+      if (plan.date === targetDate) {
+        const withoutDragged = plan.blocks.filter(
+          (b) => b.id !== draggedBlockId,
+        );
+        return {
+          ...plan,
+          blocks: [...retime(withoutDragged), { ...block, time: newTime }],
+        };
+      }
+      if (isCrossDay && plan.date === sourceDate) {
+        return {
+          ...plan,
+          blocks: plan.blocks.filter((b) => b.id !== draggedBlockId),
+        };
+      }
+      return plan;
+    };
 
     set((state) => ({
-      currentPlan:
-        state.currentPlan?._id === planId
-          ? { ...state.currentPlan, blocks }
-          : state.currentPlan,
-      weekPlans: applyReorder(state.weekPlans),
-      monthPlans: applyReorder(state.monthPlans),
+      currentPlan: state.currentPlan
+        ? applyToPlan(state.currentPlan)
+        : state.currentPlan,
+      weekPlans: state.weekPlans.map(applyToPlan),
+      monthPlans: state.monthPlans.map(applyToPlan),
       error: null,
     }));
 
     try {
-      const res = await apiCall<DayPlanResponse>(`/api/flowday/${planId}`, {
-        method: "PUT",
+      const res = await apiCall<DayPlanResponse>("/api/flowday/reflow", {
+        method: "PATCH",
         auth: true,
-        body: JSON.stringify({ blocks }),
+        body: JSON.stringify({ draggedBlockId, targetDate, newTime, sourceDate }),
       });
       const updated = res.data;
       set((state) => ({
         currentPlan:
-          state.currentPlan?._id === planId ? updated : state.currentPlan,
-        weekPlans: mergeIntoList(state.weekPlans, updated),
-        monthPlans: mergeIntoList(state.monthPlans, updated),
+          state.currentPlan?.date === updated.date
+            ? updated
+            : isCrossDay && state.currentPlan?.date === sourceDate
+              ? {
+                  ...state.currentPlan,
+                  blocks: state.currentPlan.blocks.filter(
+                    (b) => b.id !== draggedBlockId,
+                  ),
+                }
+              : state.currentPlan,
+        weekPlans: mergeIntoList(
+          stripBlockElsewhere(state.weekPlans, draggedBlockId, updated.date),
+          updated,
+        ),
+        monthPlans: mergeIntoList(
+          stripBlockElsewhere(state.monthPlans, draggedBlockId, updated.date),
+          updated,
+        ),
       }));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Error reordering blocks";
+        err instanceof Error ? err.message : "Error reflowing block";
       set({
         currentPlan: previousPlan,
         weekPlans: previousWeekPlans,

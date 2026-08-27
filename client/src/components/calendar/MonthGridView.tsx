@@ -1,41 +1,34 @@
 import { useState, type ReactNode } from "react";
 import {
   DndContext,
-  useDraggable,
+  DragOverlay,
+  closestCenter,
   useDroppable,
-  useSensor,
-  useSensors,
-  PointerSensor,
+  type DragStartEvent,
   type DragEndEvent,
-  type DragMoveEvent,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DAY_LABELS, getMonthGrid, toDateString } from "@/lib/dateUtils";
-import { pointerFirstCollisionDetection } from "@/lib/dndCollision";
+import {
+  DAY_LABELS,
+  getMonthGrid,
+  toDateString,
+  timeToMinutes,
+  addMinutesToTime,
+} from "@/lib/dateUtils";
+import { useDragSensors } from "@/lib/useDragSensors";
 import { useLongPress } from "@/lib/useLongPress";
+import { moduleBadgeClass } from "@/lib/moduleStyles";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import type { DayPlanBlock, IDayPlan } from "@shared/types";
 
-const moduleBgSoft = {
-  FlowDay: "bg-flowday-bg text-flowday",
-  MindShelf: "bg-mindshelf-bg text-mindshelf",
-  SparkTime: "bg-sparktime-bg text-sparktime",
-};
-
-interface BlockDropData {
-  date: string;
-}
-
-// Aperçu en direct de l'échange, cf. WeekGridView pour le détail du calcul.
-// Pas de `height` ici : les chips du mois n'ont pas d'axe horaire, leur
-// taille ne dépend pas d'une durée à faire tenir.
-interface SwapPreview {
-  targetId: string;
-  dx: number;
-  dy: number;
-}
+const MAX_CHIPS_PER_DAY = 4;
 
 interface MonthGridViewProps {
   year: number;
@@ -52,82 +45,94 @@ export default function MonthGridView({
   onDeleteBlock,
   onEditBlock,
 }: MonthGridViewProps) {
-  const updateBlock = useDayPlanStore((s) => s.updateBlock);
-  const reorderDayBlocks = useDayPlanStore((s) => s.reorderDayBlocks);
+  const reflowBlock = useDayPlanStore((s) => s.reflowBlock);
   const grid = getMonthGrid(year, month);
   const planByDate = new Map(plans.map((p) => [p.date, p]));
   const today = toDateString(new Date());
-  const [swapPreview, setSwapPreview] = useState<SwapPreview | null>(null);
+  const sensors = useDragSensors();
+  const [activeDrag, setActiveDrag] = useState<DayPlanBlock | null>(null);
 
-  // Un mouvement de quelques pixels ne déclenche pas de drag — ça laisse le
-  // clic simple (ouvrir la modale d'édition) fonctionner normalement.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
-
-  function handleDragMove(event: DragMoveEvent) {
-    const { active, over } = event;
-    const overData = over?.data.current as BlockDropData | undefined;
-    if (!over || !overData || over.id === active.id) {
-      setSwapPreview(null);
-      return;
-    }
-    // Une seule mesure par cible survolée — cf. WeekGridView pour le détail
-
-    setSwapPreview((prev) => {
-      if (prev && prev.targetId === over.id) return prev;
-      const activeRect = active.rect.current.initial;
-      const overRect = over.rect;
-      if (!activeRect) return null;
-      return {
-        targetId: over.id as string,
-        dx: activeRect.left - overRect.left,
-        dy: activeRect.top - overRect.top,
-      };
-    });
+  function findDragged(event: DragStartEvent | DragEndEvent) {
+    const data = event.active.data.current as { blockId: string; date: string };
+    const sourcePlan = planByDate.get(data.date);
+    return sourcePlan?.blocks.find((b) => b.id === data.blockId) ?? null;
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
-    setSwapPreview(null);
+  function handleDragStart(event: DragStartEvent) {
+    setActiveDrag(findDragged(event));
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveDrag(null);
     const { active, over } = event;
     if (!over) return;
-    const data = active.data.current as { blockId: string; date: string };
+    const dragged = findDragged(event);
+    if (!dragged) return;
+    const data = active.data.current as { date: string };
 
-    const overData = over.data.current as BlockDropData | undefined;
-    if (overData && over.id !== active.id) {
-      if (overData.date === data.date) {
-        // Même jour : rien à échanger côté date, on réordonne plutôt les
-        // deux blocs au sein du jour
-        const plan = planByDate.get(data.date);
-        if (!plan) return;
-        const idxActive = plan.blocks.findIndex((b) => b.id === data.blockId);
-        const idxOver = plan.blocks.findIndex((b) => b.id === over.id);
-        if (idxActive === -1 || idxOver === -1) return;
-        const reordered = [...plan.blocks];
-        [reordered[idxActive], reordered[idxOver]] = [
-          reordered[idxOver],
-          reordered[idxActive],
-        ];
-        await reorderDayBlocks(plan._id, reordered);
-        return;
+    // Pas de position du pointeur exploitable pour une heure ici : l'heure
+    // cible est celle du chip survolé (seul signal de position disponible),
+    // ou l'heure inchangée du bloc glissé si on lâche sur une case vide.
+    // L'aperçu "faire de la place" pendant le survol, lui, est géré par
+    // SortableContext/useSortable ci-dessous — plus besoin de le calculer
+    // à la main : le résultat final (heures réelles) reste calculé par la
+    // cascade, seule l'animation de prévisualisation vient de dnd-kit.
+    const overData = over.data.current as
+      | { date: string; time: string }
+      | undefined;
+    const targetDate = overData ? overData.date : (over.id as string);
+
+    // Lâché précisément sur une autre chip du même jour : la direction
+    // compte. En glissant vers le BAS (position d'origine avant la cible
+    // dans l'ordre chronologique), on s'attend à atterrir APRÈS elle —
+    // adopter son heure exacte nous ferait passer avant elle à tort (la
+    // cascade tranche les égalités en faveur du glissé). En glissant vers
+    // le HAUT, adopter son heure exacte correspond déjà à l'intuition : la
+    // cible se retrouve poussée après nous.
+    let newTime = dragged.time;
+    if (overData) {
+      const isSameDay = data.date === targetDate;
+      const targetBlock = planByDate
+        .get(targetDate)
+        ?.blocks.find((b) => b.id === over.id);
+      let movingDown = false;
+      if (isSameDay && targetBlock) {
+        const dayOrder = [...(planByDate.get(data.date)?.blocks ?? [])].sort(
+          (a, b) => timeToMinutes(a.time) - timeToMinutes(b.time),
+        );
+        const draggedIdx = dayOrder.findIndex((b) => b.id === dragged.id);
+        const targetIdx = dayOrder.findIndex((b) => b.id === over.id);
+        movingDown =
+          draggedIdx !== -1 && targetIdx !== -1 && draggedIdx < targetIdx;
       }
-      await updateBlock(data.blockId, { date: overData.date });
-      await updateBlock(over.id as string, { date: data.date });
-      return;
+      newTime =
+        movingDown && targetBlock
+          ? addMinutesToTime(targetBlock.time, targetBlock.duration)
+          : overData.time;
     }
 
-    const newDate = over.id as string;
-    if (newDate === data.date) return;
-    updateBlock(data.blockId, { date: newDate });
+    if (targetDate === data.date && newTime === dragged.time) return;
+
+    reflowBlock({
+      block: dragged,
+      targetDate,
+      newTime,
+      sourceDate: targetDate !== data.date ? data.date : undefined,
+    });
   }
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={pointerFirstCollisionDetection}
-      onDragMove={handleDragMove}
+      // Les chips sont minuscules et serrées : exiger que le pointeur soit
+      // EXACTEMENT au-dessus d'une chip précise (comme pointerFirstCollisionDetection
+      // le fait pour Day/Week) la rendait quasi impossible à viser en usage réel.
+      // closestCenter choisit la zone de dépôt la plus proche géométriquement,
+      // chip ou case du jour, sans exiger un survol pixel-parfait.
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => setSwapPreview(null)}
+      onDragCancel={() => setActiveDrag(null)}
     >
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
         <div className="grid grid-cols-7 border-b border-black/5">
@@ -147,15 +152,21 @@ export default function MonthGridView({
               return (
                 <div
                   key={idx}
-                  className="min-h-16 border-b border-l border-black/5 sm:min-h-28"
+                  className="min-h-20 border-b border-l border-black/5 sm:min-h-35"
                 />
               );
             }
 
             const dateStr = toDateString(day);
             const plan = planByDate.get(dateStr);
-            const blocks = plan?.blocks ?? [];
+            // Triés par heure : l'ordre du tableau en base reflète l'ordre
+            // d'insertion, pas l'heure — sans ce tri, une cascade qui change
+            // les heures ne se voit jamais ici (les chips gardent leur place).
+            const blocks = [...(plan?.blocks ?? [])].sort(
+              (a, b) => timeToMinutes(a.time) - timeToMinutes(b.time),
+            );
             const isToday = dateStr === today;
+            const visibleBlocks = blocks.slice(0, MAX_CHIPS_PER_DAY);
 
             return (
               <DayCell key={idx} dateStr={dateStr}>
@@ -168,21 +179,23 @@ export default function MonthGridView({
                 >
                   {day.getDate()}
                 </p>
-                {blocks.slice(0, 3).map((block) => (
-                  <DraggableChip
-                    key={block.id}
-                    block={block}
-                    dateStr={dateStr}
-                    onEditBlock={onEditBlock}
-                    onDeleteBlock={onDeleteBlock}
-                    swapPreview={
-                      swapPreview?.targetId === block.id ? swapPreview : null
-                    }
-                  />
-                ))}
-                {blocks.length > 3 && (
+                <SortableContext
+                  items={visibleBlocks.map((b) => b.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {visibleBlocks.map((block) => (
+                    <SortableChip
+                      key={block.id}
+                      block={block}
+                      dateStr={dateStr}
+                      onEditBlock={onEditBlock}
+                      onDeleteBlock={onDeleteBlock}
+                    />
+                  ))}
+                </SortableContext>
+                {blocks.length > MAX_CHIPS_PER_DAY && (
                   <p className="text-[8px] text-muted-foreground sm:text-[10px]">
-                    +{blocks.length - 3} de plus
+                    +{blocks.length - MAX_CHIPS_PER_DAY} de plus
                   </p>
                 )}
               </DayCell>
@@ -190,6 +203,9 @@ export default function MonthGridView({
           })}
         </div>
       </div>
+      <DragOverlay>
+        {activeDrag && <ChipVisual block={activeDrag} />}
+      </DragOverlay>
     </DndContext>
   );
 }
@@ -206,7 +222,7 @@ function DayCell({
     <div
       ref={setNodeRef}
       className={cn(
-        "min-h-16 space-y-1 border-b border-l border-black/5 p-1 transition-colors sm:min-h-28 sm:p-3.5",
+        "min-h-20 space-y-1 border-b border-l border-black/5 p-1 transition-colors sm:min-h-35 sm:p-3.5",
         isOver && "bg-flowday/5",
       )}
     >
@@ -215,74 +231,96 @@ function DayCell({
   );
 }
 
-function DraggableChip({
+interface ChipVisualProps {
+  block: DayPlanBlock;
+  deleteRevealed?: boolean;
+  onDeleteBlock?: (blockId: string) => void;
+}
+
+// Rendu purement visuel — partagé par la chip interactive ci-dessous ET par
+// son clone flottant dans le DragOverlay.
+function ChipVisual({ block, deleteRevealed = false, onDeleteBlock }: ChipVisualProps) {
+  return (
+    <div
+      className={cn(
+        "group relative cursor-grab rounded px-1 py-0.5 text-[8px] font-medium active:cursor-grabbing sm:px-1.5 sm:text-[10px]",
+        moduleBadgeClass[block.module],
+      )}
+    >
+      <span className="block truncate">{block.title}</span>
+      {onDeleteBlock && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteBlock(block.id);
+          }}
+          className={cn(
+            "absolute -right-1.5 -top-1.5 z-10 hidden h-4 w-4 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
+            deleteRevealed && "flex",
+          )}
+          aria-label="Supprimer ce bloc"
+        >
+          <X className="h-2.5 w-2.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Chip compacte sans axe horaire (jusqu'à MAX_CHIPS_PER_DAY par jour, le
+// reste passe dans "+N de plus") — forme trop différente d'un bloc
+// positionné par heure pour partager DraggableBlock (cf. DayTimelineView/
+// WeekGridView).
+//
+// `useSortable` (plutôt que useDraggable+useDroppable séparés) : chaque
+// jour est son propre SortableContext, donc dnd-kit anime automatiquement
+// le "faire de la place" des autres chips du même jour pendant le survol —
+// plus besoin de calculer nous-même un décalage en pixels. Le résultat réel
+// au lâcher (les heures) reste calculé côté serveur par resolveCascade,
+// inchangé ; seule la prévisualisation vient maintenant de dnd-kit.
+// Le clone visible pendant le drag vit dans le <DragOverlay> de la vue
+// parente (garantit qu'il reste toujours au-dessus des autres chips).
+function SortableChip({
   block,
   dateStr,
   onEditBlock,
   onDeleteBlock,
-  swapPreview,
 }: {
   block: DayPlanBlock;
   dateStr: string;
   onEditBlock: (block: DayPlanBlock, date: string) => void;
   onDeleteBlock: (blockId: string) => void;
-  swapPreview: SwapPreview | null;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
       id: block.id,
-      data: { blockId: block.id, date: dateStr },
+      data: { blockId: block.id, date: dateStr, time: block.time },
     });
-  const { setNodeRef: setDropRef } = useDroppable({
-    id: block.id,
-    data: { date: dateStr } satisfies BlockDropData,
-  });
   const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
     useLongPress<HTMLDivElement>();
-
-  const previewTransform = swapPreview
-    ? `translate3d(${swapPreview.dx}px, ${swapPreview.dy}px, 0)`
-    : undefined;
 
   return (
     <div
       ref={(node) => {
         setNodeRef(node);
-        setDropRef(node);
         setLongPressRef(node);
       }}
-      {...listeners}
       {...attributes}
+      {...listeners}
       {...longPressTouchHandlers}
       style={{
-        transform: transform
-          ? CSS.Translate.toString(transform)
-          : previewTransform,
-        transition: previewTransform ? "transform 150ms ease" : undefined,
+        transform: CSS.Transform.toString(transform),
+        transition,
         touchAction: "none",
       }}
       onClick={() => onEditBlock(block, dateStr)}
-      className={cn(
-        "group relative cursor-grab rounded px-1 py-0.5 text-[8px] font-medium active:cursor-grabbing sm:px-1.5 sm:text-[10px]",
-        isDragging ? "z-20 shadow-md" : "hover:z-10",
-        swapPreview && "z-10 ring-2 ring-white",
-        moduleBgSoft[block.module],
-      )}
+      className={cn(isDragging && "opacity-0")}
     >
-      <span className="block truncate">{block.title}</span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDeleteBlock(block.id);
-        }}
-        className={cn(
-          "absolute -right-1.5 -top-1.5 z-10 hidden h-4 w-4 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
-          longPressRevealed && "flex",
-        )}
-        aria-label="Supprimer ce bloc"
-      >
-        <X className="h-2.5 w-2.5" />
-      </button>
+      <ChipVisual
+        block={block}
+        deleteRevealed={longPressRevealed}
+        onDeleteBlock={onDeleteBlock}
+      />
     </div>
   );
 }
