@@ -311,7 +311,9 @@ function SortableChip({
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        touchAction: "none",
+        // "manipulation" (pas "none") : laisse le défilement tactile normal
+        // se produire pendant le délai d'activation de TouchSensor.
+        touchAction: "manipulation",
       }}
       onClick={() => onEditBlock(block, dateStr)}
       className={cn(isDragging && "opacity-0")}

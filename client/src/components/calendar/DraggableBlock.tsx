@@ -165,7 +165,11 @@ export default function DraggableBlock({
         height,
         transform: previewTransform,
         transition: previewTransform ? "transform 150ms ease" : undefined,
-        touchAction: "none",
+        // "manipulation" (pas "none") : laisse le défilement tactile normal
+        // se produire pendant le délai d'activation de TouchSensor — "none"
+        // bloquerait le scroll dès le premier contact, avant même que le
+        // capteur ait pu décider si c'est un glisser ou un simple défilement.
+        touchAction: "manipulation",
       }}
       onClick={() => onEditBlock(block, dateStr)}
       className={cn(

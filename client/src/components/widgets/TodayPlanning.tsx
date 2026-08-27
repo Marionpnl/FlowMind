@@ -118,7 +118,9 @@ function SortableBlock({
       {...attributes}
       {...listeners}
       className={cn(
-        "relative flex items-start gap-3 touch-none",
+        // "manipulation" (pas "none") : laisse le défilement tactile normal
+        // se produire pendant le délai d'activation de TouchSensor.
+        "relative flex touch-manipulation items-start gap-3",
         isDragging && "z-20",
       )}
     >
