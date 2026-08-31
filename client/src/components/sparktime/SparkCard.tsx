@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 import type { ISpark } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useLongPress } from "@/lib/useLongPress";
+import { useLongPress } from "@/hooks/useLongPress";
 
 interface SparkCardProps {
   spark: ISpark;

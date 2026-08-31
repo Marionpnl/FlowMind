@@ -22,8 +22,8 @@ import {
   timeToMinutes,
   addMinutesToTime,
 } from "@/lib/dateUtils";
-import { useDragSensors } from "@/lib/useDragSensors";
-import { useLongPress } from "@/lib/useLongPress";
+import { useDragSensors } from "@/hooks/useDragSensors";
+import { useLongPress } from "@/hooks/useLongPress";
 import {
   composeTouchHandlers,
   type HandlerMap,

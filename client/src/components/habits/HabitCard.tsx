@@ -12,7 +12,7 @@ import {
 import { useHabitStore } from "@/store/habitStore";
 import type { IHabit } from "@shared/types";
 import { cn } from "@/lib/utils";
-import { useLongPress } from "@/lib/useLongPress";
+import { useLongPress } from "@/hooks/useLongPress";
 
 export default function HabitCard({ habit }: { habit: IHabit }) {
   const toggleCheck = useHabitStore((s) => s.toggleCheck);

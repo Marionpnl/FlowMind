@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { PanelLeft } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
-import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 interface PageHeaderProps {
   title: string;

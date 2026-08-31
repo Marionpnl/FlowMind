@@ -16,8 +16,8 @@ import {
   minutesToTime,
 } from "@/lib/dateUtils";
 import { pointerFirstCollisionDetection } from "@/lib/dndCollision";
-import { useDragSensors } from "@/lib/useDragSensors";
-import { useCascadePreview } from "@/lib/useCascadePreview";
+import { useDragSensors } from "@/hooks/useDragSensors";
+import { useCascadePreview } from "@/hooks/useCascadePreview";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import DraggableBlock, { BlockVisual } from "./DraggableBlock";
 import type { DayPlanBlock, IDayPlan } from "@shared/types";

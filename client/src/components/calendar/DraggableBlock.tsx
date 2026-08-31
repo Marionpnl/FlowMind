@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { moduleBadgeClass, moduleSolidClass } from "@/lib/moduleStyles";
 import { addMinutesToTime } from "@/lib/dateUtils";
-import { useLongPress } from "@/lib/useLongPress";
+import { useLongPress } from "@/hooks/useLongPress";
 import {
   composeTouchHandlers,
   type HandlerMap,

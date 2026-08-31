@@ -6,8 +6,8 @@ import {
   type DragEndEvent,
   type DragMoveEvent,
 } from "@dnd-kit/core";
-import { useDragSensors } from "@/lib/useDragSensors";
-import { useCascadePreview } from "@/lib/useCascadePreview";
+import { useDragSensors } from "@/hooks/useDragSensors";
+import { useCascadePreview } from "@/hooks/useCascadePreview";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import { timeToMinutes, minutesToTime } from "@/lib/dateUtils";
 import DraggableBlock, { BlockVisual } from "./DraggableBlock";

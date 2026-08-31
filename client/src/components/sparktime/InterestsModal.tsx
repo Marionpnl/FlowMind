@@ -12,7 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { useInterestStore, type DetectedInterest } from "@/store/interestStore";
 import { CATEGORIES } from "@/lib/sparktime";
 import { cn } from "@/lib/utils";
-import { useLongPress } from "@/lib/useLongPress";
+import { useLongPress } from "@/hooks/useLongPress";
 import type { IInterest } from "@shared/types";
 
 const sliderColorClass = cn(

@@ -9,8 +9,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { Check, X } from "lucide-react";
 import { moduleBadgeClass, moduleDotClass } from "@/lib/moduleStyles";
 import { cn } from "@/lib/utils";
-import { useLongPress } from "@/lib/useLongPress";
-import { useDragSensors } from "@/lib/useDragSensors";
+import { useLongPress } from "@/hooks/useLongPress";
+import { useDragSensors } from "@/hooks/useDragSensors";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import type { DayPlanBlock } from "@shared/types";
 

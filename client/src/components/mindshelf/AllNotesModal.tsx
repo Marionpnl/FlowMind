@@ -7,7 +7,7 @@ import {
 import { Bookmark, Quote, X } from "lucide-react";
 import { useResourceStore } from "@/store/resourceStore";
 import { cn } from "@/lib/utils";
-import { useLongPress } from "@/lib/useLongPress";
+import { useLongPress } from "@/hooks/useLongPress";
 import type { IResource, INote } from "@shared/types";
 
 interface AllNotesModalProps {
