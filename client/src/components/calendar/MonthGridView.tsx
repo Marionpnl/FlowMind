@@ -24,6 +24,10 @@ import {
 } from "@/lib/dateUtils";
 import { useDragSensors } from "@/lib/useDragSensors";
 import { useLongPress } from "@/lib/useLongPress";
+import {
+  composeTouchHandlers,
+  type HandlerMap,
+} from "@/lib/composeTouchHandlers";
 import { moduleBadgeClass } from "@/lib/moduleStyles";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import type { DayPlanBlock, IDayPlan } from "@shared/types";
@@ -298,6 +302,12 @@ function SortableChip({
     });
   const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
     useLongPress<HTMLDivElement>();
+  // `listeners` et `longPressTouchHandlers` vivent sur le même nœud ici —
+  // sans fusion, le second écraserait le premier (voir composeTouchHandlers.ts).
+  const touchHandlers = composeTouchHandlers(
+    listeners as HandlerMap | undefined,
+    longPressTouchHandlers,
+  );
 
   // Même raison que DraggableBlock.tsx : `isDragging` passe à `true` dès le
   // délai tactile écoulé, même sans mouvement — un appui immobile pour
@@ -314,8 +324,7 @@ function SortableChip({
         setLongPressRef(node);
       }}
       {...attributes}
-      {...listeners}
-      {...longPressTouchHandlers}
+      {...touchHandlers}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,

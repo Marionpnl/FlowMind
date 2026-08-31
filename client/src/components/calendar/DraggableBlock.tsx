@@ -4,6 +4,10 @@ import { cn } from "@/lib/utils";
 import { moduleBadgeClass, moduleSolidClass } from "@/lib/moduleStyles";
 import { addMinutesToTime } from "@/lib/dateUtils";
 import { useLongPress } from "@/lib/useLongPress";
+import {
+  composeTouchHandlers,
+  type HandlerMap,
+} from "@/lib/composeTouchHandlers";
 import type { DayPlanBlock } from "@shared/types";
 
 interface BlockVisualProps {
@@ -145,6 +149,13 @@ export default function DraggableBlock({
   });
   const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
     useLongPress<HTMLDivElement>();
+  // `listeners` (activateurs dnd-kit) et `longPressTouchHandlers` (révélation
+  // du bouton supprimer) vivent sur le même nœud ici — sans fusion, spreader
+  // l'un après l'autre écraserait le premier (voir composeTouchHandlers.ts).
+  const touchHandlers = composeTouchHandlers(
+    listeners as HandlerMap | undefined,
+    longPressTouchHandlers,
+  );
 
   // `isDragging` passe à `true` dès que le délai tactile s'écoule, même sans
   // le moindre mouvement — un appui immobile pour révéler le bouton
@@ -169,9 +180,8 @@ export default function DraggableBlock({
         setDropRef(node);
         setLongPressRef(node);
       }}
-      {...listeners}
+      {...touchHandlers}
       {...attributes}
-      {...longPressTouchHandlers}
       style={{
         top,
         height,
