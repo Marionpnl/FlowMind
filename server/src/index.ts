@@ -11,6 +11,7 @@ import interestsRouter from "./routes/interests";
 import sparksRouter from "./routes/sparks";
 import summaryRouter from "./routes/summary";
 import weatherRouter from "./routes/weather";
+import localEventsRouter from "./routes/localEvents";
 import { connectDatabase } from "./config/database";
 import { startDailyEmailScheduler } from "./services/dailyEmailScheduler";
 
@@ -33,6 +34,7 @@ app.use("/api/interests", interestsRouter);
 app.use("/api/sparks", sparksRouter);
 app.use("/api/summary", summaryRouter);
 app.use("/api/weather", weatherRouter);
+app.use("/api/local-events", localEventsRouter);
 
 const PORT = process.env.PORT || 5000;
 

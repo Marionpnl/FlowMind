@@ -96,6 +96,20 @@ export interface ISpark {
   updatedAt: Date;
 }
 
+// Pas de _id/userId/createdAt/updatedAt : jamais persisté en base (recalculé
+// à la demande auprès de Ticketmaster à chaque appel, comme la météo).
+export interface ILocalEvent {
+  id: string; // id Ticketmaster, pas un ObjectId Mongo
+  title: string;
+  date: string; // "YYYY-MM-DD", date réelle de l'événement
+  venue?: string;
+  city?: string;
+  segment?: string; // ex: "Sports", "Music"
+  genre?: string;
+  subGenre?: string;
+  url: string; // fiche officielle Ticketmaster
+}
+
 // ===== MINDSHELF =====
 export type ResourceType = "book" | "article" | "video" | "podcast";
 export type ResourceStatus = "to-read" | "in-progress" | "done";

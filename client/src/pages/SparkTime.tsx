@@ -3,6 +3,7 @@ import { RefreshCw } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ContextBanner from "@/components/sparktime/ContextBanner";
 import SparkCard from "@/components/sparktime/SparkCard";
+import LocalEventCard from "@/components/sparktime/LocalEventCard";
 import CategoriesPanel from "@/components/sparktime/CategoriesPanel";
 import InterestsPanel from "@/components/sparktime/InterestsPanel";
 import AdjustSuggestionsPanel from "@/components/sparktime/AdjustSuggestionsPanel";
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { ENERGY_LEVELS } from "@/lib/sparktime";
 import { toDateString } from "@/lib/dateUtils";
 import apiCall from "@/lib/api";
-import type { ISpark } from "@shared/types";
+import type { ISpark, ILocalEvent } from "@shared/types";
 
 interface CurrentWeather {
   temperature: number;
@@ -63,6 +64,10 @@ export default function SparkTime() {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selectedSpark, setSelectedSpark] = useState<ISpark | null>(null);
   const [schedulingSpark, setSchedulingSpark] = useState<ISpark | null>(null);
+  const [localEvents, setLocalEvents] = useState<ILocalEvent[]>([]);
+  const [schedulingEvent, setSchedulingEvent] = useState<ILocalEvent | null>(
+    null,
+  );
   const [scheduleSession, setScheduleSession] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +77,7 @@ export default function SparkTime() {
 
   function planSpark(spark: ISpark) {
     setSelectedSpark(null);
+    setSchedulingEvent(null);
     setSchedulingSpark(spark);
     setScheduleSession((s) => s + 1);
   }
@@ -79,6 +85,18 @@ export default function SparkTime() {
   function scheduleNotesFor(spark: ISpark) {
     const parts = [spark.description];
     if (spark.energyLevel) parts.push(`énergie ${spark.energyLevel}`);
+    return parts.join(" · ");
+  }
+
+  function planEvent(event: ILocalEvent) {
+    setSchedulingSpark(null);
+    setSchedulingEvent(event);
+    setScheduleSession((s) => s + 1);
+  }
+
+  function scheduleNotesForEvent(event: ILocalEvent) {
+    const parts = [event.venue, event.city].filter(Boolean) as string[];
+    parts.push(event.url);
     return parts.join(" · ");
   }
 
@@ -105,6 +123,28 @@ export default function SparkTime() {
         setWeather(res.data);
       } catch {
         setWeather(null);
+      }
+    });
+  }, [user?.location]);
+
+  // Même logique que la météo : pas d'événement affiché si l'appel échoue
+  // (pas de lieu renseigné, pas de clé Ticketmaster, ou aucun résultat) —
+  // jamais d'événement inventé en repli. Différé en microtâche pour la même
+  // raison que ci-dessus.
+  useEffect(() => {
+    void Promise.resolve().then(async () => {
+      if (!user?.location) {
+        setLocalEvents([]);
+        return;
+      }
+      try {
+        const res = await apiCall<{ data: ILocalEvent[] }>(
+          "/api/local-events",
+          { auth: true },
+        );
+        setLocalEvents(res.data);
+      } catch {
+        setLocalEvents([]);
       }
     });
   }, [user?.location]);
@@ -168,8 +208,9 @@ export default function SparkTime() {
               Pour toi, maintenant
             </h2>
             <p className="mb-4 mt-0.5 text-xs text-black/70 text-muted-foreground">
-              {visibleSparks.length} idée{visibleSparks.length > 1 ? "s" : ""}{" "}
-              à explorer
+              {visibleSparks.length + localEvents.length} idée
+              {visibleSparks.length + localEvents.length > 1 ? "s" : ""} à
+              explorer
               {categoryFilter && (
                 <>
                   {" "}
@@ -184,7 +225,7 @@ export default function SparkTime() {
               )}
             </p>
 
-            {sparks.length === 0 ? (
+            {sparks.length === 0 && localEvents.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-black/10 bg-white p-8 text-center">
                 <p className="text-sm text-muted-foreground">
                   {interests.length === 0
@@ -210,14 +251,23 @@ export default function SparkTime() {
                   </Button>
                 )}
               </div>
-            ) : visibleSparks.length === 0 ? (
+            ) : visibleSparks.length === 0 && localEvents.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-black/10 bg-white p-8 text-center">
                 <p className="text-sm text-muted-foreground">
                   Aucune idée dans cette catégorie.
                 </p>
               </div>
             ) : (
+              // Événements réels et Sparks générés par l'IA mêlés dans la
+              // même grille (pas de bloc "Événements" séparé).
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {localEvents.map((event) => (
+                  <LocalEventCard
+                    key={event.id}
+                    event={event}
+                    onPlan={() => planEvent(event)}
+                  />
+                ))}
                 {visibleSparks.map((spark) => (
                   <SparkCard
                     key={spark._id}
@@ -264,12 +314,27 @@ export default function SparkTime() {
       />
       <NewActivityModal
         key={scheduleSession}
-        open={!!schedulingSpark}
-        onOpenChange={(open) => !open && setSchedulingSpark(null)}
+        open={!!schedulingSpark || !!schedulingEvent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSchedulingSpark(null);
+            setSchedulingEvent(null);
+          }
+        }}
         defaultModule="SparkTime"
-        defaultTitle={schedulingSpark?.title}
-        defaultNotes={schedulingSpark ? scheduleNotesFor(schedulingSpark) : ""}
+        defaultTitle={schedulingSpark?.title ?? schedulingEvent?.title}
+        defaultNotes={
+          schedulingSpark
+            ? scheduleNotesFor(schedulingSpark)
+            : schedulingEvent
+              ? scheduleNotesForEvent(schedulingEvent)
+              : ""
+        }
         defaultDuration={schedulingSpark?.duration}
+        // Date réelle de l'événement — jamais laissée vide pour un
+        // événement, sinon la modale ferait suggérer une date par l'IA,
+        // ce qui n'a pas de sens pour un événement à date fixe.
+        defaultDate={schedulingEvent?.date}
         sparkId={schedulingSpark?._id}
       />
     </div>
