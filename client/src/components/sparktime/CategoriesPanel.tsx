@@ -1,6 +1,6 @@
 import type { ISpark } from "@shared/types";
 import { Sparkles } from "lucide-react";
-import { getCategoryIcon } from "@/lib/sparktime";
+import { CATEGORIES, getCategoryIcon } from "@/lib/sparktime";
 import { cn } from "@/lib/utils";
 
 interface CategoriesPanelProps {
@@ -19,7 +19,13 @@ export default function CategoriesPanel({
     const category = s.category || "Autre";
     counts.set(category, (counts.get(category) ?? 0) + 1);
   }
-  const categories = Array.from(counts.entries());
+  // Toutes les catégories connues s'affichent en permanence (0 idée
+  // possible), pas seulement celles déjà utilisées par un Spark généré —
+  // "Autre" (repli pour un Spark sans catégorie) reste dynamique : ce n'est
+  // pas une vraie catégorie de la taxonomie, juste un fourre-tout.
+  const categories = CATEGORIES.map(
+    (category) => [category, counts.get(category) ?? 0] as const,
+  );
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm">
@@ -28,44 +34,38 @@ export default function CategoriesPanel({
         Catégories
       </h2>
 
-      {categories.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Aucune suggestion pour l'instant.
-        </p>
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
-          {categories.map(([category, count]) => {
-            const Icon = getCategoryIcon(category);
-            const isActive = activeCategory === category;
-            return (
-              <button
-                key={category}
-                type="button"
-                onClick={() => onSelectCategory?.(category)}
+      <div className="grid grid-cols-2 gap-3">
+        {categories.map(([category, count]) => {
+          const Icon = getCategoryIcon(category);
+          const isActive = activeCategory === category;
+          return (
+            <button
+              key={category}
+              type="button"
+              onClick={() => onSelectCategory?.(category)}
+              className={cn(
+                "rounded-xl p-3 text-left transition-colors cursor-pointer",
+                isActive
+                  ? "bg-sparktime-bg ring-1 ring-sparktime/40"
+                  : "bg-cream-secondary hover:bg-black/5",
+              )}
+            >
+              <div
                 className={cn(
-                  "rounded-xl p-3 text-left transition-colors cursor-pointer",
-                  isActive
-                    ? "bg-sparktime-bg ring-1 ring-sparktime/40"
-                    : "bg-cream-secondary hover:bg-black/5",
+                  "mb-2 flex h-8 w-8 items-center justify-center rounded-lg",
+                  isActive ? "bg-cream" : "bg-sparktime-bg",
                 )}
               >
-                <div
-                  className={cn(
-                    "mb-2 flex h-8 w-8 items-center justify-center rounded-lg",
-                    isActive ? "bg-cream" : "bg-sparktime-bg",
-                  )}
-                >
-                  <Icon className="h-4 w-4 text-sparktime" />
-                </div>
-                <p className="text-sm font-medium">{category}</p>
-                <p className="font-mono text-[10px] text-black/50 text-muted-foreground">
-                  {count} idée{count > 1 ? "s" : ""}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      )}
+                <Icon className="h-4 w-4 text-sparktime" />
+              </div>
+              <p className="text-sm font-medium">{category}</p>
+              <p className="font-mono text-[10px] text-black/50 text-muted-foreground">
+                {count} idée{count > 1 ? "s" : ""}
+              </p>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
