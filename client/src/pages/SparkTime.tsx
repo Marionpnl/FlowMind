@@ -16,7 +16,7 @@ import { useInterestStore } from "@/store/interestStore";
 import { useDayPlanStore } from "@/store/dayPlanStore";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
-import { ENERGY_LEVELS } from "@/lib/sparktime";
+import { ENERGY_LEVELS, MAX_FINITE_DISTANCE_KM } from "@/lib/sparktime";
 import { toDateString } from "@/lib/dateUtils";
 import apiCall from "@/lib/api";
 import type { ISpark, ILocalEvent } from "@shared/types";
@@ -52,6 +52,33 @@ function addDismissedEventId(userId: string, eventId: string): void {
     dismissedEventIdsKey(userId),
     JSON.stringify([...ids]),
   );
+}
+
+// Réglages du panneau "Ajuster les suggestions" (durée/distance/énergie) :
+// préférences purement locales à l'affichage, comme les toggles IA de
+// Paramètres ("gating côté client uniquement") — pas besoin de toucher à la
+// base de données pour qu'ils survivent à un rafraîchissement de page.
+interface SparkPrefs {
+  maxDuration: number;
+  maxDistance: number;
+  energyIndex: number;
+}
+
+function sparkPrefsKey(userId: string): string {
+  return `flowmind_sparktime_prefs_${userId}`;
+}
+
+function loadSparkPrefs(userId: string): SparkPrefs | null {
+  try {
+    const raw = localStorage.getItem(sparkPrefsKey(userId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSparkPrefs(userId: string, prefs: SparkPrefs): void {
+  localStorage.setItem(sparkPrefsKey(userId), JSON.stringify(prefs));
 }
 
 function minutesUntilNextActivity(
@@ -102,6 +129,36 @@ export default function SparkTime() {
   const liveSelectedSpark = selectedSpark
     ? (sparks.find((s) => s._id === selectedSpark._id) ?? null)
     : null;
+
+  // Au-delà de MAX_FINITE_DISTANCE_KM, le slider représente "pas de limite"
+  // plutôt qu'un chiffre — voir lib/sparktime.ts.
+  const maxDistanceKm =
+    maxDistance > MAX_FINITE_DISTANCE_KM ? null : maxDistance;
+
+  // Hydrate les réglages sauvegardés une fois l'utilisatrice connue (chargée
+  // de façon asynchrone) — écrit au clic sur chaque contrôle plutôt que
+  // réactivement, pour éviter d'écraser une valeur pas encore hydratée.
+  useEffect(() => {
+    const userId = user?._id;
+    if (!userId) return;
+    void Promise.resolve().then(() => {
+      const saved = loadSparkPrefs(userId);
+      if (!saved) return;
+      setMaxDuration(saved.maxDuration);
+      setMaxDistance(saved.maxDistance);
+      setEnergyIndex(saved.energyIndex);
+    });
+  }, [user?._id]);
+
+  function updateSparkPrefs(patch: Partial<SparkPrefs>) {
+    if (!user?._id) return;
+    saveSparkPrefs(user._id, {
+      maxDuration,
+      maxDistance,
+      energyIndex,
+      ...patch,
+    });
+  }
 
   function planSpark(spark: ISpark) {
     setSelectedSpark(null);
@@ -175,8 +232,9 @@ export default function SparkTime() {
         return;
       }
       try {
+        const distanceParam = maxDistanceKm === null ? "none" : maxDistanceKm;
         const res = await apiCall<{ data: ILocalEvent[] }>(
-          `/api/local-events?maxDistance=${maxDistance}`,
+          `/api/local-events?maxDistance=${distanceParam}`,
           { auth: true },
         );
         const dismissed = user?._id
@@ -188,12 +246,12 @@ export default function SparkTime() {
       }
     }, 500);
     return () => clearTimeout(timeout);
-  }, [user?.location, user?._id, maxDistance]);
+  }, [user?.location, user?._id, maxDistanceKm]);
 
   function handleGenerate() {
     generateSparks({
       maxDuration,
-      maxDistance,
+      maxDistance: maxDistanceKm ?? undefined,
       energyLevel: ENERGY_LEVELS[energyIndex],
     });
   }
@@ -336,11 +394,20 @@ export default function SparkTime() {
           />
           <AdjustSuggestionsPanel
             maxDuration={maxDuration}
-            onMaxDurationChange={setMaxDuration}
+            onMaxDurationChange={(v) => {
+              setMaxDuration(v);
+              updateSparkPrefs({ maxDuration: v });
+            }}
             maxDistance={maxDistance}
-            onMaxDistanceChange={setMaxDistance}
+            onMaxDistanceChange={(v) => {
+              setMaxDistance(v);
+              updateSparkPrefs({ maxDistance: v });
+            }}
             energyIndex={energyIndex}
-            onEnergyIndexChange={setEnergyIndex}
+            onEnergyIndexChange={(v) => {
+              setEnergyIndex(v);
+              updateSparkPrefs({ energyIndex: v });
+            }}
           />
         </div>
       </main>

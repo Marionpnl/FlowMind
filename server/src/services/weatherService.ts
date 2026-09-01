@@ -39,6 +39,9 @@ export async function fetchCurrentWeather(
 export interface GeoPoint {
   lat: number;
   lon: number;
+  // Code pays ISO (ex: "CH") — utilisé par ticketmasterService pour une
+  // recherche "sans limite de distance" (countryCode plutôt qu'un rayon).
+  country?: string;
 }
 
 // Géocodage (ville → coordonnées) via l'API Geocoding d'OpenWeatherMap — même
@@ -59,5 +62,9 @@ export async function geocodeCity(city: string): Promise<GeoPoint | null> {
     return null;
   }
 
-  return { lat: first.lat, lon: first.lon };
+  return {
+    lat: first.lat,
+    lon: first.lon,
+    country: typeof first.country === "string" ? first.country : undefined,
+  };
 }

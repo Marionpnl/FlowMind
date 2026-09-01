@@ -81,15 +81,30 @@ async function searchEvents(
 // géocodage échoue (clé absente, ville non reconnue...), on retombe sur une
 // recherche par `city` plutôt que de ne rien renvoyer — toujours de vraies
 // données, juste sans contrôle de rayon dans ce cas de repli.
+//
+// `radiusKm === null` : "pas de limite" côté interface. Attention, un
+// `geoPoint` SANS `radius` ne veut pas dire "élargi mais toujours centré" —
+// testé en direct : Ticketmaster ignore alors la position et renvoie son
+// catalogue global (événements sans rapport, y compris très anciens). On
+// utilise donc `countryCode` (déduit du géocodage) à la place : un vrai
+// "n'importe où dans mon pays", sans plafond de distance arbitraire.
 export async function fetchNearbyEvents(
   city: string,
-  radiusKm: number,
+  radiusKm: number | null,
 ): Promise<RawLocalEvent[] | null> {
   const apiKey = process.env.TICKETMASTER_API_KEY;
   if (!apiKey) return null;
 
   const geo = await geocodeCity(city);
   if (geo) {
+    if (radiusKm === null) {
+      if (geo.country) {
+        return searchEvents(apiKey, `countryCode=${geo.country}`);
+      }
+      // Pas de pays identifié (rare) : repli sur city plutôt que le
+      // catalogue mondial non filtré.
+      return searchEvents(apiKey, `city=${encodeURIComponent(city)}`);
+    }
     const geohash = encodeGeohash(geo.lat, geo.lon);
     return searchEvents(
       apiKey,

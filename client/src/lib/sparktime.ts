@@ -32,3 +32,14 @@ export const ENERGY_LEVELS = [
   "Moyenne-Haute",
   "Haute",
 ];
+
+// Borne haute "réelle" du slider Distance max — au-delà (un cran de plus,
+// voir MAX_DISTANCE_SLIDER_VALUE), le réglage devient "pas de limite" plutôt
+// qu'un chiffre. Doit rester cohérent avec MAX_RADIUS_KM côté serveur
+// (server/src/routes/localEvents.ts).
+export const MAX_FINITE_DISTANCE_KM = 100;
+export const MAX_DISTANCE_SLIDER_VALUE = MAX_FINITE_DISTANCE_KM + 1;
+
+export function distanceLabel(value: number): string {
+  return value > MAX_FINITE_DISTANCE_KM ? "Pas de limite" : `${value} km`;
+}

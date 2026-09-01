@@ -1,7 +1,11 @@
 import { SlidersHorizontal } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import { ENERGY_LEVELS } from "@/lib/sparktime";
+import {
+  ENERGY_LEVELS,
+  MAX_DISTANCE_SLIDER_VALUE,
+  distanceLabel,
+} from "@/lib/sparktime";
 
 const sliderColorClass = cn(
   "[&_[data-slot=slider-track]]:bg-black/10",
@@ -54,13 +58,13 @@ export default function AdjustSuggestionsPanel({
         <div>
           <div className="mb-2 flex items-center justify-between text-xs text-black/60 text-muted-foreground">
             <span className="uppercase tracking-widest">Distance max</span>
-            <span className="font-mono">{maxDistance} km</span>
+            <span className="font-mono">{distanceLabel(maxDistance)}</span>
           </div>
           <Slider
             className={sliderColorClass}
             value={[maxDistance]}
             min={1}
-            max={20}
+            max={MAX_DISTANCE_SLIDER_VALUE}
             step={1}
             onValueChange={(v) =>
               onMaxDistanceChange(Array.isArray(v) ? v[0] : v)
