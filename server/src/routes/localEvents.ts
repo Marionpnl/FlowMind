@@ -23,7 +23,9 @@ const MAX_RADIUS_KM = 100;
 // que la génération de Sparks plutôt qu'un deuxième contrôle dédié.
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
-    const user = await User.findById(req.userId).select("location");
+    const user = await User.findById(req.userId).select(
+      "location dismissedLocalEventIds",
+    );
     if (!user?.location) {
       return res
         .status(400)
@@ -54,14 +56,36 @@ router.get("/", async (req: AuthRequest, res: Response) => {
       "name category",
     );
 
-    const ranked = scoreEventsByInterests(rawEvents, interests).slice(
-      0,
-      MAX_EVENTS_RETURNED,
-    );
+    // Masqué par l'utilisatrice (bouton supprimer sur la carte) — filtré
+    // avant la troncature à MAX_EVENTS_RETURNED, pour que l'événement suivant
+    // dans le classement remonte à la place, pas juste "un de moins affiché".
+    const dismissed = new Set(user.dismissedLocalEventIds ?? []);
+    const ranked = scoreEventsByInterests(rawEvents, interests)
+      .filter((e) => !dismissed.has(e.id))
+      .slice(0, MAX_EVENTS_RETURNED);
 
     res.json({ success: true, data: ranked });
   } catch (error) {
     console.error("GET /api/local-events", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// DELETE /api/local-events/:eventId - Hide a local event on this account,
+// same shape as DELETE /api/sparks/:id. Real events are never persisted
+// server-side themselves (see ticketmasterService.ts) so there's no document
+// to soft-delete — only the id to keep filtering out is remembered.
+router.delete("/:eventId", async (req: AuthRequest, res: Response) => {
+  try {
+    const { eventId } = req.params;
+
+    await User.findByIdAndUpdate(req.userId, {
+      $addToSet: { dismissedLocalEventIds: eventId },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /api/local-events/:eventId", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

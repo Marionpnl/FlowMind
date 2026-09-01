@@ -201,6 +201,15 @@ const BOOLEAN_PREFERENCES = [
   "dailyEmailSummary",
 ] as const;
 const STRING_PREFERENCES = ["aiTone", "aiLength"] as const;
+// Réglages numériques (panneau "Ajuster les suggestions" de SparkTime, et le
+// snooze de la suggestion IA MindShelf) — persistés ici plutôt qu'en
+// localStorage pour rester identiques sur tous les appareils du compte.
+const NUMBER_PREFERENCES = [
+  "sparkMaxDuration",
+  "sparkMaxDistance",
+  "sparkEnergyIndex",
+  "readingSuggestionSnoozeUntil",
+] as const;
 
 // PUT /api/auth/me - Update profile fields and AI/display preferences
 router.put("/me", requireAuth, async (req: AuthRequest, res: Response) => {
@@ -223,6 +232,11 @@ router.put("/me", requireAuth, async (req: AuthRequest, res: Response) => {
       for (const key of STRING_PREFERENCES) {
         if (typeof preferences[key] === "string" && preferences[key].trim()) {
           updates[`preferences.${key}`] = preferences[key].trim();
+        }
+      }
+      for (const key of NUMBER_PREFERENCES) {
+        if (typeof preferences[key] === "number") {
+          updates[`preferences.${key}`] = preferences[key];
         }
       }
     }

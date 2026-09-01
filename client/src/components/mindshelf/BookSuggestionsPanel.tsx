@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 import { BookPlus, Check, ExternalLink, Plus, RefreshCw } from "lucide-react";
-import { useResourceStore, type SuggestedBook } from "@/store/resourceStore";
+import { useResourceStore } from "@/store/resourceStore";
 import { cn } from "@/lib/utils";
+import type { SuggestedBook } from "@shared/types";
 
 export default function BookSuggestionsPanel() {
   const fetchBookSuggestions = useResourceStore((s) => s.fetchBookSuggestions);
+  // Lecture pure du cache déjà persisté sur le compte (jamais d'appel IA) —
+  // au premier affichage, on lit juste ce qui a déjà été généré la dernière
+  // fois (identique sur tous les appareils), la régénération reste
+  // explicite via le bouton "Régénérer" plus bas.
+  const fetchBookSuggestionsCache = useResourceStore(
+    (s) => s.fetchBookSuggestionsCache,
+  );
   const addResource = useResourceStore((s) => s.addResource);
   const [suggestions, setSuggestions] = useState<SuggestedBook[]>([]);
   const [addedTitles, setAddedTitles] = useState<string[]>([]);
@@ -12,15 +20,17 @@ export default function BookSuggestionsPanel() {
   // Cette route est plus lente que les autres suggestions IA (un appel
   // OpenAI suivi de plusieurs recherches OpenLibrary pour vérifier chaque
   // titre) — sans indicateur, l'onglet paraîtrait vide pendant plusieurs
-  // secondes, comme si le tab n'avait aucun contenu.
+  // secondes, comme si le tab n'avait aucun contenu. Pas de souci de
+  // latence pour la lecture du cache (juste une lecture en base), mais on
+  // garde l'indicateur le temps du tout premier chargement.
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchBookSuggestions().then((result) => {
+    fetchBookSuggestionsCache().then((result) => {
       setSuggestions(result);
       setLoading(false);
     });
-  }, [fetchBookSuggestions]);
+  }, [fetchBookSuggestionsCache]);
 
   async function handleRegenerate() {
     setLoading(true);

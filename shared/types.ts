@@ -10,6 +10,32 @@ export interface IUserPreferences {
   animatedTransitions: boolean;
   compactDensity: boolean;
   dailyEmailSummary: boolean;
+  // Réglages du panneau "Ajuster les suggestions" de SparkTime — persistés
+  // sur le compte (pas en localStorage) pour rester identiques sur tous les
+  // appareils. sparkMaxDistance reprend l'encodage du slider côté client
+  // (valeur brute ; > MAX_FINITE_DISTANCE_KM = illimité, voir lib/sparktime.ts).
+  sparkMaxDuration: number;
+  sparkMaxDistance: number;
+  sparkEnergyIndex: number;
+  // Timestamp (ms) jusqu'auquel la suggestion IA MindShelf reste masquée
+  // après "Plus tard" (AISuggestionCard).
+  readingSuggestionSnoozeUntil: number | null;
+}
+
+export interface SuggestedBook {
+  title: string;
+  author?: string;
+  coverUrl?: string;
+  isbn?: string;
+  reason: string;
+  link: string | null;
+}
+
+export interface ThematicConnection {
+  resourceIdA: string;
+  resourceIdB: string;
+  theme: string;
+  explanation: string;
 }
 
 export interface IUser {
@@ -22,6 +48,16 @@ export interface IUser {
   theme?: ThemeChoice;
   lastExportAt?: string;
   preferences?: IUserPreferences;
+  // Données (pas des réglages) mémorisées pour rester cohérentes entre
+  // appareils — les événements/connexions/suggestions eux-mêmes restent
+  // recalculés à la demande (voir Décisions dans CLAUDE.md), seul ce qui a
+  // été explicitement masqué ou généré est conservé ici.
+  dismissedLocalEventIds?: string[];
+  bookSuggestions?: SuggestedBook[];
+  connectionsCache?: {
+    data: ThematicConnection[];
+    generatedAt: number;
+  };
 }
 
 // ===== FLOWDAY =====

@@ -12,6 +12,7 @@ import {
 } from "../services/aiService";
 import Resource from "../models/Resource";
 import Interest from "../models/Interest";
+import User from "../models/User";
 import { truncateWords } from "../utils/text";
 import { aiLimiter } from "../middleware/rateLimiter";
 
@@ -50,7 +51,23 @@ router.get("/search/:query", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// POST /api/resources/connections - Find thematic connections between resources (not persisted)
+// GET /api/resources/connections - Read-only: the last generated set of
+// thematic connections (never re-runs the AI) — used for the initial
+// display of ConnectionsPanel, regeneration only happens via POST below.
+router.get("/connections", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.userId).select("connectionsCache");
+    res.json({ success: true, data: user?.connectionsCache ?? null });
+  } catch (error) {
+    console.error("GET /api/resources/connections", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// POST /api/resources/connections - Find thematic connections between
+// resources, and persist just the *last result* (below) so it's identical
+// across the user's devices and never needs regenerating on a plain page
+// load — regeneration only ever happens here, on this explicit call.
 router.post(
   "/connections",
   aiLimiter,
@@ -94,6 +111,16 @@ router.post(
         })
         .slice(0, 3)
         .map((c) => ({ ...c, explanation: truncateWords(c.explanation, 20) }));
+
+      // Un résultat vide n'est jamais mis en cache — impossible de
+      // distinguer ici "vraiment aucune connexion" d'un raté ponctuel de
+      // l'IA, et ça masquerait les vraies connexions déjà en cache pendant
+      // les prochaines 12h pour rien.
+      if (connections.length > 0) {
+        await User.findByIdAndUpdate(req.userId, {
+          connectionsCache: { data: connections, generatedAt: Date.now() },
+        });
+      }
 
       res.json({ success: true, data: connections });
     } catch (error) {
@@ -207,8 +234,23 @@ router.post(
   },
 );
 
+// GET /api/resources/suggestions - Read-only: the last generated book
+// suggestions (never re-runs the AI) — used for the initial display of
+// BookSuggestionsPanel, regeneration only happens via POST below.
+router.get("/suggestions", async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.userId).select("bookSuggestions");
+    res.json({ success: true, data: user?.bookSuggestions ?? [] });
+  } catch (error) {
+    console.error("GET /api/resources/suggestions", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // POST /api/resources/suggestions - Suggest new books to add, based on the
-// library, notes and cross-module interests (not persisted).
+// library, notes and cross-module interests, and persist just the *last
+// result* (below) so it's identical across the user's devices and never
+// needs regenerating on a plain page load.
 router.post(
   "/suggestions",
   aiLimiter,
@@ -317,6 +359,8 @@ router.post(
           link: await fetchBookPurchaseLink(s.title, s.author),
         })),
       );
+
+      await User.findByIdAndUpdate(req.userId, { bookSuggestions: suggestions });
 
       res.json({ success: true, data: suggestions });
     } catch (error) {

@@ -26,58 +26,6 @@ interface CurrentWeather {
   condition: string;
 }
 
-// Pas de stockage serveur pour les événements locaux (recalculés à la
-// demande, jamais persistés — voir localEventRelevance.ts) : "supprimer"
-// une carte ne peut donc pas être un vrai DELETE en base comme pour un
-// Spark. On se souvient juste, côté navigateur, des ids à ne plus
-// réafficher — même pattern que le "Plus tard" d'AISuggestionCard.tsx et
-// le cache de ConnectionsPanel.tsx (clé préfixée par userId).
-function dismissedEventIdsKey(userId: string): string {
-  return `flowmind_dismissed_events_${userId}`;
-}
-
-function getDismissedEventIds(userId: string): Set<string> {
-  try {
-    const raw = localStorage.getItem(dismissedEventIdsKey(userId));
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function addDismissedEventId(userId: string, eventId: string): void {
-  const ids = getDismissedEventIds(userId);
-  ids.add(eventId);
-  localStorage.setItem(dismissedEventIdsKey(userId), JSON.stringify([...ids]));
-}
-
-// Réglages du panneau "Ajuster les suggestions" (durée/distance/énergie) :
-// préférences purement locales à l'affichage, comme les toggles IA de
-// Paramètres ("gating côté client uniquement") — pas besoin de toucher à la
-// base de données pour qu'ils survivent à un rafraîchissement de page.
-interface SparkPrefs {
-  maxDuration: number;
-  maxDistance: number;
-  energyIndex: number;
-}
-
-function sparkPrefsKey(userId: string): string {
-  return `flowmind_sparktime_prefs_${userId}`;
-}
-
-function loadSparkPrefs(userId: string): SparkPrefs | null {
-  try {
-    const raw = localStorage.getItem(sparkPrefsKey(userId));
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveSparkPrefs(userId: string, prefs: SparkPrefs): void {
-  localStorage.setItem(sparkPrefsKey(userId), JSON.stringify(prefs));
-}
-
 function minutesUntilNextActivity(
   blocks: { time: string; duration: number; done: boolean }[],
 ): number | null {
@@ -105,13 +53,26 @@ export default function SparkTime() {
   const fetchInterests = useInterestStore((s) => s.fetchInterests);
 
   const user = useAuthStore((s) => s.user);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
   const currentPlan = useDayPlanStore((s) => s.currentPlan);
   const fetchPlan = useDayPlanStore((s) => s.fetchPlan);
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
 
-  const [maxDuration, setMaxDuration] = useState(60);
-  const [maxDistance, setMaxDistance] = useState(5);
-  const [energyIndex, setEnergyIndex] = useState(1);
+  // Valeur initiale lue directement sur le compte (persistée côté serveur,
+  // voir updateSparkPrefs plus bas) — `user` est garanti déjà chargé ici,
+  // ProtectedRoute bloque le rendu de cette page tant que ce n'est pas le
+  // cas. État local quand même conservé (pas juste dérivé de `user` à chaque
+  // rendu) pour que le slider reste réactif au glissé sans attendre
+  // l'aller-retour réseau à chaque tick.
+  const [maxDuration, setMaxDuration] = useState(
+    () => user?.preferences?.sparkMaxDuration ?? 60,
+  );
+  const [maxDistance, setMaxDistance] = useState(
+    () => user?.preferences?.sparkMaxDistance ?? 5,
+  );
+  const [energyIndex, setEnergyIndex] = useState(
+    () => user?.preferences?.sparkEnergyIndex ?? 1,
+  );
   const [interestsModalOpen, setInterestsModalOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selectedSpark, setSelectedSpark] = useState<ISpark | null>(null);
@@ -132,28 +93,22 @@ export default function SparkTime() {
   const maxDistanceKm =
     maxDistance > MAX_FINITE_DISTANCE_KM ? null : maxDistance;
 
-  // Hydrate les réglages sauvegardés une fois l'utilisatrice connue (chargée
-  // de façon asynchrone) — écrit au clic sur chaque contrôle plutôt que
-  // réactivement, pour éviter d'écraser une valeur pas encore hydratée.
-  useEffect(() => {
-    const userId = user?._id;
-    if (!userId) return;
-    void Promise.resolve().then(() => {
-      const saved = loadSparkPrefs(userId);
-      if (!saved) return;
-      setMaxDuration(saved.maxDuration);
-      setMaxDistance(saved.maxDistance);
-      setEnergyIndex(saved.energyIndex);
-    });
-  }, [user?._id]);
-
-  function updateSparkPrefs(patch: Partial<SparkPrefs>) {
-    if (!user?._id) return;
-    saveSparkPrefs(user._id, {
-      maxDuration,
-      maxDistance,
-      energyIndex,
-      ...patch,
+  // Persiste sur le compte (PUT /api/auth/me, via authStore.updateProfile
+  // déjà existant) — synchronisé sur tous les appareils, plus de
+  // localStorage. `patch` prévaut sur l'état local encore possiblement
+  // périmé (un seul champ change par appel, les deux autres viennent de la
+  // closure).
+  function updateSparkPrefs(patch: {
+    maxDuration?: number;
+    maxDistance?: number;
+    energyIndex?: number;
+  }) {
+    updateProfile({
+      preferences: {
+        sparkMaxDuration: patch.maxDuration ?? maxDuration,
+        sparkMaxDistance: patch.maxDistance ?? maxDistance,
+        sparkEnergyIndex: patch.energyIndex ?? energyIndex,
+      },
     });
   }
 
@@ -182,10 +137,17 @@ export default function SparkTime() {
     return parts.join(" · ");
   }
 
+  // Retrait optimiste immédiat + mémorisé côté serveur (le prochain fetch,
+  // sur cet appareil ou un autre, l'exclut déjà — voir GET /api/local-events
+  // qui filtre par `dismissedLocalEventIds`). En cas d'échec réseau, l'id
+  // n'est pas mémorisé mais la carte reste retirée localement pour cette
+  // session — pas grave, elle réapparaîtrait juste au prochain fetch.
   function deleteEvent(event: ILocalEvent) {
-    if (!user) return;
-    addDismissedEventId(user._id, event.id);
     setLocalEvents((prev) => prev.filter((e) => e.id !== event.id));
+    void apiCall(`/api/local-events/${event.id}`, {
+      method: "DELETE",
+      auth: true,
+    }).catch(() => {});
   }
 
   useEffect(() => {
@@ -221,7 +183,9 @@ export default function SparkTime() {
   // slider que la génération de Sparks (pilote le rayon de recherche
   // Ticketmaster côté serveur) — débounce de 500ms (même pattern que la
   // recherche de titre dans NewResourceModal.tsx) pour ne pas déclencher un
-  // appel à chaque tick pendant qu'on glisse le curseur.
+  // appel à chaque tick pendant qu'on glisse le curseur. Les événements déjà
+  // masqués par l'utilisatrice sont filtrés côté serveur (dismissedLocalEventIds
+  // sur le compte), pas ici — cohérent sur tous ses appareils.
   useEffect(() => {
     const timeout = setTimeout(async () => {
       if (!user?.location) {
@@ -234,10 +198,7 @@ export default function SparkTime() {
           `/api/local-events?maxDistance=${distanceParam}`,
           { auth: true },
         );
-        const dismissed = user?._id
-          ? getDismissedEventIds(user._id)
-          : new Set();
-        setLocalEvents(res.data.filter((e) => !dismissed.has(e.id)));
+        setLocalEvents(res.data);
       } catch {
         setLocalEvents([]);
       }
@@ -426,6 +387,15 @@ export default function SparkTime() {
             setSchedulingSpark(null);
             setSchedulingEvent(null);
           }
+        }}
+        // Une fois vraiment planifié (pas juste la modale fermée — on
+        // annulerait sinon aussi en cliquant "Annuler"), le Spark/événement
+        // n'a plus de raison de rester dans "Pour toi, maintenant" — même
+        // mécanisme de retrait que le bouton supprimer (dismiss du Spark en
+        // base, DELETE de l'événement).
+        onSuccess={() => {
+          if (schedulingSpark) deleteSpark(schedulingSpark._id);
+          if (schedulingEvent) deleteEvent(schedulingEvent);
         }}
         defaultModule="SparkTime"
         defaultTitle={schedulingSpark?.title ?? schedulingEvent?.title}

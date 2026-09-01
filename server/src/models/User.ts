@@ -10,6 +10,34 @@ interface IUserPreferences {
   animatedTransitions: boolean;
   compactDensity: boolean;
   dailyEmailSummary: boolean;
+  // Réglages du panneau "Ajuster les suggestions" de SparkTime — persistés
+  // ici (plutôt qu'en localStorage) pour rester identiques sur tous les
+  // appareils du même compte. sparkMaxDistance reprend l'encodage déjà
+  // utilisé côté client (valeur brute du slider ; > MAX_FINITE_DISTANCE_KM
+  // = illimité, voir client/src/lib/sparktime.ts).
+  sparkMaxDuration: number;
+  sparkMaxDistance: number;
+  sparkEnergyIndex: number;
+  // Timestamp (ms) jusqu'auquel la suggestion IA "pratique liée à tes
+  // lectures" (AISuggestionCard) reste masquée après un clic sur "Plus
+  // tard" — remplace l'ancien SNOOZE_KEY en localStorage.
+  readingSuggestionSnoozeUntil: number | null;
+}
+
+interface ISuggestedBook {
+  title: string;
+  author?: string;
+  coverUrl?: string;
+  isbn?: string;
+  reason: string;
+  link: string | null;
+}
+
+interface IThematicConnection {
+  resourceIdA: string;
+  resourceIdB: string;
+  theme: string;
+  explanation: string;
 }
 
 // 1. Define the IUser interface TypeScript to represent the user document structure
@@ -28,6 +56,17 @@ export interface IUser extends Document {
   resetPasswordTokenHash?: string;
   resetPasswordExpires?: Date;
   preferences: IUserPreferences;
+  // Pas des "préférences" (des données, pas des réglages) — top-level comme
+  // `location`. Jamais persistés nulle part avant cette migration : les
+  // événements locaux, connexions et suggestions de livres eux-mêmes restent
+  // recalculés à la demande (voir Décisions dans CLAUDE.md), seul ce que
+  // l'utilisatrice a explicitement masqué/généré est mémorisé ici.
+  dismissedLocalEventIds: string[];
+  bookSuggestions: ISuggestedBook[];
+  connectionsCache?: {
+    data: IThematicConnection[];
+    generatedAt: number;
+  };
   comparePassword: (candidate: string) => Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
@@ -94,6 +133,44 @@ const userSchema = new Schema<IUser>(
       animatedTransitions: { type: Boolean, default: true },
       compactDensity: { type: Boolean, default: false },
       dailyEmailSummary: { type: Boolean, default: false },
+      sparkMaxDuration: { type: Number, default: 60 },
+      sparkMaxDistance: { type: Number, default: 5 },
+      sparkEnergyIndex: { type: Number, default: 1 },
+      readingSuggestionSnoozeUntil: { type: Number, default: null },
+    },
+    dismissedLocalEventIds: {
+      type: [String],
+      default: [],
+    },
+    bookSuggestions: {
+      type: [
+        {
+          title: { type: String, required: true },
+          author: { type: String },
+          coverUrl: { type: String },
+          isbn: { type: String },
+          reason: { type: String, required: true },
+          link: { type: String, default: null },
+        },
+      ],
+      default: [],
+    },
+    connectionsCache: {
+      type: {
+        data: {
+          type: [
+            {
+              resourceIdA: { type: String, required: true },
+              resourceIdB: { type: String, required: true },
+              theme: { type: String, required: true },
+              explanation: { type: String, required: true },
+            },
+          ],
+          default: [],
+        },
+        generatedAt: { type: Number, required: true },
+      },
+      default: undefined,
     },
   },
   {

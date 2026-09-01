@@ -8,26 +8,32 @@ import {
 } from "@/store/resourceStore";
 import { useAuthStore } from "@/store/authStore";
 
-// Pas de stockage serveur pour cette suggestion (cohérent avec le choix déjà
-// pris : recalculée à la demande, jamais persistée) — "Plus tard" se
-// souvient juste dans le navigateur de ne pas la réafficher avant demain.
-const SNOOZE_KEY = "flowmind_reading_suggestion_snooze_until";
-
-function isSnoozed(): boolean {
-  const until = localStorage.getItem(SNOOZE_KEY);
-  return until !== null && Date.now() < Number(until);
-}
-
 export default function AISuggestionCard() {
   const fetchReadingPattern = useResourceStore((s) => s.fetchReadingPattern);
   const [suggestion, setSuggestion] = useState<ReadingPatternSuggestion | null>(
     null,
   );
-  const [snoozed, setSnoozed] = useState(isSnoozed);
+  const user = useAuthStore((s) => s.user);
+  const updateProfile = useAuthStore((s) => s.updateProfile);
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState(0);
-  const crossModuleSuggestions =
-    useAuthStore((s) => s.user?.preferences?.crossModuleSuggestions) ?? true;
+  const crossModuleSuggestions = user?.preferences?.crossModuleSuggestions ?? true;
+  // Persisté sur le compte (pas en localStorage) — "Plus tard" ne réaffiche
+  // rien avant demain, identique sur tous les appareils de l'utilisatrice.
+  // La suggestion elle-même reste recalculée à la demande à chaque montage,
+  // choix assumé (voir CLAUDE.md) — seul ce timestamp de report est mémorisé.
+  // `Date.now()` déplacé dans l'initialiseur paresseux + l'effet ci-dessous
+  // (jamais pendant le rendu lui-même — Date.now() est une fonction impure).
+  const snoozeUntil = user?.preferences?.readingSuggestionSnoozeUntil;
+  const [snoozed, setSnoozed] = useState(
+    () => !!snoozeUntil && Date.now() < snoozeUntil,
+  );
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      setSnoozed(!!snoozeUntil && Date.now() < snoozeUntil);
+    });
+  }, [snoozeUntil]);
 
   useEffect(() => {
     if (!crossModuleSuggestions || snoozed) return;
@@ -44,8 +50,9 @@ export default function AISuggestionCard() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
-    localStorage.setItem(SNOOZE_KEY, String(tomorrow.getTime()));
-    setSnoozed(true);
+    updateProfile({
+      preferences: { readingSuggestionSnoozeUntil: tomorrow.getTime() },
+    });
   }
 
   if (!crossModuleSuggestions) {

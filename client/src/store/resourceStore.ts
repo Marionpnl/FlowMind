@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import apiCall from "@/lib/api";
-import type { IResource, ResourceStatus, ResourceType } from "@shared/types";
+import type {
+  IResource,
+  ResourceStatus,
+  ResourceType,
+  ThematicConnection,
+  SuggestedBook,
+} from "@shared/types";
 
 interface ResourcesResponse {
   success: boolean;
@@ -29,16 +35,14 @@ interface BookSearchResponse {
   data: BookSearchResult[];
 }
 
-export interface ThematicConnection {
-  resourceIdA: string;
-  resourceIdB: string;
-  theme: string;
-  explanation: string;
-}
-
 interface ConnectionsResponse {
   success: boolean;
   data: ThematicConnection[];
+}
+
+interface ConnectionsCacheResponse {
+  success: boolean;
+  data: { data: ThematicConnection[]; generatedAt: number } | null;
 }
 
 export interface RediscoveredNote {
@@ -65,15 +69,6 @@ export interface ReadingPatternSuggestion {
 interface ReadingPatternResponse {
   success: boolean;
   data: ReadingPatternSuggestion;
-}
-
-export interface SuggestedBook {
-  title: string;
-  author?: string;
-  coverUrl?: string;
-  isbn?: string;
-  reason: string;
-  link: string | null;
 }
 
 interface BookSuggestionsResponse {
@@ -115,9 +110,18 @@ interface ResourceState {
   ) => Promise<{ title: string; author?: string; coverUrl?: string } | null>;
   searchByTitle: (query: string) => Promise<BookSearchResult[]>;
   fetchConnections: () => Promise<ThematicConnection[]>;
+  // Lecture pure du cache déjà persisté (jamais d'appel IA) — utilisée au
+  // premier affichage du panneau, `fetchConnections` reste réservée à la
+  // régénération explicite (bouton).
+  fetchConnectionsCache: () => Promise<{
+    data: ThematicConnection[];
+    generatedAt: number;
+  } | null>;
   fetchRediscovery: (count?: number) => Promise<RediscoveredNote[]>;
   fetchReadingPattern: () => Promise<ReadingPatternSuggestion | null>;
   fetchBookSuggestions: () => Promise<SuggestedBook[]>;
+  // Même principe que fetchConnectionsCache : lecture pure, pas d'IA.
+  fetchBookSuggestionsCache: () => Promise<SuggestedBook[]>;
 }
 
 export const useResourceStore = create<ResourceState>((set, get) => ({
@@ -276,6 +280,18 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
     }
   },
 
+  fetchConnectionsCache: async () => {
+    try {
+      const res = await apiCall<ConnectionsCacheResponse>(
+        "/api/resources/connections",
+        { auth: true },
+      );
+      return res.data;
+    } catch {
+      return null;
+    }
+  },
+
   fetchRediscovery: async (count = 1) => {
     try {
       const res = await apiCall<RediscoveryResponse>(
@@ -305,6 +321,18 @@ export const useResourceStore = create<ResourceState>((set, get) => ({
       const res = await apiCall<BookSuggestionsResponse>(
         "/api/resources/suggestions",
         { method: "POST", auth: true },
+      );
+      return res.data;
+    } catch {
+      return [];
+    }
+  },
+
+  fetchBookSuggestionsCache: async () => {
+    try {
+      const res = await apiCall<BookSuggestionsResponse>(
+        "/api/resources/suggestions",
+        { auth: true },
       );
       return res.data;
     } catch {
