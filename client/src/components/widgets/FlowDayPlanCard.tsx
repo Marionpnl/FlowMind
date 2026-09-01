@@ -89,6 +89,7 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
       </p>
 
       <textarea
+        aria-label="Décris ta journée"
         value={userInput}
         onChange={(e) => {
           setUserInput(e.target.value);
@@ -97,7 +98,7 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         rows={2}
-        className="w-full resize-none border-none bg-transparent font-display text-[18px] sm:text-lg italic leading-snug outline-none placeholder:text-muted-foreground"
+        className="w-full resize-none border-none bg-transparent font-display text-[18px] sm:text-lg italic leading-snug outline-none focus-visible:ring-2 focus-visible:ring-flowday/30 rounded placeholder:text-muted-foreground"
         placeholder="Décris ta journée... Énergie moyenne, deux heures pour coder ce matin, envie d'une sortie
         running ce soir."
       />

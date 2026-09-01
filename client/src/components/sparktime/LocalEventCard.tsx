@@ -53,7 +53,7 @@ export default function LocalEventCard({
 
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="rounded-full bg-cream-secondary px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-black/50 text-muted-foreground">
+          <span className="rounded-full bg-cream-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-black/50 text-muted-foreground">
             Événement
           </span>
           {category && (

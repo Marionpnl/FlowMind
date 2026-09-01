@@ -52,9 +52,11 @@ export default function AuthLayout({
             <p className="font-display text-xl italic">FlowMind</p>
           </Link>
 
-          <h1 className="max-w-md font-display text-4xl italic leading-tight">
+          {/* Accroche décorative, pas le vrai titre de page (voir le <h1>
+              du panneau formulaire ci-dessous, seul visible sur mobile). */}
+          <p className="max-w-md font-display text-4xl italic leading-tight">
             Ta journée, ta bibliothèque et tes envies — au même endroit.
-          </h1>
+          </p>
 
           <ul className="mt-10 space-y-3">
             {MODULES.map((m) => (
@@ -86,7 +88,9 @@ export default function AuthLayout({
             <p className="font-display text-xl italic">FlowMind</p>
           </Link>
 
-          <h2 className="font-display text-3xl italic">{title}</h2>
+          {/* Vrai <h1> de la page — visible sur toutes les tailles d'écran,
+              contrairement à l'accroche du panneau de marque ci-dessus. */}
+          <h1 className="font-display text-3xl italic">{title}</h1>
           <p className="mt-1 text-sm text-black/60 text-muted-foreground">
             {subtitle}
           </p>
@@ -163,6 +167,12 @@ interface AuthFieldProps {
   autoComplete?: string;
 }
 
+// Id dérivé du label plutôt que passé en prop — un seul champ par label sur
+// un formulaire d'auth, jamais deux instances de "Email" sur la même page.
+function slugify(label: string): string {
+  return `auth-field-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
 export function AuthField({
   label,
   type,
@@ -172,14 +182,19 @@ export function AuthField({
   Icon,
   autoComplete,
 }: AuthFieldProps) {
+  const id = slugify(label);
   return (
     <div>
-      <label className="text-xs font-medium text-black/60 uppercase tracking-widest text-muted-foreground">
+      <label
+        htmlFor={id}
+        className="text-xs font-medium text-black/60 uppercase tracking-widest text-muted-foreground"
+      >
         {label}
       </label>
       <div className="relative mt-1.5">
         <Icon className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-black/40" />
         <input
+          id={id}
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}

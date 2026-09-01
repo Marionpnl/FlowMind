@@ -44,6 +44,7 @@ export default function AdjustSuggestionsPanel({
             <span className="font-mono">{maxDuration} min</span>
           </div>
           <Slider
+            aria-label="Durée max"
             className={sliderColorClass}
             value={[maxDuration]}
             min={15}
@@ -61,6 +62,7 @@ export default function AdjustSuggestionsPanel({
             <span className="font-mono">{distanceLabel(maxDistance)}</span>
           </div>
           <Slider
+            aria-label="Distance max"
             className={sliderColorClass}
             value={[maxDistance]}
             min={1}
@@ -78,6 +80,7 @@ export default function AdjustSuggestionsPanel({
             <span>{ENERGY_LEVELS[energyIndex]}</span>
           </div>
           <Slider
+            aria-label="Énergie requise"
             className={sliderColorClass}
             value={[energyIndex]}
             min={0}

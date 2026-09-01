@@ -99,25 +99,33 @@ export default function AIPreferencesSection() {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              htmlFor="ai-pref-tone"
+              className="text-xs font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Style
             </label>
             <input
+              id="ai-pref-tone"
               value={tone}
               onChange={(e) => setTone(e.target.value)}
               onBlur={handleToneBlur}
-              className="mt-1 w-full rounded-lg border border-border bg-cream-secondary px-3 py-2 text-sm outline-none"
+              className="mt-1 w-full rounded-lg border border-border bg-cream-secondary px-3 py-2 text-sm outline-none focus-visible:border-black/30 focus-visible:ring-2 focus-visible:ring-black/15"
             />
           </div>
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              htmlFor="ai-pref-length"
+              className="text-xs font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Longueur des suggestions
             </label>
             <input
+              id="ai-pref-length"
               value={length}
               onChange={(e) => setLength(e.target.value)}
               onBlur={handleLengthBlur}
-              className="mt-1 w-full rounded-lg border border-border bg-cream-secondary px-3 py-2 text-sm outline-none"
+              className="mt-1 w-full rounded-lg border border-border bg-cream-secondary px-3 py-2 text-sm outline-none focus-visible:border-black/30 focus-visible:ring-2 focus-visible:ring-black/15"
             />
           </div>
         </div>

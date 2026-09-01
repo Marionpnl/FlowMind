@@ -159,6 +159,14 @@ function SortableBlock({
         ref={setLongPressRef}
         {...longPressTouchHandlers}
         onClick={() => onEditBlock(block)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onEditBlock(block);
+          }
+        }}
         className={cn(
           "group relative flex-1 cursor-grab rounded-2xl bg-white p-3 sm:p-4 shadow-sm active:cursor-grabbing",
           showDraggingVisual && "shadow-lg",
@@ -171,6 +179,9 @@ function SortableBlock({
                 e.stopPropagation();
                 onToggleBlock(block.id);
               }}
+              aria-label={
+                block.done ? "Marquer comme non terminé" : "Marquer comme terminé"
+              }
               className={cn(
                 "mt-0.5 flex h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 items-center justify-center rounded-full border",
                 block.done
@@ -197,7 +208,7 @@ function SortableBlock({
           </div>
           <span
             className={cn(
-              "shrink-0 rounded-full px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-medium uppercase tracking-wider",
+              "shrink-0 rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-medium uppercase tracking-wider",
               moduleBadgeClass[block.module],
             )}
           >

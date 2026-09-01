@@ -55,7 +55,7 @@ export default function EmojiPicker({ value, onChange }: EmojiPickerProps) {
         if (newValue) onChange(newValue);
       }}
     >
-      <SelectTrigger className="w-15 text-xl">
+      <SelectTrigger className="w-15 text-xl" aria-label="Emoji">
         <SelectValue />
       </SelectTrigger>
       <SelectContent className="bg-white shadow-lg">
@@ -78,6 +78,7 @@ export default function EmojiPicker({ value, onChange }: EmojiPickerProps) {
             <div className="flex items-center gap-1">
               <Input
                 autoFocus
+                aria-label="Ajouter un emoji personnalisé"
                 value={newEmoji}
                 onChange={(e) => setNewEmoji(e.target.value)}
                 placeholder="🎉"

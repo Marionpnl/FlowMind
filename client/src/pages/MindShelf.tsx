@@ -146,10 +146,11 @@ export default function MindShelf() {
             <span className="absolute inset-x-0 top-0 h-0.5 bg-mindshelf" />
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-black/70 text-muted-foreground sm:left-8" />
             <input
+              aria-label="Rechercher dans la bibliothèque"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un titre, un auteur, une note..."
-              className="w-full bg-transparent py-5 pl-11 pr-4 text-sm outline-none sm:py-8 sm:pl-15"
+              className="w-full bg-transparent py-5 pl-11 pr-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-black/15 sm:py-8 sm:pl-15"
             />
             <kbd className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-1 px-1.5 py-0.5 pr-8 text-xs text-black/60 text-muted-foreground sm:flex">
               <Command className="h-2.5 w-2.5" />K

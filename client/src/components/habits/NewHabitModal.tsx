@@ -87,10 +87,14 @@ export default function NewHabitModal({
 
         <div className="space-y-4 mt-2">
           <div>
-            <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              htmlFor="habit-name"
+              className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Nom
             </label>
             <Input
+              id="habit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Méditation"
@@ -99,10 +103,14 @@ export default function NewHabitModal({
           </div>
 
           <div>
-            <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              htmlFor="habit-goal"
+              className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Objectif
             </label>
             <Input
+              id="habit-goal"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="10 min chaque matin"
@@ -111,10 +119,17 @@ export default function NewHabitModal({
           </div>
 
           <div>
-            <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              id="habit-module-label"
+              className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Module
             </label>
-            <div className="mt-1 flex gap-2">
+            <div
+              role="group"
+              aria-labelledby="habit-module-label"
+              className="mt-1 flex gap-2"
+            >
               {MODULES.map((m) => (
                 <button
                   key={m.key}

@@ -83,17 +83,20 @@ export default function HabitsWidget({ layout = "row" }: HabitsWidgetProps) {
                   </span>
                 </div>
                 <div className="flex items-end gap-[3px]">
-                  {last30Days.map((date) => (
-                    <div
-                      key={date}
-                      className={cn(
-                        "h-6 flex-1 rounded-full",
-                        habit.completedDates.includes(date)
-                          ? moduleDotClass[habit.module]
-                          : "bg-black/10",
-                      )}
-                    />
-                  ))}
+                  {last30Days.map((date) => {
+                    const done = habit.completedDates.includes(date);
+                    return (
+                      <div
+                        key={date}
+                        role="img"
+                        aria-label={`${done ? "Fait" : "Pas fait"} le ${date}`}
+                        className={cn(
+                          "h-6 flex-1 rounded-full",
+                          done ? moduleDotClass[habit.module] : "bg-black/10",
+                        )}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             );

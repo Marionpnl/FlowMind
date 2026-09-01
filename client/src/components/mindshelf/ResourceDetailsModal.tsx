@@ -139,7 +139,7 @@ export default function ResourceDetailsModal({
             {/* Ligne de stats */}
             <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
               <div className="min-w-0 rounded-xl border border-border bg-cream-secondary p-2 sm:p-3">
-                <p className="flex items-center gap-1 truncate text-[8px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
+                <p className="flex items-center gap-1 truncate text-[9px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
                   <BookOpen className="h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
                   <span className="truncate">Statut</span>
                 </p>
@@ -148,7 +148,7 @@ export default function ResourceDetailsModal({
                 </p>
               </div>
               <div className="min-w-0 rounded-xl border border-border bg-cream-secondary p-2 sm:p-3">
-                <p className="flex items-center gap-1 truncate text-[8px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
+                <p className="flex items-center gap-1 truncate text-[9px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
                   <Clock className="h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
                   <span className="truncate">Progression</span>
                 </p>
@@ -160,7 +160,7 @@ export default function ResourceDetailsModal({
                 </p>
               </div>
               <div className="min-w-0 rounded-xl border border-border bg-cream-secondary p-2 sm:p-3">
-                <p className="flex items-center gap-1 truncate text-[8px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
+                <p className="flex items-center gap-1 truncate text-[9px] uppercase tracking-normal text-muted-foreground sm:text-xs sm:tracking-widest">
                   <Star className="h-2.5 w-2.5 shrink-0 sm:h-3 sm:w-3" />
                   <span className="truncate">Note</span>
                 </p>
@@ -171,6 +171,7 @@ export default function ResourceDetailsModal({
                       onClick={() =>
                         updateResource(resource._id, { rating: i + 1 })
                       }
+                      aria-label={`${i + 1} étoile${i > 0 ? "s" : ""}`}
                     >
                       <Star
                         className={cn(
@@ -190,7 +191,7 @@ export default function ResourceDetailsModal({
           {/* Contenu principal */}
           <div className="space-y-4 overflow-y-auto p-5 pt-2 sm:p-8 sm:pt-2">
             {/* Changement de statut */}
-            <div className="flex flex-wrap gap-2">
+            <div role="group" aria-label="Statut" className="flex flex-wrap gap-2">
               {STATUSES.map((s) => (
                 <button
                   key={s.key}
@@ -250,11 +251,12 @@ export default function ResourceDetailsModal({
             {/* Ajouter une note */}
             <div className="rounded-xl border border-border bg-cream-secondary py-3 px-4">
               <textarea
+                aria-label="Nouvelle note ou citation"
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="Ajouter une note ou une citation..."
                 rows={2}
-                className="w-full resize-none bg-transparent text-xs italic outline-none"
+                className="w-full resize-none bg-transparent text-xs italic outline-none focus-visible:ring-2 focus-visible:ring-black/15 rounded"
               />
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
@@ -267,10 +269,11 @@ export default function ResourceDetailsModal({
                     C'est une citation
                   </label>
                   <input
+                    aria-label="Numéro de page"
                     value={newPage}
                     onChange={(e) => setNewPage(e.target.value)}
                     placeholder="p. 142"
-                    className="w-16 rounded-md border border-black/5 bg-cream-secondary px-2 py-1 font-mono text-[10px] outline-none"
+                    className="w-16 rounded-md border border-black/5 bg-cream-secondary px-2 py-1 font-mono text-[10px] outline-none focus-visible:ring-2 focus-visible:ring-black/15"
                   />
                 </div>
                 <Button

@@ -167,7 +167,11 @@ export default function NewActivityModal({
           </p>
         </DialogHeader>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div
+          role="group"
+          aria-label="Module"
+          className="mt-3 grid grid-cols-3 gap-2"
+        >
           {MODULES.map(({ key, label, subtitle, Icon }) => (
             <button
               key={key}
@@ -195,10 +199,14 @@ export default function NewActivityModal({
         </div>
 
         <div className="mt-1">
-          <label className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground">
+          <label
+            htmlFor="activity-title"
+            className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground"
+          >
             Titre
           </label>
           <Input
+            id="activity-title"
             value={title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             placeholder="Ex. Deep work - Refactor auth"
@@ -208,10 +216,14 @@ export default function NewActivityModal({
 
         <div className="mt-1 grid grid-cols-3 gap-3">
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground">
+            <label
+              htmlFor="activity-date"
+              className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground"
+            >
               Date
             </label>
             <Input
+              id="activity-date"
               type="date"
               value={date}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
@@ -219,10 +231,14 @@ export default function NewActivityModal({
             />
           </div>
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground">
+            <label
+              htmlFor="activity-time"
+              className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground"
+            >
               Heure
             </label>
             <Input
+              id="activity-time"
               type="time"
               value={time}
               onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
@@ -230,10 +246,14 @@ export default function NewActivityModal({
             />
           </div>
           <div>
-            <label className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground">
+            <label
+              htmlFor="activity-duration"
+              className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground"
+            >
               Durée (min)
             </label>
             <Input
+              id="activity-duration"
               type="number"
               min={5}
               step={5}
@@ -247,15 +267,19 @@ export default function NewActivityModal({
         </div>
 
         <div className="mt-1">
-          <label className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground">
+          <label
+            htmlFor="activity-notes"
+            className="text-xs font-medium uppercase tracking-widest text-black/50 text-muted-foreground"
+          >
             Notes
           </label>
           <textarea
+            id="activity-notes"
             value={notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             placeholder="Contexte, intention, énergie..."
             rows={2}
-            className="mt-1.5 w-full resize-none rounded-xl border border-black/10 bg-cream-secondary px-2.5 py-2 text-sm outline-none"
+            className="mt-1.5 w-full resize-none rounded-xl border border-black/10 bg-cream-secondary px-2.5 py-2 text-sm outline-none focus-visible:border-black/30 focus-visible:ring-2 focus-visible:ring-black/15"
           />
         </div>
 

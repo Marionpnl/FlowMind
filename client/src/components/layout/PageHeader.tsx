@@ -23,16 +23,18 @@ export default function PageHeader({
       <div className="flex min-w-0 items-center gap-3">
         <button
           onClick={isMobile ? toggleMobileMenu : toggleSidebar}
-          className="shrink-0 text-muted-foreground hover:text-foreground"
+          className="shrink-0 rounded-md p-1.5 -m-1.5 text-muted-foreground hover:text-foreground hover:bg-black/5"
           aria-label="Replier/déplier la barre latérale"
         >
           <PanelLeft className="h-4.5 w-4.5 text-black/70" />
         </button>
         <span className="h-6 w-px shrink-0 bg-black/10" />
         <div className="flex min-w-0 flex-col gap-0.5 lg:flex-row lg:items-baseline lg:gap-3">
-          <p className="shrink-0 whitespace-nowrap font-display text-xl italic capitalize">
+          {/* Titre de page — un seul <h1> par page, ce composant n'est
+              monté qu'une fois par page (voir Dashboard/FlowDay/etc.). */}
+          <h1 className="shrink-0 whitespace-nowrap font-display text-xl italic capitalize">
             {title}
-          </p>
+          </h1>
           {subtitle && (
             <span className="truncate text-[11px] text-black/70 text-muted-foreground lg:text-sm">
               {subtitle}

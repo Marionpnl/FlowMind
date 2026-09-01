@@ -59,6 +59,7 @@ export default function SparkTimeCard() {
               </div>
               <button
                 onClick={() => handlePlan(s)}
+                aria-label={`Planifier ${s.title}`}
                 className="flex h-5.5 w-5.5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-sparktime-bg text-sparktime"
               >
                 <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

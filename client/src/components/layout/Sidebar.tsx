@@ -59,6 +59,19 @@ export default function Sidebar() {
     closeMobileMenu();
   }, [location.pathname, closeMobileMenu]);
 
+  // Ce tiroir mobile est un overlay fait main (pas le composant Dialog
+  // partagé — c'est un menu de navigation, pas une modale), donc Échap ne le
+  // ferme pas automatiquement comme pour les vraies modales : à ajouter
+  // explicitement.
+  useEffect(() => {
+    if (!isMobile || !mobileMenuOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") closeMobileMenu();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isMobile, mobileMenuOpen, closeMobileMenu]);
+
   const collapsed = isMobile ? !mobileMenuOpen : sidebarCollapsed;
 
   // Sur mobile, pas de rail d'icônes permanent : la sidebar n'existe qu'en
@@ -249,7 +262,7 @@ export default function Sidebar() {
                 </div>
                 <button
                   onClick={logout}
-                  className="shrink-0 text-muted-foreground hover:text-accent-danger"
+                  className="shrink-0 rounded-md p-1.5 -m-1.5 text-muted-foreground hover:bg-black/5 hover:text-accent-danger"
                   aria-label="Se déconnecter"
                 >
                   <LogOut className="h-4 w-4" />
@@ -266,7 +279,7 @@ export default function Sidebar() {
               </div>
               <button
                 onClick={logout}
-                className="text-muted-foreground hover:text-accent-danger"
+                className="rounded-md p-1.5 -m-1.5 text-muted-foreground hover:bg-black/5 hover:text-accent-danger"
                 aria-label="Se déconnecter"
               >
                 <LogOut className="h-4 w-4" />

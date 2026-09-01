@@ -169,7 +169,7 @@ export default function WeekGridView({
                 key={i}
                 className="border-l border-black/5 px-1 py-2 sm:px-3 sm:py-3"
               >
-                <p className="text-[9px] text-black/60 font-medium uppercase tracking-widest text-muted-foreground sm:text-xs">
+                <p className="text-[10px] text-black/60 font-medium uppercase tracking-widest text-muted-foreground sm:text-xs">
                   {DAY_LABELS[i]}
                 </p>
                 <p

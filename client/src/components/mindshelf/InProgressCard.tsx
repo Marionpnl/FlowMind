@@ -26,7 +26,10 @@ export default function InProgressCard({
         {resource.coverUrl && !coverFailed ? (
           <img
             src={resource.coverUrl}
-            alt={resource.title}
+            // Décorative : le titre est déjà affiché en texte juste à côté
+            // (cohérent avec les autres couvertures de l'app — LibraryRow,
+            // BookSuggestionsPanel, etc.).
+            alt=""
             onError={() => setCoverFailed(true)}
             className="h-full w-full object-cover"
           />

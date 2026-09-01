@@ -64,7 +64,7 @@ export function BlockVisual({
         <p
           className={cn(
             "truncate font-medium",
-            dense ? "text-[8px] sm:text-[11px]" : "text-xs",
+            dense ? "text-[9px] sm:text-[11px]" : "text-xs",
           )}
         >
           {block.title}{" "}
@@ -77,7 +77,7 @@ export function BlockVisual({
           <p
             className={cn(
               "truncate font-medium leading-tight",
-              dense ? "text-[8px] sm:text-xs" : "text-sm",
+              dense ? "text-[9px] sm:text-xs" : "text-sm",
             )}
           >
             {block.title}
@@ -85,7 +85,7 @@ export function BlockVisual({
           <p
             className={cn(
               "truncate font-mono leading-tight",
-              dense ? "text-[7px] sm:text-[10px]" : "text-xs",
+              dense ? "text-[9px] sm:text-[10px]" : "text-xs",
               timeColorClass,
             )}
           >

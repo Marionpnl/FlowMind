@@ -134,10 +134,17 @@ export default function NewResourceModal({
         <div className="space-y-4">
           {/* Resource Type */}
           <div>
-            <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              id="resource-type-label"
+              className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Type
             </label>
-            <div className="mt-1 flex flex-wrap gap-1">
+            <div
+              role="group"
+              aria-labelledby="resource-type-label"
+              className="mt-1 flex flex-wrap gap-1"
+            >
               {(Object.keys(RESOURCE_TYPE_CONFIG) as ResourceType[]).map(
                 (t) => {
                   const { label, Icon } = RESOURCE_TYPE_CONFIG[t];
@@ -183,10 +190,14 @@ export default function NewResourceModal({
             <div className="flex-1 space-y-3">
               {/* Title with search */}
               <div className="relative">
-                <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+                <label
+                  htmlFor="resource-title"
+                  className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+                >
                   Titre
                 </label>
                 <Input
+                  id="resource-title"
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
@@ -233,10 +244,14 @@ export default function NewResourceModal({
 
               {/* Author */}
               <div>
-                <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+                <label
+                  htmlFor="resource-author"
+                  className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+                >
                   Auteur
                 </label>
                 <Input
+                  id="resource-author"
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
                   placeholder="Ex. Martin Fowler"
@@ -248,10 +263,17 @@ export default function NewResourceModal({
 
           {/* Status */}
           <div>
-            <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              id="resource-status-label"
+              className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Statut
             </label>
-            <div className="mt-1 flex flex-wrap gap-2">
+            <div
+              role="group"
+              aria-labelledby="resource-status-label"
+              className="mt-1 flex flex-wrap gap-2"
+            >
               {STATUSES.map((s) => (
                 <button
                   key={s.key}
@@ -272,10 +294,17 @@ export default function NewResourceModal({
 
           {/* Category */}
           <div>
-            <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              id="resource-category-label"
+              className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Catégorie
             </label>
-            <div className="mt-1 flex flex-wrap gap-2">
+            <div
+              role="group"
+              aria-labelledby="resource-category-label"
+              className="mt-1 flex flex-wrap gap-2"
+            >
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
@@ -296,15 +325,19 @@ export default function NewResourceModal({
 
           {/* First note */}
           <div>
-            <label className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground">
+            <label
+              htmlFor="resource-first-note"
+              className="text-xs text-black/70 font-medium uppercase tracking-widest text-muted-foreground"
+            >
               Première note
             </label>
             <textarea
+              id="resource-first-note"
               value={firstNote}
               onChange={(e) => setFirstNote(e.target.value)}
               placeholder="Pourquoi ce livre ? Ce que tu veux en retirer..."
               rows={2}
-              className="mt-1 w-full resize-none rounded-lg border border-border bg-cream-secondary p-4 text-xs font-medium outline-none"
+              className="mt-1 w-full resize-none rounded-lg border border-border bg-cream-secondary p-4 text-xs font-medium outline-none focus-visible:border-black/30 focus-visible:ring-2 focus-visible:ring-black/15"
             />
           </div>
         </div>

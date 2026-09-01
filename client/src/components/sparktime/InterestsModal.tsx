@@ -146,6 +146,7 @@ export default function InterestsModal({
             <>
               <div>
                 <Input
+                  aria-label="Nom du centre d'intérêt"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex. escalade en salle"
@@ -155,10 +156,17 @@ export default function InterestsModal({
                   }}
                 />
 
-                <p className="mt-4 mb-2 text-xs font-medium uppercase tracking-widest text-black/60 text-muted-foreground">
+                <p
+                  id="interest-category-label"
+                  className="mt-4 mb-2 text-xs font-medium uppercase tracking-widest text-black/60 text-muted-foreground"
+                >
                   Catégorie
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div
+                  role="group"
+                  aria-labelledby="interest-category-label"
+                  className="flex flex-wrap gap-2"
+                >
                   {CATEGORIES.map((c) => (
                     <button
                       key={c}
@@ -184,6 +192,7 @@ export default function InterestsModal({
                     <span className="font-mono">{importance}/5</span>
                   </div>
                   <Slider
+                    aria-label="Importance"
                     className={sliderColorClass}
                     value={[importance]}
                     min={1}
@@ -367,6 +376,7 @@ function InterestRow({
         {editing ? (
           <input
             autoFocus
+            aria-label="Renommer le centre d'intérêt"
             value={draftName}
             onChange={(e) => setDraftName(e.target.value)}
             onKeyDown={(e) => {
@@ -375,7 +385,7 @@ function InterestRow({
                 commitAndClose();
               }
             }}
-            className="w-full bg-transparent text-sm font-medium outline-none"
+            className="w-full bg-transparent text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-black/15 rounded"
           />
         ) : (
           <p className="truncate text-sm font-medium">
@@ -385,13 +395,14 @@ function InterestRow({
 
         {editing ? (
           <select
+            aria-label="Catégorie du centre d'intérêt"
             value={interest.category ?? ""}
             onChange={(e) =>
               updateInterest(interest._id, {
                 category: e.target.value || undefined,
               })
             }
-            className="mt-1 bg-transparent font-mono text-xs text-black/60 outline-none"
+            className="mt-1 bg-transparent font-mono text-xs text-black/60 outline-none focus-visible:ring-2 focus-visible:ring-black/15 rounded"
           >
             <option value="">—</option>
             {CATEGORIES.map((c) => (

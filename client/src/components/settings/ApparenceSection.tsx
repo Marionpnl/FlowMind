@@ -75,7 +75,7 @@ export default function ApparenceSection() {
             <div className="flex flex-wrap items-center gap-1">
               <p className="text-sm font-medium">{t.label}</p>
               {t.comingSoon && (
-                <span className="rounded-full bg-black/5 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="rounded-full bg-black/5 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   Bientôt
                 </span>
               )}

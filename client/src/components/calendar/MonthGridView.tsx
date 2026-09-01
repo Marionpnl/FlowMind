@@ -143,7 +143,7 @@ export default function MonthGridView({
           {DAY_LABELS.map((label) => (
             <div
               key={label}
-              className="px-1 py-1.5 text-[9px] text-black/70 font-medium uppercase tracking-widest text-muted-foreground sm:px-3 sm:py-2 sm:text-xs"
+              className="px-1 py-1.5 text-[10px] text-black/70 font-medium uppercase tracking-widest text-muted-foreground sm:px-3 sm:py-2 sm:text-xs"
             >
               {label}
             </div>
@@ -198,7 +198,7 @@ export default function MonthGridView({
                   ))}
                 </SortableContext>
                 {blocks.length > MAX_CHIPS_PER_DAY && (
-                  <p className="text-[8px] text-muted-foreground sm:text-[10px]">
+                  <p className="text-[9px] text-muted-foreground sm:text-[10px]">
                     +{blocks.length - MAX_CHIPS_PER_DAY} de plus
                   </p>
                 )}
@@ -247,7 +247,7 @@ function ChipVisual({ block, deleteRevealed = false, onDeleteBlock }: ChipVisual
   return (
     <div
       className={cn(
-        "group relative cursor-grab rounded px-1 py-0.5 text-[8px] font-medium active:cursor-grabbing sm:px-1.5 sm:text-[10px]",
+        "group relative cursor-grab rounded px-1 py-0.5 text-[9px] font-medium active:cursor-grabbing sm:px-1.5 sm:text-[10px]",
         moduleBadgeClass[block.module],
       )}
     >
