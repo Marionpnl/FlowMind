@@ -10,10 +10,16 @@ const router = Router();
 router.use(requireAuth);
 
 const MAX_EVENTS_RETURNED = 6;
+const DEFAULT_RADIUS_KM = 10;
+// Mêmes bornes que le slider "Distance max" d'AdjustSuggestionsPanel.tsx.
+const MIN_RADIUS_KM = 1;
+const MAX_RADIUS_KM = 20;
 
-// GET /api/local-events - Real events near the user's saved location,
-// ranked by relevance to their stored interests (deterministic, no AI —
-// see localEventRelevance.ts for why).
+// GET /api/local-events?maxDistance=N - Real events within N km of the
+// user's saved location, ranked by relevance to their stored interests
+// (deterministic, no AI — see localEventRelevance.ts for why). `maxDistance`
+// réutilise le même réglage que la génération de Sparks plutôt qu'un
+// deuxième contrôle dédié.
 router.get("/", async (req: AuthRequest, res: Response) => {
   try {
     const user = await User.findById(req.userId).select("location");
@@ -23,7 +29,15 @@ router.get("/", async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "No location set" });
     }
 
-    const rawEvents = await fetchNearbyEvents(user.location);
+    const requestedRadius = Number(req.query.maxDistance);
+    const radiusKm =
+      Number.isFinite(requestedRadius) &&
+      requestedRadius >= MIN_RADIUS_KM &&
+      requestedRadius <= MAX_RADIUS_KM
+        ? requestedRadius
+        : DEFAULT_RADIUS_KM;
+
+    const rawEvents = await fetchNearbyEvents(user.location, radiusKm);
     if (!rawEvents) {
       return res
         .status(502)

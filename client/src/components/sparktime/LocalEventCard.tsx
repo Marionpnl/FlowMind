@@ -1,17 +1,29 @@
+import { X } from "lucide-react";
 import type { ILocalEvent } from "@shared/types";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useLongPress } from "@/hooks/useLongPress";
 
 interface LocalEventCardProps {
   event: ILocalEvent;
   onPlan: () => void;
+  onDelete: () => void;
 }
 
 // Même carcasse visuelle que SparkCard.tsx pour que les deux types de carte
 // se fondent dans la même grille — contenu différent : date réelle plutôt
 // que durée, lieu plutôt que description, et un lien externe vers la fiche
 // Ticketmaster plutôt qu'une modale "Détails" (elle fait déjà office de
-// détail, même logique que "Voir sur Google Books").
-export default function LocalEventCard({ event, onPlan }: LocalEventCardProps) {
+// détail, même logique que "Voir sur Google Books"). Même mécanique de
+// suppression que SparkCard (bulle croix au survol / appui long tactile).
+export default function LocalEventCard({
+  event,
+  onPlan,
+  onDelete,
+}: LocalEventCardProps) {
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
+    useLongPress<HTMLDivElement>();
+
   const dateLabel = new Date(event.date).toLocaleDateString("fr-CH", {
     day: "numeric",
     month: "short",
@@ -20,7 +32,25 @@ export default function LocalEventCard({ event, onPlan }: LocalEventCardProps) {
   const category = event.genre || event.segment;
 
   return (
-    <div className="group relative rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+    <div
+      ref={setLongPressRef}
+      {...longPressTouchHandlers}
+      className="group relative rounded-2xl border border-black/5 bg-white p-5 shadow-sm"
+    >
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        className={cn(
+          "absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-black/40 shadow-sm hover:border-accent-danger/30 hover:text-accent-danger group-hover:flex",
+          longPressRevealed && "flex",
+        )}
+        aria-label="Supprimer cet événement"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <span className="rounded-full bg-cream-secondary px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-black/50 text-muted-foreground">

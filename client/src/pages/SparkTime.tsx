@@ -26,6 +26,34 @@ interface CurrentWeather {
   condition: string;
 }
 
+// Pas de stockage serveur pour les événements locaux (recalculés à la
+// demande, jamais persistés — voir localEventRelevance.ts) : "supprimer"
+// une carte ne peut donc pas être un vrai DELETE en base comme pour un
+// Spark. On se souvient juste, côté navigateur, des ids à ne plus
+// réafficher — même pattern que le "Plus tard" d'AISuggestionCard.tsx et
+// le cache de ConnectionsPanel.tsx (clé préfixée par userId).
+function dismissedEventIdsKey(userId: string): string {
+  return `flowmind_dismissed_events_${userId}`;
+}
+
+function getDismissedEventIds(userId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(dismissedEventIdsKey(userId));
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function addDismissedEventId(userId: string, eventId: string): void {
+  const ids = getDismissedEventIds(userId);
+  ids.add(eventId);
+  localStorage.setItem(
+    dismissedEventIdsKey(userId),
+    JSON.stringify([...ids]),
+  );
+}
+
 function minutesUntilNextActivity(
   blocks: { time: string; duration: number; done: boolean }[],
 ): number | null {
@@ -100,6 +128,12 @@ export default function SparkTime() {
     return parts.join(" · ");
   }
 
+  function deleteEvent(event: ILocalEvent) {
+    if (!user) return;
+    addDismissedEventId(user._id, event.id);
+    setLocalEvents((prev) => prev.filter((e) => e.id !== event.id));
+  }
+
   useEffect(() => {
     fetchSparks();
     fetchInterests();
@@ -129,25 +163,32 @@ export default function SparkTime() {
 
   // Même logique que la météo : pas d'événement affiché si l'appel échoue
   // (pas de lieu renseigné, pas de clé Ticketmaster, ou aucun résultat) —
-  // jamais d'événement inventé en repli. Différé en microtâche pour la même
-  // raison que ci-dessus.
+  // jamais d'événement inventé en repli. `maxDistance` réutilise le même
+  // slider que la génération de Sparks (pilote le rayon de recherche
+  // Ticketmaster côté serveur) — débounce de 500ms (même pattern que la
+  // recherche de titre dans NewResourceModal.tsx) pour ne pas déclencher un
+  // appel à chaque tick pendant qu'on glisse le curseur.
   useEffect(() => {
-    void Promise.resolve().then(async () => {
+    const timeout = setTimeout(async () => {
       if (!user?.location) {
         setLocalEvents([]);
         return;
       }
       try {
         const res = await apiCall<{ data: ILocalEvent[] }>(
-          "/api/local-events",
+          `/api/local-events?maxDistance=${maxDistance}`,
           { auth: true },
         );
-        setLocalEvents(res.data);
+        const dismissed = user?._id
+          ? getDismissedEventIds(user._id)
+          : new Set();
+        setLocalEvents(res.data.filter((e) => !dismissed.has(e.id)));
       } catch {
         setLocalEvents([]);
       }
-    });
-  }, [user?.location]);
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [user?.location, user?._id, maxDistance]);
 
   function handleGenerate() {
     generateSparks({
@@ -266,6 +307,7 @@ export default function SparkTime() {
                     key={event.id}
                     event={event}
                     onPlan={() => planEvent(event)}
+                    onDelete={() => deleteEvent(event)}
                   />
                 ))}
                 {visibleSparks.map((spark) => (

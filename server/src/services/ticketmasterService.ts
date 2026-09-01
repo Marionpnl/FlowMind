@@ -1,3 +1,6 @@
+import { geocodeCity } from "./weatherService";
+import { encodeGeohash } from "../utils/geohash";
+
 export interface RawLocalEvent {
   id: string;
   title: string;
@@ -27,13 +30,11 @@ interface TicketmasterEventRaw {
   };
 }
 
-export async function fetchNearbyEvents(
-  city: string,
+async function searchEvents(
+  apiKey: string,
+  geoParams: string,
 ): Promise<RawLocalEvent[] | null> {
-  const apiKey = process.env.TICKETMASTER_API_KEY;
-  if (!apiKey) return null;
-
-  const url = `https://app.ticketmaster.com/discovery/v2/events.json?city=${encodeURIComponent(city)}&size=30&sort=date,asc&apikey=${apiKey}`;
+  const url = `https://app.ticketmaster.com/discovery/v2/events.json?${geoParams}&size=30&sort=date,asc&apikey=${apiKey}`;
   const response = await fetch(url);
   if (!response.ok) return null;
 
@@ -71,4 +72,30 @@ export async function fetchNearbyEvents(
         url: e.url,
       };
     });
+}
+
+// `city` seul (ancien comportement) ne permet aucun rayon — Ticketmaster
+// exige `geoPoint` (geohash) pour une recherche par périmètre, `latlong`
+// étant déprécié. On géocode donc la ville du profil (même clé OpenWeather,
+// voir weatherService.geocodeCity) puis on encode en geohash. Si le
+// géocodage échoue (clé absente, ville non reconnue...), on retombe sur une
+// recherche par `city` plutôt que de ne rien renvoyer — toujours de vraies
+// données, juste sans contrôle de rayon dans ce cas de repli.
+export async function fetchNearbyEvents(
+  city: string,
+  radiusKm: number,
+): Promise<RawLocalEvent[] | null> {
+  const apiKey = process.env.TICKETMASTER_API_KEY;
+  if (!apiKey) return null;
+
+  const geo = await geocodeCity(city);
+  if (geo) {
+    const geohash = encodeGeohash(geo.lat, geo.lon);
+    return searchEvents(
+      apiKey,
+      `geoPoint=${geohash}&radius=${radiusKm}&unit=km`,
+    );
+  }
+
+  return searchEvents(apiKey, `city=${encodeURIComponent(city)}`);
 }
