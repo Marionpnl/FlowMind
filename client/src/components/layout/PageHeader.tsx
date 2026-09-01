@@ -26,7 +26,7 @@ export default function PageHeader({
           className="shrink-0 text-muted-foreground hover:text-foreground"
           aria-label="Replier/déplier la barre latérale"
         >
-          <PanelLeft className="h-4 w-4 text-black/70" />
+          <PanelLeft className="h-4.5 w-4.5 text-black/70" />
         </button>
         <span className="h-6 w-px shrink-0 bg-black/10" />
         <div className="flex min-w-0 flex-col gap-0.5 lg:flex-row lg:items-baseline lg:gap-3">
@@ -34,7 +34,7 @@ export default function PageHeader({
             {title}
           </p>
           {subtitle && (
-            <span className="truncate text-[10px] text-black/70 text-muted-foreground lg:text-sm">
+            <span className="truncate text-[11px] text-black/70 text-muted-foreground lg:text-sm">
               {subtitle}
             </span>
           )}

@@ -118,7 +118,7 @@ export default function BookSuggestionsPanel() {
         <button
           onClick={handleRegenerate}
           disabled={loading}
-          className="flex items-center gap-1.5 text-xs text-mindshelf hover:underline disabled:opacity-50 cursor-pointer"
+          className="flex items-center gap-1.5 text-sm text-mindshelf hover:underline disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
           Régénérer

@@ -115,11 +115,11 @@ export default function MindShelf() {
         title="MindShelf"
         subtitle={`${resources.length} livres · ${totalNotes} notes · ${inProgress.length} en cours`}
         actions={
-          <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
             <button
               onClick={() => setFilterOpen(true)}
               className={cn(
-                "flex items-center gap-2 whitespace-nowrap text-[10px] hover:text-foreground cursor-pointer lg:text-sm",
+                "flex items-center gap-2 whitespace-nowrap text-xs hover:text-foreground cursor-pointer lg:text-sm",
                 filtersActive
                   ? "text-black/60 font-medium"
                   : "text-black/70 text-muted-foreground",
@@ -131,7 +131,7 @@ export default function MindShelf() {
             <Button
               size="lg"
               onClick={() => setModalOpen(true)}
-              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-mindshelf px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-mindshelf/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
+              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-mindshelf px-2 sm:px-2.5 text-[11px] text-white hover:bg-mindshelf/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
             >
               <Plus className="h-2.5 w-2.5 sm:mr-1 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
               Ajouter un livre
@@ -182,7 +182,7 @@ export default function MindShelf() {
                 <button
                   onClick={() => setLibraryTab("library")}
                   className={cn(
-                    "flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-semibold tracking-wide transition-colors cursor-pointer sm:gap-1.5 sm:px-3 sm:text-sm",
+                    "flex items-center gap-1 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-semibold tracking-wide transition-colors cursor-pointer sm:gap-1.5 sm:px-3 sm:text-sm",
                     libraryTab === "library"
                       ? "bg-white shadow-sm"
                       : "text-black/60 hover:text-foreground",
@@ -207,11 +207,11 @@ export default function MindShelf() {
                 </button>
               </div>
               {libraryTab === "library" && (
-                <div className="flex items-center gap-0 sm:gap-1">
+                <div className="flex items-center gap-0.5 sm:gap-1">
                   <button
                     onClick={() => setStatuses([])}
                     className={cn(
-                      "whitespace-nowrap rounded-full px-1 py-0.5 text-[9px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
+                      "whitespace-nowrap rounded-full px-1.5 py-0.5 text-[11px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
                       statuses.length === 0
                         ? "bg-[#2B2A28] text-white"
                         : "text-muted-foreground hover:text-foreground",
@@ -225,7 +225,7 @@ export default function MindShelf() {
                         key={s}
                         onClick={() => toggleStatus(s)}
                         className={cn(
-                          "whitespace-nowrap rounded-full px-1 py-0.5 text-[9px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
+                          "whitespace-nowrap rounded-full px-1 py-0.5 text-[11px] font-medium tracking-wider transition-colors cursor-pointer sm:px-3 sm:py-1 sm:text-xs",
                           statuses.includes(s)
                             ? "bg-[#2B2A28] text-white"
                             : "text-muted-foreground hover:text-foreground",

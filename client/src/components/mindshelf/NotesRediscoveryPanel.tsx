@@ -43,7 +43,7 @@ export default function NotesRediscoveryPanel({
         </h2>
         <button
           onClick={onOpenAllNotes}
-          className="text-[10px] sm:text-xs text-black/70 text-muted-foreground hover:underline cursor-pointer"
+          className="text-[11px] sm:text-xs text-black/70 text-muted-foreground hover:underline cursor-pointer"
         >
           Tout voir
         </button>

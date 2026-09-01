@@ -102,9 +102,16 @@ function SortableBlock({
   onDeleteBlock: (blockId: string) => void;
   onEditBlock: (block: DayPlanBlock) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: block.id });
-  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] = useLongPress<HTMLDivElement>();
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
+  const [setLongPressRef, longPressRevealed, longPressTouchHandlers] =
+    useLongPress<HTMLDivElement>();
 
   // `isDragging` passe à `true` dès que le délai tactile s'écoule, même sans
   // mouvement — un appui immobile pour révéler le bouton supprimer (délai
@@ -165,7 +172,7 @@ function SortableBlock({
                 onToggleBlock(block.id);
               }}
               className={cn(
-                "mt-0.5 flex h-3 w-3 sm:h-4 sm:w-4 shrink-0 items-center justify-center rounded-full border",
+                "mt-0.5 flex h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 items-center justify-center rounded-full border",
                 block.done
                   ? "border-flowday bg-flowday text-white"
                   : "border-black/20 text-transparent",
@@ -176,13 +183,13 @@ function SortableBlock({
             <div>
               <p
                 className={cn(
-                  "text-xs sm:text-sm font-medium",
+                  "text-sm font-medium",
                   block.done && "text-muted-foreground line-through",
                 )}
               >
                 {block.title}
               </p>
-              <p className="text-[10px] sm:text-xs text-black/70 text-muted-foreground">
+              <p className="text-[11px] sm:text-xs text-black/70 text-muted-foreground">
                 {block.duration ? `${block.duration} min` : ""} ·{" "}
                 {block.subtitle}
               </p>

@@ -96,17 +96,17 @@ export default function Calendar() {
           view === "day" ? `${blocks.length} blocs planifiés` : undefined
         }
         actions={
-          <div className="flex items-center gap-1 sm:gap-3">
+          <div className="flex flex-col items-end gap-1.5 sm:gap-3">
             <button
               onClick={goToToday}
-              className="whitespace-nowrap text-[10px] text-black/70 text-muted-foreground hover:text-foreground lg:text-sm cursor-pointer"
+              className="whitespace-nowrap text-xs text-black/70 text-muted-foreground hover:text-foreground lg:text-sm cursor-pointer"
             >
               Aujourd'hui
             </button>
             <Button
               size="lg"
               onClick={openNewActivity}
-              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-flowday px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-flowday/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm cursor-pointer"
+              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-flowday px-2 sm:px-2.5 text-[11px] text-white hover:bg-flowday/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm cursor-pointer"
             >
               <Plus className="h-2.5 w-2.5 sm:mr-1 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
               Bloc
@@ -142,7 +142,7 @@ export default function Calendar() {
                 key={v}
                 onClick={() => setView(v)}
                 className={cn(
-                  "whitespace-nowrap rounded-full px-1.5 py-1 text-[10px] font-medium transition-colors sm:px-3 sm:text-xs cursor-pointer",
+                  "whitespace-nowrap rounded-full px-1.5 py-0.5 text-[11px] font-medium transition-colors sm:px-3 sm:text-xs cursor-pointer",
                   view === v
                     ? "bg-[#2B2A28] text-white"
                     : "text-muted-foreground hover:text-foreground",

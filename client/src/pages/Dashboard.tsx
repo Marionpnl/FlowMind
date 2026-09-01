@@ -67,11 +67,11 @@ export default function Dashboard() {
         title={todayLabel}
         subtitle={`Bonjour ${user?.name}`}
         actions={
-          <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
             <button
               onClick={openDaySummary}
               disabled={!currentPlan}
-              className="flex items-center gap-2 whitespace-nowrap text-[10px] text-black/70 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 lg:text-sm"
+              className="flex items-center gap-2 whitespace-nowrap text-xs text-black/70 text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 lg:text-sm"
             >
               <Sun className="h-4 w-4" />
               Bilan du jour
@@ -79,7 +79,7 @@ export default function Dashboard() {
             <Button
               size="lg"
               onClick={openNewActivity}
-              className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-[#2B2A28] px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-flowday/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
+              className="h-6.5 gap-1 whitespace-nowrap rounded-xl bg-[#2B2A28] px-2.5 text-[11px] text-white hover:bg-flowday/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
             >
               <Plus className="h-2.5 w-2.5 sm:mr-1 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" />
               Nouvelle activité

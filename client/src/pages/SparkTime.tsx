@@ -48,10 +48,7 @@ function getDismissedEventIds(userId: string): Set<string> {
 function addDismissedEventId(userId: string, eventId: string): void {
   const ids = getDismissedEventIds(userId);
   ids.add(eventId);
-  localStorage.setItem(
-    dismissedEventIdsKey(userId),
-    JSON.stringify([...ids]),
-  );
+  localStorage.setItem(dismissedEventIdsKey(userId), JSON.stringify([...ids]));
 }
 
 // Réglages du panneau "Ajuster les suggestions" (durée/distance/énergie) :
@@ -278,7 +275,7 @@ export default function SparkTime() {
             size="lg"
             disabled={sparksLoading || interests.length === 0}
             onClick={handleGenerate}
-            className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-sparktime px-1.5 sm:px-2.5 text-[10px] text-white hover:bg-sparktime/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
+            className="h-6 sm:h-7 gap-1 whitespace-nowrap rounded-xl bg-sparktime px-2 sm:px-2.5 text-[11px] text-white hover:bg-sparktime/90 lg:h-9 lg:gap-1.5 lg:px-2.5 lg:text-sm"
           >
             <RefreshCw
               className={cn(

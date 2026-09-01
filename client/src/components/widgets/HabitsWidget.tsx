@@ -16,9 +16,7 @@ interface HabitsWidgetProps {
   layout?: "row" | "column" | "responsive";
 }
 
-export default function HabitsWidget({
-  layout = "row",
-}: HabitsWidgetProps) {
+export default function HabitsWidget({ layout = "row" }: HabitsWidgetProps) {
   const habits = useHabitStore((s) => s.habits);
   const fetchHabits = useHabitStore((s) => s.fetchHabits);
 
@@ -37,7 +35,7 @@ export default function HabitsWidget({
         </h2>
         <Link
           to="/flowday/habits"
-          className="text-[10px] text-black/70 text-muted-foreground hover:underline"
+          className="text-[11px] text-black/70 text-muted-foreground hover:underline"
         >
           Voir tout
         </Link>
@@ -52,7 +50,8 @@ export default function HabitsWidget({
           className={cn(
             layout === "row" && "grid grid-cols-3 gap-3",
             layout === "column" && "space-y-3",
-            layout === "responsive" && "space-y-3 sm:grid sm:grid-cols-3 sm:gap-3 sm:space-y-0",
+            layout === "responsive" &&
+              "space-y-3 sm:grid sm:grid-cols-3 sm:gap-3 sm:space-y-0",
           )}
         >
           {habits.slice(0, 3).map((habit) => {
