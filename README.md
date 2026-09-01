@@ -25,7 +25,7 @@ _(le backend est hébergé sur un tier gratuit Railway — la toute première re
 </table>
 
 <img src="docs/screenshots/dashboard-mobile.png" alt="Dashboard sur mobile" width="280" />
-<br /><sub>Responsive mobile</sub>
+<br /><sub>Responsive mobile — le glisser-déposer (calendrier, planning du jour) fonctionne aussi bien à la souris qu'au doigt, avec un appui long dédié au tactile pour rester distinct du défilement natif</sub>
 
 ---
 
@@ -42,13 +42,17 @@ _(le backend est hébergé sur un tier gratuit Railway — la toute première re
 - Ajout d'une ressource par recherche de titre ou scan ISBN via l'API OpenLibrary (gratuite, sans clé).
 - Notes et citations horodatées, avec numéro de page.
 - Connexions thématiques entre ressources suggérées par l'IA, mode "Redécouverte" (rotation déterministe d'anciennes notes — volontairement sans IA, pour rester gratuit et prévisible).
+- Suggestions de nouveaux livres par l'IA à partir de la bibliothèque, des notes et des centres d'intérêt — chaque titre proposé est ensuite vérifié auprès d'OpenLibrary avant d'être affiché, jamais de confiance aveugle sur une référence générée.
 - Pont vers FlowDay : suggestion de créneau de lecture basée sur le rythme de la semaine.
+- Lien "Voir sur Google Books" sur chaque fiche et sur les suggestions, quand disponible.
 
 ### ✨ SparkTime — Suggestions d'activités
 
 - Détection automatique de centres d'intérêt par IA à partir de l'activité dans les autres modules.
 - Génération de suggestions filtrables par durée, distance et niveau d'énergie.
 - Filtre par catégorie en un clic, planification directe dans FlowDay.
+- Événements locaux réels (concerts, spectacles, sport...) via l'API Ticketmaster, mêlés aux suggestions générées par l'IA dans la même grille — filtrés par pertinence aux centres d'intérêt sans appel IA (classification déjà réelle sur chaque événement). Rayon de recherche réglable, jusqu'à "sans limite".
+- Météo contextuelle (OpenWeather) affichée quand disponible, jamais de valeur inventée en repli.
 
 ### 🔥 Habitudes
 
@@ -72,7 +76,7 @@ Stats déterministes (Focus/Lecture/Mouvement) affichées immédiatement, synth�
 | Base de données | MongoDB Atlas + Mongoose                                   |
 | Auth            | JWT + bcrypt                                               |
 | IA              | OpenAI `gpt-4o-mini`                                       |
-| API externe     | OpenLibrary (recherche + lookup ISBN)                      |
+| APIs externes   | OpenLibrary (recherche + lookup ISBN) · OpenWeather (météo contextuelle) · Google Books (liens d'achat) · Ticketmaster Discovery (événements locaux réels) |
 | Déploiement     | Vercel (frontend) · Railway (backend) · MongoDB Atlas      |
 
 **Monorepo** : `client/`, `server/` et `shared/types.ts` (source de vérité des types métier, partagée entre front et back).
@@ -92,6 +96,12 @@ Une sélection de choix volontairement assumés — le détail complet est docum
 - **Sections Paramètres sans base technique réelle affichées comme "Bientôt disponible"** plutôt que simulées avec de faux toggles.
 
 - **Fonctionnalité "mot de passe oublié"** : toute la logique de sécurité (token à usage unique, hashé, expiration 1h) est réelle et testée ; l'envoi d'e-mail est pour l'instant simulé (loggé côté serveur) faute de fournisseur configuré — isolé dans une seule fonction à remplacer le jour venu.
+
+- **Événements locaux SparkTime sans IA de classification** : chaque événement Ticketmaster porte déjà sa propre catégorie réelle — comparer ces mots-clés aux centres d'intérêt est un filtre déterministe, pas un problème qui a besoin de raisonnement génératif.
+
+- **Recherche d'événements par coordonnées (geohash) plutôt que par ville** : la ville du profil est géocodée puis encodée en geohash pour une vraie recherche par rayon (`geoPoint`, le paramètre `latlong` de l'API étant déprécié) ; en mode "sans limite", recherche par pays entier (`countryCode`) plutôt qu'un `geoPoint` sans rayon — testé en direct, ce dernier ignore la position et renvoie le catalogue mondial non filtré. La recherche par ville reste un repli si le géocodage échoue, jamais une absence totale de résultat.
+
+- **Suggestions et réglages personnels synchronisés sur le compte, pas dans le navigateur** : filtres SparkTime, connexions thématiques, suggestions de livres — tout est persisté côté serveur pour rester identique sur tous les appareils d'une même utilisatrice, plutôt qu'en `localStorage` (propre à chaque appareil).
 
 ---
 
@@ -123,6 +133,13 @@ MONGODB_URI=mongodb+srv://...
 JWT_SECRET=<chaîne aléatoire longue>
 OPENAI_API_KEY=sk-...
 CLIENT_URL=http://localhost:5173
+
+# Optionnelles — chaque intégration dégrade proprement en leur absence
+# (aucune fonctionnalité cassée, juste masquée/désactivée) :
+RESEND_API_KEY=...        # résumé quotidien par e-mail
+OPENWEATHER_API_KEY=...   # météo contextuelle sur SparkTime
+GOOGLE_BOOKS_API_KEY=...  # liens "Voir sur Google Books"
+TICKETMASTER_API_KEY=...  # événements locaux réels sur SparkTime
 ```
 
 `client/.env` :
@@ -150,17 +167,20 @@ L'app est accessible sur `http://localhost:5173`.
 ```
 flowmind/
 ├── client/src/
-│   ├── components/     → layout, widgets partagés, un dossier par module
+│   ├── components/   → layout, widgets partagés, un dossier par module
+│   ├── hooks/        → hooks réutilisables (drag & drop souris/tactile, appui long, media query...)
+│   ├── lib/          → utils, dateUtils, streak, moduleStyles...
 │   ├── pages/
-│   ├── store/          → un store Zustand par domaine
-│   └── lib/             → utils, dateUtils, streak, moduleStyles...
+│   └── store/        → un store Zustand par domaine
 ├── server/src/
-│   ├── models/          → un modèle Mongoose par ressource
+│   ├── config/       → connexion base de données
+│   ├── middleware/   → auth JWT
+│   ├── models/       → un modèle Mongoose par ressource
 │   ├── routes/
-│   ├── middleware/      → auth JWT
-│   └── services/        → aiService (OpenAI), openLibraryService, emailService
+│   ├── services/     → OpenAI, OpenLibrary, OpenWeather, Google Books, Ticketmaster, e-mail
+│   └── utils/        → fonctions pures partagées (cascade de planning, geohash...)
 └── shared/
-    └── types.ts          → types métier partagés front/back
+    └── types.ts        → types métier partagés front/back
 ```
 
 ---
