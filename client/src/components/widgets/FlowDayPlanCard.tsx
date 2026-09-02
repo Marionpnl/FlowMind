@@ -28,9 +28,7 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
   const [userInput, setUserInput] = useState(DEFAULT_EXAMPLE);
   const generatePlan = useDayPlanStore((s) => s.generatePlan);
   const generating = useDayPlanStore((s) => s.generating);
-  const lastGenerationSummary = useDayPlanStore(
-    (s) => s.lastGenerationSummary,
-  );
+  const lastGenerationSummary = useDayPlanStore((s) => s.lastGenerationSummary);
   const autoGeneratePlan =
     useAuthStore((s) => s.user?.preferences?.autoGeneratePlan) ?? true;
   // N'affiche le résumé qu'après une génération déclenchée depuis CETTE
@@ -98,7 +96,7 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         rows={2}
-        className="w-full resize-none border-none bg-transparent font-display text-[18px] sm:text-lg italic leading-snug outline-none focus-visible:ring-2 focus-visible:ring-flowday/30 rounded placeholder:text-muted-foreground"
+        className="w-full resize-none border-none bg-transparent font-display text-[18px] sm:text-lg italic leading-snug outline-none focus-visible:ring-1 focus-visible:ring-flowday/20 rounded placeholder:text-muted-foreground"
         placeholder="Décris ta journée... Énergie moyenne, deux heures pour coder ce matin, envie d'une sortie
         running ce soir."
       />
@@ -120,16 +118,18 @@ export default function FlowDayPlanCard({ date }: FlowDayPlanCardProps) {
         </Button>
       </div>
 
-      {showSummary && lastGenerationSummary && lastGenerationSummary.length > 0 && (
-        <p className="mt-3 text-xs text-flowday">
-          {lastGenerationSummary
-            .map(
-              (s) =>
-                `${s.count} bloc${s.count > 1 ? "s" : ""} ajouté${s.count > 1 ? "s" : ""} ${labelForDate(s.date, date)}`,
-            )
-            .join(" · ")}
-        </p>
-      )}
+      {showSummary &&
+        lastGenerationSummary &&
+        lastGenerationSummary.length > 0 && (
+          <p className="mt-3 text-xs text-flowday">
+            {lastGenerationSummary
+              .map(
+                (s) =>
+                  `${s.count} bloc${s.count > 1 ? "s" : ""} ajouté${s.count > 1 ? "s" : ""} ${labelForDate(s.date, date)}`,
+              )
+              .join(" · ")}
+          </p>
+        )}
     </div>
   );
 }

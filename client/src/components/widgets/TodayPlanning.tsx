@@ -68,7 +68,7 @@ export default function TodayPlanning({
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <ul className="relative space-y-3">
-            <div className="absolute left-[47px] top-2 bottom-2 w-px bg-black/10" />
+            <div className="absolute left-11.75 top-2 bottom-2 w-px bg-black/10" />
 
             <SortableContext
               items={sortedBlocks.map((b) => b.id)}
@@ -180,7 +180,9 @@ function SortableBlock({
                 onToggleBlock(block.id);
               }}
               aria-label={
-                block.done ? "Marquer comme non terminé" : "Marquer comme terminé"
+                block.done
+                  ? "Marquer comme non terminé"
+                  : "Marquer comme terminé"
               }
               className={cn(
                 "mt-0.5 flex h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 items-center justify-center rounded-full border",

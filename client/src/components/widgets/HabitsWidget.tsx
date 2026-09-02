@@ -82,7 +82,7 @@ export default function HabitsWidget({ layout = "row" }: HabitsWidgetProps) {
                     {streak}j
                   </span>
                 </div>
-                <div className="flex items-end gap-[3px]">
+                <div className="flex items-end gap-1">
                   {last30Days.map((date) => {
                     const done = habit.completedDates.includes(date);
                     return (
