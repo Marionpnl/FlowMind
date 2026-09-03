@@ -1,5 +1,15 @@
 # FlowMind
 
+[![CI](https://github.com/Marionpnl/FlowMind/actions/workflows/ci.yml/badge.svg)](https://github.com/Marionpnl/FlowMind/actions/workflows/ci.yml)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-412991?logo=openai&logoColor=white)
+
 **Planifie ta journée, garde une trace de tes lectures, et laisse l'IA te suggérer comment recharger — le tout dans une seule app.**
 
 FlowMind est une application de productivité personnelle qui réunit trois modules — **FlowDay** (planification de journée assistée par IA), **MindShelf** (bibliothèque de lecture avec notes et citations) et **SparkTime** (suggestions d'activités personnalisées) — autour d'un système d'habitudes et de centres d'intérêts partagés. Projet fullstack développé en solo, du modèle de données au déploiement.
@@ -80,6 +90,22 @@ Stats déterministes (Focus/Lecture/Mouvement) affichées immédiatement, synth�
 | Déploiement     | Vercel (frontend) · Railway (backend) · MongoDB Atlas      |
 
 **Monorepo** : `client/`, `server/` et `shared/types.ts` (source de vérité des types métier, partagée entre front et back).
+
+---
+
+## CI/CD
+
+Un pipeline GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) tourne à chaque push et pull request vers `main` :
+
+| Job       | Ce qu'il vérifie                                                        |
+| --------- | ------------------------------------------------------------------------ |
+| `client`  | Lint (ESLint) · vérification TypeScript · build (Vite)                   |
+| `server`  | Vérification TypeScript · build                                          |
+| `quality` | Analyse de sécurité statique (CodeQL), en parallèle des deux autres jobs |
+
+Pas de job de tests automatisés pour l'instant — le projet n'a pas encore de suite de tests (choix assumé, pas un oubli : rien à faire tourner tant qu'elle n'existe pas).
+
+Le **déploiement, lui, ne passe pas par ce pipeline** : Vercel (frontend) et Railway (backend) redéploient automatiquement à chaque push sur `main`, via leur propre intégration GitHub native, indépendamment du résultat du CI ci-dessus. Ce pipeline sert donc de filet de détection (voir les erreurs avant qu'elles n'atterrissent en prod), pas encore de verrou avant mise en ligne.
 
 ---
 
